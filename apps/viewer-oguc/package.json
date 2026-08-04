@@ -9,10 +9,10 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:smoke": "tsx tests/smoke-harness.ts",
-    "check:domain-isolation": "tsc --noEmit -p tsconfig.domain.json && depcruise --validate .dependency-cruiser.json src/engine/domain"
+    "test:smoke": "tsx tests/smoke-harness.ts"
   },
   "dependencies": {
+    "@bw-central/ifc-core": "workspace:*",
     "@thatopen/components": "^3.4.6",
     "@thatopen/components-front": "^3.4.3",
     "@thatopen/fragments": "^3.4.6",
@@ -28,7 +28,6 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.185.1",
     "@vitejs/plugin-react": "^6.0.3",
-    "dependency-cruiser": "^18.1.0",
     "happy-dom": "^20.10.6",
     "oxlint": "^1.71.0",
     "tsx": "^4.23.1",

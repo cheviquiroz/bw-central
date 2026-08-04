@@ -1,5 +1,3 @@
-// src/engine/domain/federation/detectDistantModels.ts
-
 export interface ModelBoundingBox {
   modelId: string;
   min: { x: number; y: number; z: number };

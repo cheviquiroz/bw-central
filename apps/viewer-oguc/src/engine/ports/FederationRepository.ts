@@ -1,5 +1,4 @@
-import type { Federation } from "../domain/federation/Federation";
-import type { FederationId } from "../domain/federation/FederationId";
+import type { Federation, FederationId } from "@bw-central/ifc-core";
 
 export interface FederationRepository {
   get(id: FederationId): Promise<Federation | null>;

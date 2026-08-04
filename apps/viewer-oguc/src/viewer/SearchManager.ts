@@ -1,6 +1,7 @@
 // src/viewer/SearchManager.ts
 import * as THREE from "three";
 import * as OBF from "@thatopen/components-front";
+import { extractPsetValues } from "@bw-central/ifc-core";
 import type { IfcViewerHandles } from "../core/IfcBootstrap";
 import type { ApplicationInstance } from "../engine/createApplication";
 
@@ -135,7 +136,7 @@ export class SearchManager {
 
         const name = data?.Name?.value || data?.Name || "";
         const category = data?._category?.value || data?._category || "";
-        const psets = this.extractPsets(data);
+        const psets = extractPsetValues(data);
 
         entries.push({ modelId: model.modelId, localId, name, category, psets });
       }
@@ -144,52 +145,6 @@ export class SearchManager {
       console.error("❌ Error indexando modelo para búsqueda:", error);
       return [];
     }
-  }
-
-  private extractPsets(data: any): Record<string, Record<string, string>> {
-    const psets: Record<string, Record<string, string>> = {};
-    if (!Array.isArray(data.IsDefinedBy)) return psets;
-
-    for (const rel of data.IsDefinedBy) {
-      const psetName = rel?.Name?.value || rel?.Name || "Pset";
-      // Los quantity sets (ej. BaseQuantities/Qto_*) son IfcElementQuantity,
-      // no IfcPropertySet - guardan sus valores bajo Quantities, no
-      // HasProperties. Sin este fallback, propiedades como CrossSectionArea
-      // o NominalLength quedaban completamente afuera del índice (bug real,
-      // confirmado: "crosssectionarea>0" daba 0 resultados incluso con un
-      // umbral trivial, mientras que un Pset real como "loadbearing:true"
-      // sí matcheaba).
-      const props = rel?.HasProperties || rel?.Quantities;
-      if (!Array.isArray(props)) continue;
-
-      const values: Record<string, string> = {};
-      for (const prop of props) {
-        const propName = prop?.Name?.value || prop?.Name;
-        if (typeof propName !== "string") continue;
-
-        const value = this.extractPropertyValue(prop);
-        if (value !== null) values[propName] = value;
-      }
-      psets[psetName] = values;
-    }
-
-    return psets;
-  }
-
-  // Copia de la misma heurística de PropertiesPanel.tsx: cada tipo de
-  // propiedad IFC guarda su valor en un campo distinto (NominalValue,
-  // LengthValue, AreaValue...) pero todos terminan en "Value".
-  private extractPropertyValue(prop: any): string | null {
-    if (!prop || typeof prop !== "object") return null;
-
-    for (const [key, val] of Object.entries(prop)) {
-      if (key === "Name" || key.startsWith("_") || !key.endsWith("Value")) continue;
-      const unwrapped = val && typeof val === "object" && "value" in val ? (val as any).value : val;
-      if (unwrapped === null || unwrapped === undefined) continue;
-      return String(unwrapped);
-    }
-
-    return null;
   }
 
   async getCategories(): Promise<string[]> {

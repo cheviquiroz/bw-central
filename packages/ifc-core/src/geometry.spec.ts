@@ -1,6 +1,5 @@
-// src/engine/domain/federation/detectDistantModels.spec.ts
 import { describe, test, expect } from "vitest";
-import { detectDistantModels } from "./detectDistantModels";
+import { detectDistantModels } from "./geometry";
 
 describe("detectDistantModels", () => {
   test("no reporta nada si hay un solo modelo", () => {

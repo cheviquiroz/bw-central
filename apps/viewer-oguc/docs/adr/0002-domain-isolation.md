@@ -1,7 +1,15 @@
 # ADR 0002: Aislamiento verificable del dominio
 
 ## Estado
-Aceptado
+Superseded — el dominio (`Model`, `ModelId`, `Federation`, `Project`,
+`registerModelInFederation`, `removeModelFromFederation`,
+`detectDistantModels`) se separó como paquete npm independiente
+(`packages/ifc-core` en el monorepo `bw-central`), el escenario que esta
+misma ADR ya preveía en "Consecuencias". El aislamiento ahora lo garantiza
+el propio límite de paquete (ifc-core no tiene ninguna dependencia de
+runtime) en vez del gate de `tsconfig.domain.json` + `dependency-cruiser`
+descrito abajo, que fue removido de este proyecto. El resto de esta ADR
+queda como registro histórico de la decisión original.
 
 ## Contexto
 El proyecto afirma desde su origen que "el dominio no depende de

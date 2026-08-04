@@ -2,8 +2,7 @@
 import { describe, test, expect } from "vitest";
 import { registerModel } from "./application/registerModel";
 import type { FederationRepository } from "./ports/FederationRepository";
-import type { Federation } from "./domain/federation/Federation";
-import type { FederationId } from "./domain/federation/FederationId";
+import type { Federation, FederationId } from "@bw-central/ifc-core";
 
 interface ModelLoader {
   load(

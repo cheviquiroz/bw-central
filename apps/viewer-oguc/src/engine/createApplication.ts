@@ -2,10 +2,8 @@
 import { IfcLoaderAdapter } from "./adapters/ThatOpenModelLoaderAdapter";
 import { InMemoryFederationRepository } from "./adapters/InMemoryFederationRepository";
 import { registerModel } from "./application/registerModel";
-import { removeModelFromFederation } from "./domain/federation/removeModelFromFederation";
-import type { FederationId } from "./domain/federation/FederationId";
-import type { ModelId } from "./domain/model/ModelId";
-import type { ProximityWarning } from "./domain/federation/detectDistantModels";
+import { removeModelFromFederation } from "@bw-central/ifc-core";
+import type { FederationId, ModelId, ProximityWarning } from "@bw-central/ifc-core";
 
 export interface ModelProgress {
   percentage: number;

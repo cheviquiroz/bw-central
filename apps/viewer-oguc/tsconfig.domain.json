@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "types": [],
-    "lib": ["ES2022"]
-  },
-  "include": ["src/engine/domain/**/*.ts"],
-  "exclude": ["src/engine/domain/**/*.spec.ts"]
-}

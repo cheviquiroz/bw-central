@@ -5,7 +5,7 @@ import { setInitialDiagonalView } from "../core/IfcBootstrap";
 import {
   detectDistantModels,
   type ModelBoundingBox,
-} from "../engine/domain/federation/detectDistantModels";
+} from "@bw-central/ifc-core";
 
 /**
  * Detecta modelos federados cuya geometría real (bounding box, no un punto

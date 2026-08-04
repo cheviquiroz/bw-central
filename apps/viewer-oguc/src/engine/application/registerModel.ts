@@ -1,8 +1,6 @@
-import { ModelId } from "../domain/model/ModelId";
-import { Model } from "../domain/model/Model";
+import { ModelId, Model, calculateSHA256, registerModelInFederation } from "@bw-central/ifc-core";
+import type { FederationId } from "@bw-central/ifc-core";
 import type { FederationRepository } from "../ports/FederationRepository";
-import type { FederationId } from "../domain/federation/FederationId";
-import { registerModelInFederation } from "../domain/federation/registerModelInFederation";
 
 export interface ModelProgress {
   readonly percentage: number;
@@ -27,12 +25,6 @@ export interface RegisterModelInput {
   federationId: FederationId;
 }
 
-async function hashContent(content: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", content.buffer as ArrayBuffer);
-  const bytes = Array.from(new Uint8Array(digest));
-  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 /**
  * Caso de Uso: Registrar e importar un modelo a la Federación,
  * protegiendo la invariante de no permitir el mismo archivo dos veces,
@@ -54,7 +46,7 @@ export async function registerModel(
     return { success: false, error: "La Federación indicada no existe." };
   }
 
-  const contentHash = await hashContent(input.content);
+  const contentHash = await calculateSHA256(input.content);
   const modelId = new ModelId(contentHash);
 
   const registrationResult = registerModelInFederation(federation, modelId, input.name);

@@ -1,6 +1,7 @@
 // src/components/PropertiesPanel/PropertiesPanel.tsx
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import type { ReactNode, CSSProperties } from "react";
+import { readIfcName, readIfcPropertyValue, groupPropertySets } from "@bw-central/ifc-core";
 import { useApp } from "../../ui/AppContext";
 import type { SelectionState } from "../../engine/createApplication";
 import { IconLock } from "../../ui/icons/dock";
@@ -18,27 +19,12 @@ type TabType = "PROPERTIES" | "QUANTITIES" | "BSDD";
 
 const BASE_QUANTITIES_KEY = "BaseQuantities";
 
-// Cada propiedad IFC (IfcPropertySingleValue, IfcQuantityLength, etc.)
-// guarda su valor en un campo distinto según el tipo (NominalValue,
-// LengthValue, AreaValue...), pero todos siguen la misma convención de
-// nombre: terminan en "Value". Buscar por ese patrón, en vez de una lista
-// fija de nombres, cubre tanto Psets como Quantities sin enumerarlos.
 function getPropertyValue(prop: any): string {
-  if (!prop || typeof prop !== "object") return "—";
-
-  for (const [key, val] of Object.entries(prop)) {
-    if (key === "Name" || key.startsWith("_") || !key.endsWith("Value")) continue;
-    const unwrapped = val && typeof val === "object" && "value" in val ? (val as any).value : val;
-    if (unwrapped === null || unwrapped === undefined) continue;
-    return String(unwrapped);
-  }
-
-  return "—";
+  return readIfcPropertyValue(prop) ?? "—";
 }
 
 function getPropertyName(prop: any, index: number): string {
-  const raw = prop?.Name?.value ?? prop?.Name;
-  return typeof raw === "string" ? raw : `Propiedad #${index + 1}`;
+  return readIfcName(prop) ?? `Propiedad #${index + 1}`;
 }
 
 // toLocaleString con locale 'es-ES' se probó y descartó: da coma decimal
@@ -212,32 +198,25 @@ export default function PropertiesPanel() {
     const name = data?.Name?.value || data?.Name || `Elemento #${data?._localId?.value || "Sin Nombre"}`;
 
     const attrs: [string, any][] = [];
-    const sets: Record<string, any[]> = {};
 
     Object.entries(data).forEach(([key, val]) => {
       try {
-        if (key === "IsDefinedBy" && Array.isArray(val)) {
-          val.forEach((rel, rIdx) => {
-            try {
-              const psetName = rel?.Name?.value || rel?.Name || `PropertySet_#${rIdx}`;
-              const props = rel?.HasProperties || rel?.Quantities;
-              // Solo aceptar un array real de propiedades individuales - si
-              // no existe, es mejor omitir el Pset que mostrar la relación
-              // cruda (metadatos internos como _category/_localId/_guid).
-              if (Array.isArray(props)) {
-                sets[psetName] = props;
-              }
-            } catch (err) {
-              console.warn("⚠️ Error omitiendo rama circular en sub-pset:", err);
-            }
-          });
-        } else {
-          attrs.push([key, val]);
-        }
+        if (key !== "IsDefinedBy") attrs.push([key, val]);
       } catch (err) {
         console.warn(`⚠️ Error procesando la propiedad IFC [${key}]:`, err);
       }
     });
+
+    let sets: Record<string, any[]> = {};
+    try {
+      // Solo llegan acá Psets con un array real de propiedades individuales
+      // (groupPropertySets omite relaciones sin HasProperties/Quantities) -
+      // se prefiere omitir el Pset a mostrar la relación cruda (metadatos
+      // internos como _category/_localId/_guid).
+      sets = groupPropertySets(data);
+    } catch (err) {
+      console.warn("⚠️ Error procesando Property Sets:", err);
+    }
 
     return { attributes: attrs, psets: sets, ifcCategory: category, elementName: name, selectedElement: el, extraData: data };
   }, [selection, activeModelId, currentGuids, app]);

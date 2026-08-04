@@ -1,6 +1,5 @@
 // src/engine/adapters/InMemoryFederationRepository.ts
-import type { Federation } from "../domain/federation/Federation";
-import type { FederationId } from "../domain/federation/FederationId";
+import type { Federation, FederationId } from "@bw-central/ifc-core";
 import type { FederationRepository } from "../ports/FederationRepository";
 
 /**

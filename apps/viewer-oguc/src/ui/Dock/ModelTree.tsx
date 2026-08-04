@@ -2,7 +2,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useApp } from "../AppContext";
 import type { ModelTrees, ModelTreeNode, ApplicationInstance, SelectionState, ModelDisplayNames } from "../../engine/createApplication";
-import type { ProximityWarning } from "../../engine/domain/federation/detectDistantModels";
+import type { ProximityWarning } from "@bw-central/ifc-core";
 import { IconChevron, IconFolder, IconEye, IconTrash } from "../icons/dock";
 
 function findPathToLocalId(node: ModelTreeNode, targetLocalId: number): number[] | null {
