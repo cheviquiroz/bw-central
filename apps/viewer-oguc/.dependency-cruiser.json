@@ -1,0 +1,33 @@
+{
+  "forbidden": [
+    {
+      "name": "domain-no-infra",
+      "comment": "El dominio no puede depender de infraestructura ni frameworks",
+      "severity": "error",
+      "from": { "path": "^src/engine/domain" },
+      "to": {
+        "path": [
+          "^node_modules/three",
+          "^node_modules/@thatopen",
+          "^node_modules/react",
+          "^src/engine/adapters",
+          "^src/engine/application"
+        ]
+      }
+    },
+    {
+      "name": "domain-no-ports-impl",
+      "comment": "El dominio no conoce implementaciones de puertos, solo tipos propios",
+      "severity": "error",
+      "from": { "path": "^src/engine/domain" },
+      "to": { "path": "^src/engine/ports" }
+    }
+  ],
+  "options": {
+    "tsPreCompilationDeps": true,
+    "tsConfig": { "fileName": "tsconfig.domain.json" },
+    "doNotFollow": {
+      "path": "\\.spec\\.ts$"
+    }
+  }
+}

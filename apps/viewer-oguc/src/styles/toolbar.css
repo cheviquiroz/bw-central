@@ -1,0 +1,146 @@
+/* src/styles/toolbar.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap');
+@import "./tokens.css";
+
+:root {
+  --toolbar-bg: #1d232b;
+  --toolbar-hover: #262d37;
+  /* --toolbar-line, --brand-blue y --text-dim coinciden con tokens.css -
+     se referencian en vez de repetir el hex. --text-secondary (#a0aec0) y
+     --text-primary (#ffffff) NO coinciden con --text-mid/--text-hi de
+     tokens.css (son valores ligeramente distintos) y se dejan como estaban
+     para no alterar el toolbar ya verificado visualmente. */
+  --toolbar-line: var(--line);
+  --brand-blue: var(--blue);
+  --brand-blue-glow: rgba(74, 144, 217, 0.16);
+  --text-primary: #ffffff;
+  --text-secondary: #a0aec0;
+  --text-dim: var(--text-low);
+  /* --green ya llega de tokens.css (mismo valor exacto, #5fc48d) - no se
+     redeclara acá para evitar una referencia circular (--green: var(--green)
+     dentro del mismo :root es inválido en CSS, no hace fallback). */
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+.toolbar {
+  height: 44px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--toolbar-line);
+  color: var(--text-primary);
+}
+
+.toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  padding-right: 16px;
+  border-right: 1px solid var(--toolbar-line);
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.toolbar-brand .mark {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.toolbar-brand .name-b {
+  color: var(--text-primary);
+}
+
+.toolbar-brand .name-wise {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.toolbar-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.toolbar-btn:hover {
+  background: var(--toolbar-hover);
+  color: var(--text-primary);
+}
+
+/* Mismo tratamiento visual que .tbtn.active en el mockup real
+   (public/mockup-v1.0.html): fondo + borde teñidos de azul, no un
+   border-bottom - la descripción del pedido decía "border-bottom 2px",
+   pero el mockup real no hace eso. */
+.toolbar-btn.active {
+  background: var(--brand-blue-glow);
+  color: var(--brand-blue);
+  border-color: rgba(74, 144, 217, 0.3);
+}
+
+.toolbar-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 18px;
+  background: var(--toolbar-line);
+  flex-shrink: 0;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.toolbar-project-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #262d37;
+  border: 1px solid var(--toolbar-line);
+  padding: 5px 10px 5px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.toolbar-project-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(95, 196, 141, 0.15);
+  flex-shrink: 0;
+}
+
+.toolbar-project-pill b {
+  color: var(--text-primary);
+  font-weight: 600;
+}

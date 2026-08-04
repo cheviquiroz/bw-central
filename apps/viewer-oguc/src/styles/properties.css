@@ -1,0 +1,360 @@
+/* src/styles/properties.css */
+@import "./tokens.css";
+
+/* Flotante dentro de .viewport, mismo mecanismo y "look" que .dock-panel
+   (dock.css) pero espejado al lado derecho - valores (blur, radius, sombra,
+   bg translúcido) copiados de ahí a propósito, no inventados, para lograr
+   "el mismo efecto visual que Tree" real, no una aproximación. */
+.properties-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  bottom: 16px;
+  width: var(--properties-width, 272px);
+  /* rgba en vez de un token: mismo valor que --dock-bg en dock.css (no hay
+     token de bg translúcido en tokens.css, ver mismo comentario en dock.css). */
+  background: rgba(23, 28, 34, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  /* Sombra horizontal, no vertical - mismo criterio que .dock-panel (10px 0
+     30px), espejada en signo porque este panel cuelga del lado derecho. */
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--sans);
+  color: var(--text-mid);
+}
+
+/* Header contextual: sigue mostrando categoría/nombre/modelo del elemento
+   seleccionado (no se reemplaza por un título genérico "Properties" - acá
+   no existía ese título estático, inventar uno hubiera sido redundante con
+   la info real que ya muestra). El botón de pin se agrega como hermano en
+   la misma fila, no como una segunda barra de header aparte. */
+.properties-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.properties-header-text {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.properties-pin {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-low);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.properties-pin:hover {
+  background: #262d37;
+  color: var(--text-mid);
+}
+
+.properties-pin.active {
+  color: var(--blue);
+  background: rgba(74, 144, 217, 0.16);
+}
+
+.properties-pin svg {
+  width: 13px;
+  height: 13px;
+}
+
+.prop-type {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-low);
+  margin: 0;
+  transition: color 0.2s;
+}
+
+.prop-type.has-selection {
+  color: var(--blue);
+}
+
+.prop-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-mid);
+  margin: 4px 0 0 0;
+  word-break: break-word;
+  transition: color 0.2s;
+}
+
+.prop-name.has-selection {
+  color: var(--text-hi);
+}
+
+.prop-model {
+  font-size: 11px;
+  color: var(--text-low);
+  margin: 4px 0 0 0;
+}
+
+/* Tabs */
+.properties-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+/* Colapsado (56px, mismo COLLAPSED_WIDTH que DockLeft): en vez de abreviar
+   texto o dejarlo envolver letra por letra (lo que se probó antes y quedaba
+   ilegible), tabs y contenido se difuminan - "está ahí pero fantasmagórico",
+   no roto. pointer-events:none para que no queden clickeables por accidente
+   mientras están casi invisibles (el proximity-hover ya se encarga de
+   expandir el panel antes de que el usuario pueda intentar clickear algo
+   real). El header (categoría + pin) se excluye a propósito - ver
+   .properties-header más abajo, tiene que seguir nítido y clickeable. */
+.properties-panel.collapsed .properties-tabs,
+.properties-panel.collapsed .properties-body {
+  backdrop-filter: blur(8px);
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.properties-panel:not(.collapsed) .properties-tabs,
+.properties-panel:not(.collapsed) .properties-body {
+  backdrop-filter: none;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.properties-panel.collapsed .properties-header-text {
+  overflow: hidden;
+}
+
+.properties-panel.collapsed .prop-name,
+.properties-panel.collapsed .prop-model {
+  display: none;
+}
+
+.prop-tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.prop-tab:hover {
+  color: var(--text-hi);
+}
+
+.prop-tab.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+}
+
+/* Panel de contenido */
+.properties-body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  scrollbar-color: var(--blue) var(--bg-1);
+  scrollbar-width: thin;
+}
+
+.properties-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.properties-body::-webkit-scrollbar-track {
+  background: var(--bg-1);
+}
+
+.properties-body::-webkit-scrollbar-thumb {
+  background: var(--blue);
+  border-radius: 4px;
+}
+
+.properties-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-hi);
+}
+
+/* Secciones */
+.prop-section {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.prop-section-title {
+  padding: 12px 14px 8px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-low);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.prop-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 14px;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.prop-row:last-child {
+  border-bottom: none;
+}
+
+.prop-row.filterable {
+  cursor: pointer;
+}
+
+.prop-row:hover {
+  background: rgba(74, 144, 217, 0.08);
+}
+
+.prop-key {
+  color: var(--text-low);
+  font-size: 13px;
+  flex: 0 0 40%;
+  word-break: break-word;
+}
+
+.prop-val {
+  color: var(--text-hi);
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  word-break: break-all;
+  text-align: right;
+}
+
+/* Estados */
+.prop-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-low);
+  font-size: 13px;
+}
+
+/* Complementa el blur de .properties-body (arriba): un texto más chico
+   difumina en una mancha más compacta y prolija que el mismo texto grande
+   envuelto en 3 líneas y luego blurreado. */
+.properties-panel.collapsed .prop-empty {
+  padding: 12px 6px;
+  font-size: 10px;
+}
+
+.prop-multi {
+  padding: 16px 14px;
+  background: rgba(232, 163, 61, 0.1);
+  border-left: 3px solid var(--amber);
+  color: var(--amber);
+  font-size: 12px;
+  margin: 12px 14px;
+  border-radius: 4px;
+}
+
+.prop-section-empty {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: var(--text-low);
+  text-align: center;
+}
+
+/* --- Psets/Quantities expandibles --- */
+
+.expandible-section {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.expandible-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 150ms ease-in-out;
+}
+
+.expandible-header:hover {
+  background: var(--line);
+}
+
+.expandible-chevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-mid);
+  transition: transform 200ms ease-in-out;
+}
+
+.expandible-chevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.expandible-chevron.open {
+  transform: rotate(180deg);
+}
+
+.expandible-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-low);
+}
+
+.expandible-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+}
+
+/* Truco de grid-template-rows 0fr->1fr para animar altura automática sin
+   medir scrollHeight a mano - 200ms ease-in-out como pide la spec. */
+.expandible-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-in-out;
+}
+
+.expandible-body.open {
+  grid-template-rows: 1fr;
+}
+
+.expandible-body-inner {
+  overflow: hidden;
+}

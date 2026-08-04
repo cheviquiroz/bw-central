@@ -1,0 +1,73 @@
+/* src/ui/OrientationCube/orientation-cube.css */
+@import "../../styles/tokens.css";
+
+.orientation-cube {
+  position: absolute;
+  top: 40px;
+  /* right YA NO es fijo acá: se calcula en OrientationCube.tsx a partir de
+     PanelWidthContext (40px de separación + ancho actual de PropertiesPanel)
+     y se aplica vía inline style, para que el cubo se corra a la izquierda
+     cuando el panel expande en vez de quedar tapado detrás. */
+  width: 60px;
+  height: 60px;
+  perspective: 600px;
+  z-index: 90;
+}
+
+.orientation-cube-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* Sin transition acá a propósito: la rotación por click ya se anima a
+     mano en OrientationCube.tsx (rAF + ease-in-out de 400ms, moviendo la
+     cámara REAL cuadro a cuadro), y este div solo refleja el ángulo actual
+     de la cámara en cada frame vía el evento "update". Agregar una
+     transition CSS acá encima duplicaría el suavizado (la curva de 400ms
+     ya diseñada, más un lag adicional de la transition), sintiéndose más
+     "gomoso" que preciso. */
+}
+
+.orientation-cube-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--blue);
+  background: var(--bg-2);
+  cursor: pointer;
+  font-size: 10px;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+  backface-visibility: hidden;
+  transition: background 0.15s ease-in-out;
+  user-select: none;
+}
+
+.orientation-cube-face:hover {
+  background: var(--line);
+}
+
+.orientation-cube-vertex {
+  position: absolute;
+  top: calc(50% - 5px);
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  cursor: pointer;
+  /* El translate3d real llega vía --vertex-translate (inline, por vértice) -
+     así el :hover puede agregar un scale() sin pisar la posición 3D (un
+     transform inline hubiera bloqueado que este :hover lo sobreescriba). */
+  transform: var(--vertex-translate) scale(1);
+  transition: transform 0.15s ease-in-out;
+}
+
+.orientation-cube-vertex:hover {
+  transform: var(--vertex-translate) scale(1.3);
+}

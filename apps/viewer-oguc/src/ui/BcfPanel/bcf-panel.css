@@ -1,0 +1,226 @@
+/* src/ui/BcfPanel/bcf-panel.css */
+@import "../../styles/tokens.css";
+
+/* Mismo "look" flotante que .dock-panel/.properties-panel (blur, radius,
+   sombra, bg translúcido) - valores calcados de esos dos, no inventados,
+   para que los 3 paneles floating de la app se vean consistentes. right se
+   fija inline en BcfPanel.tsx (es dinámico: depende del ancho actual de
+   PropertiesPanel), por eso no aparece acá. */
+.bcf-panel {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  width: var(--bcf-panel-width, 56px);
+  background: rgba(23, 28, 34, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+  font-family: var(--sans);
+}
+
+.bcf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.bcf-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-low);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bcf-pin-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-low);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.bcf-pin-btn:hover {
+  background: #262d37;
+  color: var(--text-mid);
+}
+
+.bcf-pin-btn.active {
+  color: var(--blue);
+  background: rgba(74, 144, 217, 0.16);
+}
+
+.bcf-pin-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.filter-bar {
+  padding: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
+.filter-dropdown {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.filter-dropdown:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.issue-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  scrollbar-color: var(--blue) var(--bg-1);
+  scrollbar-width: thin;
+}
+
+.issue-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.issue-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.issue-list::-webkit-scrollbar-thumb {
+  background: var(--blue);
+  border-radius: 3px;
+}
+
+.issue-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-low);
+  font-size: 12px;
+  text-align: center;
+}
+
+.issue-card {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.issue-card:hover {
+  background: #252d38;
+  border-color: var(--blue);
+  box-shadow: 0 0 12px rgba(74, 144, 217, 0.2);
+}
+
+.issue-card.active {
+  background: #252d38;
+  border-color: var(--blue);
+  box-shadow: 0 0 12px rgba(74, 144, 217, 0.3);
+}
+
+.issue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.issue-number {
+  font-size: 11px;
+  color: var(--blue);
+  font-weight: 600;
+  font-family: var(--mono);
+}
+
+.issue-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.issue-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-hi);
+  margin-bottom: 6px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.issue-meta {
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.issue-priority {
+  font-weight: 600;
+}
+
+.issue-status {
+  padding: 2px 6px;
+  background: rgba(74, 144, 217, 0.2);
+  border-radius: 3px;
+  color: var(--blue);
+}
+
+/* Colapsado (56px, mismo COLLAPSED_WIDTH que Dock/Properties): filtro y
+   lista se difuminan en vez de ocultarse o comprimirse a texto ilegible -
+   mismo criterio ya validado en PropertiesPanel (blur + opacity, no
+   abreviar texto). El header (título + pin) queda siempre nítido y
+   clickeable. */
+.bcf-panel.collapsed .filter-bar,
+.bcf-panel.collapsed .issue-list {
+  backdrop-filter: blur(8px);
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bcf-panel:not(.collapsed) .filter-bar,
+.bcf-panel:not(.collapsed) .issue-list {
+  backdrop-filter: none;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bcf-panel.collapsed .bcf-title {
+  overflow: hidden;
+}

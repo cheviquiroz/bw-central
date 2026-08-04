@@ -1,0 +1,140 @@
+/* src/ui/MeasurementTool/measurement-toolbar.css */
+@import "../../styles/tokens.css";
+
+.measurement-toolbar {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  width: 260px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-mid);
+  z-index: 60;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.measure-status {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(74, 144, 217, 0.1);
+  border-left: 2px solid var(--blue);
+}
+
+.measure-mode {
+  font-weight: 700;
+  color: var(--blue);
+}
+
+.measure-count {
+  font-size: 11px;
+  color: var(--text-low);
+}
+
+.measure-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.measure-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--text-mid);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--sans);
+  transition: background 0.15s ease-in-out, border-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.measure-btn:hover {
+  background: var(--line);
+  border-color: var(--blue);
+}
+
+.measure-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--bg-1);
+  font-weight: 700;
+}
+
+.measure-btn.clear:hover {
+  background: #7a2020;
+  border-color: #d32f2f;
+  color: var(--text-hi);
+}
+
+.measure-hint {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--text-low);
+  line-height: 1.5;
+}
+
+.measure-finish-link {
+  display: block;
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--blue);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--sans);
+  text-decoration: underline;
+}
+
+.measure-list {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.measure-list-title {
+  font-size: 10px;
+  color: var(--text-low);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.measure-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: var(--bg-1);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-hi);
+  margin-top: 3px;
+}
+
+.measure-item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.measure-item-dot.distance {
+  background: #ff4d4d;
+}
+
+.measure-item-dot.area {
+  background: #4d88ff;
+}

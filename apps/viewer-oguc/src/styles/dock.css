@@ -1,0 +1,230 @@
+/* src/styles/dock.css */
+@import "./tokens.css";
+
+:root {
+  /* --dock-bg (translúcido), --dock-hover-bg y --dock-selected-bg no tienen
+     token equivalente en tokens.css (ese archivo solo cubre --bg-1 sólido,
+     no las variantes translúcidas/hover del mockup) - se dejan hardcodeadas
+     tal como estaban. El resto sí coincide exactamente y se referencia. */
+  --dock-bg: rgba(23, 28, 34, 0.88);
+  --dock-line: var(--line);
+  --dock-text: var(--text-mid);
+  --dock-text-hover: var(--text-hi);
+  --dock-text-secondary: var(--text-low);
+  --dock-hover-bg: #1d232b;
+  --dock-selected-bg: rgba(74, 144, 217, 0.16);
+  --dock-selected-border: var(--blue);
+}
+
+.dock-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  bottom: 16px;
+  background: var(--dock-bg);
+  border: 1px solid var(--dock-line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Por encima del overlay del File Upload Modal (z-index:50) mientras el
+     modal está activo, ver src/ui/FileUploadModal/file-upload-modal.css. */
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-header {
+  height: 38px;
+  padding: 0 8px 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.2s;
+}
+
+.dock-header.visible {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+.dock-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dock-text-secondary);
+}
+
+.dock-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.dock-action {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--dock-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dock-action:hover {
+  background: #262d37;
+  color: var(--dock-text);
+}
+
+.dock-action.active {
+  color: var(--dock-selected-border);
+  background: var(--dock-selected-bg);
+}
+
+.dock-action svg {
+  width: 13px;
+  height: 13px;
+}
+
+.dock-tree-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px 0 16px;
+  scrollbar-color: var(--dock-selected-border) var(--dock-bg);
+  scrollbar-width: thin; /* Firefox */
+}
+
+.dock-tree-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dock-tree-content::-webkit-scrollbar-track {
+  background: var(--dock-bg);
+}
+
+.dock-tree-content::-webkit-scrollbar-thumb {
+  background: var(--dock-selected-border);
+  border-radius: 4px;
+}
+
+.dock-tree-content::-webkit-scrollbar-thumb:hover {
+  background: var(--dock-text-hover);
+}
+
+.dock-collapsed {
+  position: absolute;
+  top: 45px;
+  left: 0;
+  width: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 5;
+  cursor: pointer;
+}
+
+.dock-collapsed .f-ico {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dock-text-secondary);
+  height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.dock-collapsed .f-ico.active {
+  color: var(--dock-selected-border);
+}
+
+/* --- Árbol --- */
+
+.dock-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 0;
+  cursor: pointer;
+  color: var(--dock-text);
+  font-size: 12.5px;
+  white-space: nowrap;
+  border-left: 2px solid transparent;
+}
+
+.dock-tree-node:hover {
+  background: var(--dock-hover-bg);
+  color: var(--dock-text-hover);
+}
+
+.dock-tree-node.selected {
+  background: var(--dock-selected-bg);
+  color: var(--dock-text-hover);
+  border-left-color: var(--dock-selected-border);
+}
+
+.dock-tree-node .chev {
+  width: 12px;
+  flex-shrink: 0;
+  color: var(--dock-text-secondary);
+  transition: transform 0.12s;
+}
+
+.dock-tree-node.open .chev {
+  transform: rotate(90deg);
+}
+
+.dock-tree-node .ico {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--dock-text-secondary);
+}
+
+.dock-tree-node.selected .ico {
+  color: var(--dock-selected-border);
+}
+
+.dock-tree-node .lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-tree-node .count {
+  margin-left: auto;
+  color: var(--dock-text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding-left: 6px;
+  flex-shrink: 0;
+}
+
+.dock-tree-eye {
+  width: 13px;
+  height: 13px;
+  color: var(--dock-text-secondary);
+  flex-shrink: 0;
+  opacity: 0;
+  margin-left: 6px;
+  padding-left: 6px;
+}
+
+.dock-tree-node:hover .dock-tree-eye {
+  opacity: 1;
+}
+
+.dock-tree-eye:hover {
+  color: var(--dock-selected-border);
+}
+
+.dock-tree-eye.hidden-element {
+  opacity: 1;
+  color: var(--dock-selected-border);
+}

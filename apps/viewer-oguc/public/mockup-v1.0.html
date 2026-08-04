@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BWise Viewer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg-0: #10141a; --bg-1: #171c22; --bg-2: #1d232b; --bg-3: #262d37;
+    --bg-panel: rgba(23, 28, 34, 0.88);
+    --line: #2c3540; --line-soft: rgba(255, 255, 255, 0.06);
+    --text-hi: #e9edf1; --text-mid: #a3aebb; --text-low: #5d6773;
+    --blue: #4a90d9; --blue-dim: #2c5f8a; --blue-glow: rgba(74, 144, 217, 0.16);
+    --amber: #e8a33d; --green: #5fc48d;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, html { height: 100%; background: var(--bg-0); color: var(--text-hi); font-family: var(--sans); overflow: hidden; font-size: 13px; }
+  .app { display: grid; grid-template-rows: 44px 1fr 26px; height: 100vh; position: relative; }
+
+  .toolbar { background: var(--bg-2); border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 14px; gap: 16px; z-index: 200; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; letter-spacing: 0.01em; padding-right: 16px; border-right: 1px solid var(--line); }
+  .brand .mark { width: 18px; height: 18px; flex-shrink: 0; }
+  .brand .mark svg { width: 100%; height: 100%; }
+  .brand .name-b { color: var(--text-hi); }
+  .brand .name-wise { color: var(--text-low); font-weight: 500; }
+
+  .toolbar-group { display: flex; align-items: center; gap: 2px; }
+  .tbtn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 5px; color: var(--text-mid); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+  .tbtn:hover { background: var(--bg-3); color: var(--text-hi); }
+  .tbtn.active { background: var(--blue-glow); color: var(--blue); border-color: rgba(74,144,217,0.3); }
+  .tbtn.disabled { color: var(--text-low); opacity: 0.4; cursor: not-allowed; }
+  .tbtn.disabled:hover { background: none; color: var(--text-low); }
+  .tbtn svg { width: 16px; height: 16px; }
+  .tsep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; }
+  .toolbar-spacer { flex: 1; }
+
+  .search-trigger { display: flex; align-items: center; gap: 8px; background: var(--bg-1); border: 1px solid var(--line); padding: 6px 10px; border-radius: 7px; color: var(--text-low); font-size: 12px; cursor: pointer; width: 230px; transition: border-color 0.15s; }
+  .search-trigger:hover { border-color: var(--blue-dim); color: var(--text-mid); }
+  .search-trigger svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .search-trigger kbd { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--text-low); background: var(--bg-3); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--line); }
+
+  .project-pill { display: flex; align-items: center; gap: 8px; background: var(--bg-3); border: 1px solid var(--line); padding: 5px 10px 5px 8px; border-radius: 6px; font-size: 12px; color: var(--text-mid); }
+  .project-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(95,196,141,0.15); }
+  .project-pill b { color: var(--text-hi); font-weight: 600; }
+
+  .main-container { display: grid; grid-template-columns: 1fr 300px; position: relative; overflow: hidden; }
+
+  /* Dock: apertura "gradual" — transición más larga y con curva de insinuación, según decisión 2 */
+  .hover-dock-left {
+    position: absolute; top: 16px; left: 16px; bottom: 16px; width: 56px;
+    background: var(--bg-panel); border: 1px solid var(--line); backdrop-filter: blur(20px); border-radius: 12px;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 150; overflow: hidden; display: flex; flex-direction: column; box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+  }
+  .hover-dock-left:hover, .hover-dock-left.expanded, .hover-dock-left.pinned { width: 272px; }
+
+  .dock-header { height: 38px; padding: 0 8px 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid transparent; opacity: 0; transition: opacity 0.3s 0.1s, border-color 0.3s; white-space: nowrap; }
+  .hover-dock-left:hover .dock-header, .hover-dock-left.expanded .dock-header, .hover-dock-left.pinned .dock-header { opacity: 1; border-color: var(--line-soft); }
+  .dock-title { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-low); }
+  .dock-header-actions { display: flex; align-items: center; gap: 2px; }
+  .dock-action { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--text-low); cursor: pointer; flex-shrink: 0; }
+  .dock-action:hover { background: var(--bg-3); color: var(--text-mid); }
+  .dock-action.active { color: var(--blue); background: var(--blue-glow); }
+  .dock-action svg { width: 13px; height: 13px; }
+
+  .dock-tree-content { flex: 1; overflow-y: auto; overflow-x: hidden; opacity: 0; transition: opacity 0.3s 0.1s; pointer-events: none; padding: 6px 0 16px; }
+  .hover-dock-left:hover .dock-tree-content, .hover-dock-left.expanded .dock-tree-content, .hover-dock-left.pinned .dock-tree-content { opacity: 1; pointer-events: auto; }
+
+  .fixed-icons-guide { position: absolute; top: 45px; left: 0; width: 56px; display: flex; flex-direction: column; align-items: center; gap: 16px; transition: opacity 0.15s; z-index: 5; cursor: pointer; }
+  .fixed-icons-guide .f-ico { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-low); height: 28px; display: flex; align-items: center; }
+  .fixed-icons-guide .f-ico.active { color: var(--blue); }
+  .hover-dock-left:hover .fixed-icons-guide, .hover-dock-left.expanded .fixed-icons-guide, .hover-dock-left.pinned .fixed-icons-guide { opacity: 0; pointer-events: none; }
+
+  /* Árbol jerárquico completo: Modelo > Sitio > Edificio > Piso > Categoría (decisión 7) */
+  .tree-node { display: flex; align-items: center; gap: 6px; padding: 6px 10px 6px 18px; cursor: pointer; color: var(--text-mid); font-size: 12.5px; white-space: nowrap; border-left: 2px solid transparent; }
+  .tree-node:hover { background: var(--bg-2); color: var(--text-hi); }
+  .tree-node.selected { background: var(--blue-glow); color: var(--text-hi); border-left-color: var(--blue); }
+  .tree-node .chev { width: 12px; flex-shrink: 0; color: var(--text-low); transition: transform 0.12s; }
+  .tree-node.open .chev { transform: rotate(90deg); }
+  .tree-node .ico { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-low); }
+  .tree-node.selected .ico { color: var(--blue); }
+  .tree-node .lbl { overflow: hidden; text-overflow: ellipsis; }
+  .tree-node .count { margin-left: auto; color: var(--text-low); font-family: var(--mono); font-size: 10px; padding-left: 6px; }
+  .indent-0 { padding-left: 18px; }
+  .indent-1 { padding-left: 30px; }
+  .indent-2 { padding-left: 42px; }
+  .indent-3 { padding-left: 54px; }
+  .indent-4 { padding-left: 66px; }
+
+  .tree-eye { width: 13px; height: 13px; color: var(--text-low); flex-shrink: 0; opacity: 0; margin-left: auto; padding-left: 6px; }
+  .tree-node:hover .tree-eye { opacity: 1; }
+  .tree-node .count + .tree-eye { margin-left: 6px; }
+  .tree-eye:hover { color: var(--blue); }
+
+  .viewport { position: relative; background: radial-gradient(ellipse at 50% 40%, #171c22 0%, #0d1116 75%); overflow: hidden; z-index: 10; }
+  .viewport-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 32px 32px; pointer-events: none; }
+  .viewport-fade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, transparent 40%, var(--bg-0) 100%); pointer-events: none; }
+  .model-svg-container { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 20; pointer-events: auto; }
+  .model-svg { width: 100%; height: 100%; }
+
+  .model-element { cursor: pointer; fill: rgba(255,255,255,0.005); stroke: #3d4650; stroke-width: 1.1; transition: all 0.15s; }
+  .model-element:hover { stroke: var(--blue); stroke-width: 1.5; fill: rgba(74, 144, 217, 0.04); }
+  .model-element.selected { fill: var(--blue-glow); stroke: var(--blue); stroke-width: 2.2; }
+  .viewport.isolating .model-element:not(.selected) { opacity: 0.08; pointer-events: none; }
+  .viewport.isolating .wireframe-static { opacity: 0.08; }
+  .wireframe-static { transition: opacity 0.2s; }
+
+  .gizmo { position: absolute; top: 16px; right: 16px; width: 60px; height: 60px; border-radius: 50%; background: var(--bg-panel); border: 1px solid var(--line); backdrop-filter: blur(6px); z-index: 90; display: flex; align-items: center; justify-content: center; }
+  .gizmo svg { width: 34px; height: 34px; opacity: 0.7; }
+
+  /* Breadcrumb ampliado: Hospital > Torre > Modelo > Piso > Categoría */
+  .breadcrumb { position: absolute; top: 16px; left: 88px; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-low); background: var(--bg-panel); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line-soft); backdrop-filter: blur(10px); z-index: 100; max-width: 480px; overflow: hidden; }
+  .breadcrumb b { color: var(--text-mid); font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .breadcrumb b:hover { color: var(--text-hi); text-decoration: underline; }
+  .breadcrumb .sep { color: var(--text-low); opacity: 0.5; flex-shrink: 0; }
+  .breadcrumb .crumb-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .multiselect-hint { position: absolute; top: 16px; left: 88px; z-index: 99; background: var(--bg-panel); border: 1px solid var(--blue-dim); color: var(--blue); padding: 6px 12px; border-radius: 6px; font-size: 11px; font-family: var(--mono); backdrop-filter: blur(10px); opacity: 0; transform: translateY(-5px); transition: all 0.2s; }
+  .multiselect-hint.visible { opacity: 1; transform: translateY(0); }
+
+  /* Callout de selección: Modelo + Tipo configurable, sin GUID visible por defecto (decisión 8) */
+  .selection-callout { position: absolute; display: flex; align-items: center; gap: 8px; z-index: 100; opacity: 0; transform: translateY(4px); transition: all 0.18s ease; pointer-events: none; }
+  .selection-callout.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .selection-callout .line { width: 30px; height: 1px; background: var(--blue); position: relative; flex-shrink: 0; }
+  .selection-callout .line::before { content: ''; position: absolute; left: -3px; top: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+  .selection-callout .tag { display: flex; align-items: center; gap: 6px; background: var(--bg-3); border: 1px solid var(--blue-dim); color: var(--blue); font-family: var(--mono); font-size: 10.5px; padding: 4px 6px 4px 8px; border-radius: 4px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+  .selection-callout .tag .model-name { color: var(--text-mid); font-size: 9.5px; }
+  .callout-cycle { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 3px; color: var(--blue-dim); cursor: pointer; pointer-events: auto; }
+  .callout-cycle:hover { background: rgba(74,144,217,0.2); color: var(--blue); }
+  .callout-cycle svg { width: 10px; height: 10px; }
+
+  .vp-toolbar { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 3px; background: rgba(23,28,34,0.88); border: 1px solid var(--line); border-radius: 8px; padding: 4px; backdrop-filter: blur(10px); z-index: 100; }
+  .vp-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 5px; color: var(--text-mid); cursor: pointer; }
+  .vp-btn:hover { background: var(--bg-3); color: var(--text-hi); }
+  .vp-btn.active { background: var(--blue-glow); color: var(--blue); }
+  .vp-btn svg { width: 15px; height: 15px; }
+  .vp-toolbar-sep { width: 1px; background: var(--line); margin: 4px 2px; }
+
+  /* Hint de controles de mouse, estilo ArchiCAD — discreto, esquina inferior izquierda */
+  .mouse-hint { position: absolute; bottom: 16px; left: 16px; z-index: 90; background: var(--bg-panel); border: 1px solid var(--line-soft); border-radius: 6px; padding: 6px 10px; font-size: 10px; color: var(--text-low); backdrop-filter: blur(8px); line-height: 1.6; }
+  .mouse-hint b { color: var(--text-mid); font-weight: 600; }
+
+  .panel-right { background: var(--bg-1); border-left: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; min-height: 0; z-index: 130; }
+  .element-header { padding: 14px 14px 10px; border-bottom: 1px solid var(--line-soft); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .element-type { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-low); transition: color 0.2s; }
+  .element-type.has-selection { color: var(--blue); }
+  .element-name { font-size: 14px; font-weight: 600; color: var(--text-mid); margin: 2px 0; }
+  .element-name.has-selection { color: var(--text-hi); }
+  .element-model { font-size: 11px; color: var(--text-low); }
+
+  .prop-tabs { display: flex; padding: 0 14px; gap: 16px; border-bottom: 1px solid var(--line-soft); }
+  .prop-tab { padding: 9px 0; font-size: 12px; color: var(--text-low); cursor: pointer; border-bottom: 2px solid transparent; font-weight: 500; }
+  .prop-tab.active { color: var(--text-hi); border-bottom-color: var(--blue); }
+
+  .panel-body-props { flex: 1; overflow-y: auto; padding: 6px 0; }
+  .prop-empty-note { padding: 20px 14px; font-size: 11.5px; color: var(--text-low); line-height: 1.6; text-align: center; }
+  .prop-data-wrapper { display: none; }
+  .prop-multi-note { display: none; padding: 20px 14px; font-size: 12px; color: var(--amber); line-height: 1.6; text-align: center; }
+
+  .prop-section { padding: 10px 14px 4px; }
+  .prop-section-title { font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-low); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .prop-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line-soft); }
+  .prop-row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; font-size: 12px; gap: 10px; }
+  .prop-key { color: var(--text-low); flex-shrink: 0; }
+  .prop-val { color: var(--text-hi); text-align: right; font-family: var(--mono); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .statusbar { background: var(--bg-2); border-top: 1px solid var(--line); display: flex; align-items: center; padding: 0 12px; gap: 16px; font-size: 11px; color: var(--text-low); font-family: var(--mono); z-index: 200; }
+  .statusbar .item { display: flex; align-items: center; gap: 5px; }
+  .statusbar .item svg { width: 11px; height: 11px; }
+  .statusbar .ok { color: var(--green); }
+  .statusbar .spacer { flex: 1; }
+
+  .cmdk-overlay { position: fixed; inset: 0; background: rgba(6,8,11,0.6); backdrop-filter: blur(3px); display: none; align-items: flex-start; justify-content: center; padding-top: 120px; z-index: 1000; }
+  .cmdk-overlay.open { display: flex; }
+  .cmdk-box { width: 520px; max-width: 90vw; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); overflow: hidden; }
+  .cmdk-input-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); }
+  .cmdk-input-row svg { width: 16px; height: 16px; color: var(--text-low); flex-shrink: 0; }
+  .cmdk-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-hi); font-family: var(--sans); font-size: 14px; }
+  .cmdk-input::placeholder { color: var(--text-low); }
+  .cmdk-results { max-height: 320px; overflow-y: auto; padding: 6px; }
+  .cmdk-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px; cursor: pointer; color: var(--text-mid); }
+  .cmdk-item.active { background: var(--blue-glow); color: var(--text-hi); }
+  .cmdk-item .cmdk-tag { font-size: 9px; font-weight: 700; color: var(--blue); font-family: var(--mono); background: var(--blue-glow); padding: 2px 5px; border-radius: 3px; flex-shrink: 0; }
+  .cmdk-item .cmdk-lbl { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmdk-item .cmdk-guid { font-size: 10px; color: var(--text-low); font-family: var(--mono); }
+  .cmdk-empty { padding: 24px 16px; text-align: center; color: var(--text-low); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="toolbar">
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" stroke="#4a90d9" stroke-width="1.4"/>
+          <path d="M12 2V22M3 7L12 12L21 7M3 17L12 12" stroke="#4a90d9" stroke-width="1" opacity="0.5"/>
+        </svg>
+      </div>
+      <span class="name-b">BWise</span><span class="name-wise">Viewer</span>
+    </div>
+
+    <div class="toolbar-group">
+      <div class="tbtn" title="Abrir IFC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg></div>
+      <div class="tbtn" title="Guardar vista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></div>
+    </div>
+    <div class="tsep"></div>
+    <div class="toolbar-group">
+      <div class="tbtn active" title="Seleccionar (clic izquierdo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l6 16 2.5-6.5L19 11 4 4z"/></svg></div>
+      <div class="tbtn" title="Medir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 17l14-14M8 12l2 2M12 8l2 2M6 14l2 2M14 6l2 2"/><path d="M17 3l4 4-14 14-4-4L17 3z"/></svg></div>
+      <div class="tbtn" id="btn-isolate" title="Aislar Selección"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></div>
+    </div>
+
+    <div class="tsep"></div>
+
+    <div class="search-trigger" id="cmdk-trigger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Buscar por nombre o tipo…
+      <kbd>Ctrl K</kbd>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+    <div class="project-pill"><span class="dot"></span><span>Federación · <b>Hospital La Serena</b></span></div>
+  </header>
+
+  <div class="main-container">
+
+    <nav class="hover-dock-left" id="dock">
+      <div class="dock-header">
+        <span class="dock-title">Modelos</span>
+        <div class="dock-header-actions">
+          <div class="dock-action" title="Agregar IFC"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+          <div class="dock-action" id="pin-btn" title="Fijar panel abierto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l1.5 5.5L19 9l-4 3.5L16 18l-4-3-4 3 1-5.5-4-3.5 5.5-1.5z"/></svg></div>
+        </div>
+      </div>
+
+      <div class="fixed-icons-guide" id="dock-icons">
+        <div class="f-ico active" title="ARQ_HospitalLaSerena.ifc — Arquitectura">AR</div>
+        <div class="f-ico" title="EST_HospitalLaSerena.ifc — Estructura">ST</div>
+        <div class="f-ico" title="MEP_HospitalLaSerena.ifc — Instalaciones">ME</div>
+      </div>
+
+      <div class="dock-tree-content">
+        <!-- Jerarquía real de edificio: Sitio > Edificio > Modelo > Piso > Categoría -->
+        <div class="tree-node open indent-0">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="lbl" style="font-weight:600; color:var(--text-hi);">Hospital La Serena</span>
+        </div>
+        <div class="tree-node open indent-1">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="lbl" style="font-weight:600;">Torre Principal</span>
+        </div>
+        <div class="tree-node open indent-2">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          <span class="lbl" style="font-weight: 600; color: var(--text-hi);">ARQ_HospitalLaSerena.ifc</span>
+          <svg class="tree-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="tree-node indent-3">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="lbl">Piso 1</span><span class="count">312</span>
+        </div>
+        <div class="tree-node indent-4 open">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span class="lbl">Muros</span><span class="count">84</span>
+        </div>
+        <div class="tree-node indent-4 selectable-node" data-target="wall-1" style="padding-left:78px;">
+          <span class="ico" style="width:6px;height:6px;border-radius:50%;background:currentColor;margin-left:3px;margin-right:8px;"></span>
+          <span class="lbl">Muro Cortina — Nivel 1</span>
+          <svg class="tree-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="tree-node indent-4 selectable-node" data-target="wall-2" style="padding-left:78px;">
+          <span class="ico" style="width:6px;height:6px;border-radius:50%;background:currentColor;margin-left:3px;margin-right:8px;"></span>
+          <span class="lbl">Tabique 15cm</span>
+          <svg class="tree-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+
+        <div class="tree-node indent-2" style="margin-top:6px;">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          <span class="lbl" style="font-weight: 600;">EST_HospitalLaSerena.ifc</span>
+          <svg class="tree-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="tree-node indent-2">
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          <span class="lbl" style="font-weight: 600;">MEP_HospitalLaSerena.ifc</span>
+          <svg class="tree-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+      </div>
+    </nav>
+
+    <div class="viewport" id="canvas-hitbox">
+      <div class="viewport-grid"></div>
+      <div class="viewport-fade"></div>
+
+      <div class="breadcrumb" id="ui-breadcrumb" style="display: none;">
+        <b id="crumb-site" class="crumb-item">Hospital La Serena</b>
+        <span class="sep">/</span><span class="crumb-item">Torre Principal</span>
+        <span class="sep">/</span><span class="crumb-item">Piso 1</span>
+        <span class="sep">/</span><span class="crumb-item">Muros</span>
+      </div>
+
+      <div class="multiselect-hint" id="multiselect-hint">Shift+Click para agregar a la selección</div>
+
+      <div class="gizmo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#a3aebb" stroke-width="1.3">
+          <circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18" opacity="0.4"/><circle cx="12" cy="3" r="1.6" fill="#4a90d9" stroke="none"/>
+        </svg>
+      </div>
+
+      <div class="selection-callout" id="ui-callout" style="left:428px; top:168px;">
+        <div class="line"></div>
+        <div class="tag">
+          <span id="ui-callout-value">Muro Cortina</span>
+          <span class="model-name">· ARQ_Hospital.ifc</span>
+          <div class="callout-cycle" id="callout-cycle" title="Cambiar dato mostrado">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 2l4 4-4 4M3 12h18M7 22l-4-4 4-4M21 12H3"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="model-svg-container">
+        <svg class="model-svg" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid meet">
+          <g class="wireframe-static" stroke="#454e5a" stroke-width="1.1" fill="none" opacity="0.9">
+            <polygon points="220,430 520,430 620,370 320,370" stroke="#454e5a"/>
+            <polygon points="220,430 220,250 320,190 320,370"/>
+            <polygon points="320,370 320,190 620,190 620,370"/>
+            <polygon points="220,250 320,190 620,190 520,250"/>
+            <line x1="220" y1="340" x2="320" y2="280" stroke="#3d4650"/>
+            <line x1="320" y1="280" x2="620" y2="280" stroke="#3d4650"/>
+            <g stroke="#414a55" stroke-width="0.8">
+              <line x1="410" y1="190" x2="410" y2="370"/><line x1="460" y1="190" x2="460" y2="370"/>
+              <line x1="510" y1="190" x2="510" y2="370"/><line x1="560" y1="190" x2="560" y2="370"/>
+            </g>
+          </g>
+          <polygon id="wall-1" class="model-element" data-guid="3fH$qWz…kP2" data-type="Muro Cortina" data-level="Piso 1" data-material="Vidrio templado" data-model="ARQ_Hospital.ifc" points="320,370 320,190 380,190 380,370" />
+          <polygon id="wall-2" class="model-element" data-guid="9pL2xRt…m7Q" data-type="Tabique 15cm" data-level="Piso 1" data-material="Yeso-Cartón" data-model="ARQ_Hospital.ifc" points="440,370 440,250 500,250 500,370" />
+          <ellipse cx="420" cy="470" rx="260" ry="26" fill="none" stroke="#242b33" stroke-width="1" class="wireframe-static"/>
+        </svg>
+      </div>
+
+      <div class="mouse-hint">
+        <b>Clic izq.</b> Seleccionar &nbsp;·&nbsp; <b>Rueda (clic)</b> Panear &nbsp;·&nbsp; <b>Shift + Rueda</b> Orbitar
+      </div>
+
+      <div class="vp-toolbar">
+        <div class="vp-btn active" title="Orbitar — Shift + clic central + arrastrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="3.5"/></svg></div>
+        <div class="vp-btn" title="Panear — clic central + arrastrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2l3 3-3 3M22 13l-3 3 3 3M11 22l-3-3 3-3M2 11l3-3-3-3"/></svg></div>
+        <div class="vp-btn" title="Zoom extensión"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5"/></svg></div>
+        <div class="vp-toolbar-sep"></div>
+        <div class="vp-btn" title="Corte"><rect x="4" y="4" width="16" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.6"/></div>
+      </div>
+    </div>
+
+    <aside class="panel-right">
+      <div class="element-header">
+        <div>
+          <div class="element-type" id="panel-type">IFCElement</div>
+          <div class="element-name" id="panel-name">Ningún elemento seleccionado</div>
+          <div class="element-model" id="panel-model">—</div>
+        </div>
+      </div>
+
+      <div class="prop-tabs">
+        <div class="prop-tab active">Atributos</div>
+        <div class="prop-tab">Psets</div>
+        <div class="prop-tab">Tipo</div>
+      </div>
+
+      <div class="panel-body-props">
+        <div class="prop-empty-note" id="props-empty-state">
+          Haz clic en cualquier componente del modelo o del árbol para inspeccionar sus parámetros e información federada IFC.
+        </div>
+        <div class="prop-multi-note" id="props-multi-state">Varios elementos seleccionados. Mostrando solo propiedades comunes.</div>
+
+        <div class="prop-data-wrapper" id="props-data-state">
+          <div class="prop-section">
+            <div class="prop-section-title">Identidad</div>
+            <div class="prop-row"><span class="prop-key">GlobalId</span><span class="prop-val" id="d-guid" style="color: var(--text-mid);">—</span></div>
+            <div class="prop-row"><span class="prop-key">Tag</span><span class="prop-val">MC-104</span></div>
+            <div class="prop-row"><span class="prop-key">ObjectType</span><span class="prop-val" id="d-type">—</span></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Pset_CurtainWallCommon</div>
+            <div class="prop-row"><span class="prop-key">IsExternal</span><span class="prop-val">true</span></div>
+            <div class="prop-row"><span class="prop-key">FireRating</span><span class="prop-val">REI 60</span></div>
+            <div class="prop-row"><span class="prop-key">ThermalTransmit.</span><span class="prop-val">1.8 W/m²K</span></div>
+          </div>
+          <div class="prop-section">
+            <div class="prop-section-title">Cantidades</div>
+            <div class="prop-row"><span class="prop-key">Área bruta</span><span class="prop-val">42.6 m²</span></div>
+            <div class="prop-row"><span class="prop-key">Altura</span><span class="prop-val">3.60 m</span></div>
+            <div class="prop-row"><span class="prop-key">Ancho</span><span class="prop-val">11.83 m</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <footer class="statusbar">
+    <div class="item ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>3 modelos cargados</div>
+    <div class="item">847,204 tris</div>
+    <div class="item" id="sb-selection-count">0 elementos seleccionados</div>
+    <div class="spacer"></div>
+    <div class="item">60 fps</div>
+    <div class="item">EPSG:32719</div>
+  </footer>
+
+</div>
+
+<div class="cmdk-overlay" id="cmdk-overlay">
+  <div class="cmdk-box">
+    <div class="cmdk-input-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input class="cmdk-input" id="cmdk-input" placeholder="Buscar por nombre o tipo IFC…" autocomplete="off">
+    </div>
+    <div class="cmdk-results" id="cmdk-results"></div>
+  </div>
+</div>
+
+<script>
+  const REGISTRY = [
+    { id: 'wall-1', type: 'Muro Cortina', level: 'Piso 1', material: 'Vidrio templado', guid: '3fH$qWz…kP2', model: 'ARQ_Hospital.ifc' },
+    { id: 'wall-2', type: 'Tabique 15cm', level: 'Piso 1', material: 'Yeso-Cartón', guid: '9pL2xRt…m7Q', model: 'ARQ_Hospital.ifc' },
+  ];
+
+  // Ciclo de datos que puede mostrar la etiqueta de selección (decisión 8: configurable, sin GUID por defecto)
+  const CALLOUT_FIELDS = ['type', 'level', 'material'];
+  let calloutFieldIndex = 0;
+
+  const viewport = document.getElementById('canvas-hitbox');
+  const uiCallout = document.getElementById('ui-callout');
+  const uiCalloutValue = document.getElementById('ui-callout-value');
+  const uiBreadcrumb = document.getElementById('ui-breadcrumb');
+  const pType = document.getElementById('panel-type');
+  const pName = document.getElementById('panel-name');
+  const pModel = document.getElementById('panel-model');
+  const emptyState = document.getElementById('props-empty-state');
+  const dataState = document.getElementById('props-data-state');
+  const multiState = document.getElementById('props-multi-state');
+  const sbSelection = document.getElementById('sb-selection-count');
+  const multiHint = document.getElementById('multiselect-hint');
+  const dGuid = document.getElementById('d-guid');
+  const dType = document.getElementById('d-type');
+
+  let selection = new Set();
+
+  function elementsFor(ids) { return REGISTRY.filter(r => ids.has(r.id)); }
+
+  function render() {
+    document.querySelectorAll('.model-element').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.selectable-node').forEach(el => el.classList.remove('selected'));
+
+    const items = elementsFor(selection);
+    items.forEach(item => {
+      document.getElementById(item.id).classList.add('selected');
+      document.querySelector(`.selectable-node[data-target="${item.id}"]`)?.classList.add('selected');
+    });
+
+    sbSelection.innerText = `${selection.size} elemento${selection.size === 1 ? '' : 's'} seleccionado${selection.size === 1 ? '' : 's'}`;
+    sbSelection.style.color = selection.size > 0 ? 'var(--blue)' : '';
+    multiHint.classList.toggle('visible', selection.size === 1);
+
+    if (selection.size === 0) {
+      uiCallout.classList.remove('visible');
+      uiBreadcrumb.style.display = 'none';
+      pType.classList.remove('has-selection'); pType.innerText = 'IFCElement';
+      pName.classList.remove('has-selection'); pName.innerText = 'Ningún elemento seleccionado';
+      pModel.innerText = '—';
+      emptyState.style.display = 'block'; dataState.style.display = 'none'; multiState.style.display = 'none';
+      viewport.classList.remove('isolating');
+    } else if (selection.size === 1) {
+      const item = items[0];
+      uiCallout.classList.add('visible');
+      updateCalloutValue(item);
+      uiBreadcrumb.style.display = 'flex';
+      pType.classList.add('has-selection'); pType.innerText = item.type;
+      pName.classList.add('has-selection'); pName.innerText = item.type;
+      pModel.innerText = item.model;
+      dGuid.innerText = item.guid; dType.innerText = item.type;
+      emptyState.style.display = 'none'; dataState.style.display = 'block'; multiState.style.display = 'none';
+    } else {
+      uiCallout.classList.remove('visible');
+      uiBreadcrumb.style.display = 'none';
+      pType.classList.add('has-selection'); pType.innerText = 'Selección múltiple';
+      pName.classList.add('has-selection'); pName.innerText = `${selection.size} elementos`;
+      pModel.innerText = '—';
+      emptyState.style.display = 'none'; dataState.style.display = 'none'; multiState.style.display = 'block';
+    }
+  }
+
+  function updateCalloutValue(item) {
+    const field = CALLOUT_FIELDS[calloutFieldIndex];
+    uiCalloutValue.innerText = item[field];
+  }
+
+  function selectOne(id, additive) {
+    if (additive) { selection.has(id) ? selection.delete(id) : selection.add(id); }
+    else { selection = new Set([id]); }
+    render();
+  }
+  function clearSelection() { selection = new Set(); render(); }
+
+  document.querySelectorAll('.model-element').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); selectOne(el.id, e.shiftKey); });
+  });
+  document.querySelectorAll('.selectable-node').forEach(el => {
+    el.addEventListener('click', (e) => { e.stopPropagation(); selectOne(el.dataset.target, e.shiftKey); });
+  });
+  viewport.addEventListener('click', clearSelection);
+  document.getElementById('crumb-site').addEventListener('click', (e) => { e.stopPropagation(); clearSelection(); });
+
+  // Ciclo del dato mostrado en el callout: Tipo -> Nivel -> Material -> Tipo...
+  document.getElementById('callout-cycle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    calloutFieldIndex = (calloutFieldIndex + 1) % CALLOUT_FIELDS.length;
+    const items = elementsFor(selection);
+    if (items.length === 1) updateCalloutValue(items[0]);
+  });
+
+  document.getElementById('btn-isolate').addEventListener('click', (e) => {
+    if (selection.size === 0) return;
+    viewport.classList.toggle('isolating');
+    e.currentTarget.classList.toggle('active');
+  });
+
+  const dock = document.getElementById('dock');
+  const pinBtn = document.getElementById('pin-btn');
+  const dockIcons = document.getElementById('dock-icons');
+  pinBtn.addEventListener('click', (e) => { e.stopPropagation(); dock.classList.toggle('pinned'); pinBtn.classList.toggle('active'); });
+  dockIcons.addEventListener('click', () => { if (!dock.classList.contains('pinned')) dock.classList.toggle('expanded'); });
+
+  const cmdkOverlay = document.getElementById('cmdk-overlay');
+  const cmdkInput = document.getElementById('cmdk-input');
+  const cmdkResults = document.getElementById('cmdk-results');
+  const cmdkTrigger = document.getElementById('cmdk-trigger');
+  let cmdkActiveIndex = 0;
+  let cmdkFiltered = [];
+
+  function openCmdk() { cmdkOverlay.classList.add('open'); cmdkInput.value = ''; cmdkInput.focus(); renderCmdkResults(''); }
+  function closeCmdk() { cmdkOverlay.classList.remove('open'); }
+
+  function renderCmdkResults(query) {
+    const q = query.trim().toLowerCase();
+    cmdkFiltered = REGISTRY.filter(r => r.type.toLowerCase().includes(q) || r.model.toLowerCase().includes(q) || r.material.toLowerCase().includes(q));
+    cmdkActiveIndex = 0;
+    if (cmdkFiltered.length === 0) { cmdkResults.innerHTML = `<div class="cmdk-empty">Sin coincidencias para "${query}"</div>`; return; }
+    cmdkResults.innerHTML = cmdkFiltered.map((r, i) => `
+      <div class="cmdk-item ${i === 0 ? 'active' : ''}" data-id="${r.id}">
+        <span class="cmdk-tag">${r.level}</span>
+        <span class="cmdk-lbl">${r.type}</span>
+        <span class="cmdk-guid">${r.material}</span>
+      </div>
+    `).join('');
+    cmdkResults.querySelectorAll('.cmdk-item').forEach(item => {
+      item.addEventListener('click', () => { selectOne(item.dataset.id, false); closeCmdk(); });
+    });
+  }
+
+  cmdkTrigger.addEventListener('click', openCmdk);
+  cmdkOverlay.addEventListener('click', (e) => { if (e.target === cmdkOverlay) closeCmdk(); });
+  cmdkInput.addEventListener('input', (e) => renderCmdkResults(e.target.value));
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); cmdkOverlay.classList.contains('open') ? closeCmdk() : openCmdk(); return; }
+    if (!cmdkOverlay.classList.contains('open')) return;
+    if (e.key === 'Escape') closeCmdk();
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdkActiveIndex = Math.min(cmdkActiveIndex + 1, cmdkFiltered.length - 1); updateCmdkActive(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); cmdkActiveIndex = Math.max(cmdkActiveIndex - 1, 0); updateCmdkActive(); }
+    if (e.key === 'Enter' && cmdkFiltered[cmdkActiveIndex]) { selectOne(cmdkFiltered[cmdkActiveIndex].id, false); closeCmdk(); }
+  });
+  function updateCmdkActive() { cmdkResults.querySelectorAll('.cmdk-item').forEach((el, i) => el.classList.toggle('active', i === cmdkActiveIndex)); }
+
+  render();
+</script>
+
+</body>
+</html>

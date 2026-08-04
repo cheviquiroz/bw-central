@@ -1,0 +1,43 @@
+/* src/ui/StatusBar/status-bar.css */
+@import "../../styles/tokens.css";
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  background: var(--bg-2);
+  border-top: 1px solid var(--line);
+  padding: 0 14px;
+  gap: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-low);
+}
+
+.status-left,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.status-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.status-icon.ok {
+  color: var(--green);
+}

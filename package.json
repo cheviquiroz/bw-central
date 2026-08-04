@@ -1,0 +1,10 @@
+{
+  "name": "bw-central",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev:viewer-oguc": "pnpm --filter bwise-viewer-oguc dev",
+    "build:viewer-oguc": "pnpm --filter bwise-viewer-oguc build"
+  }
+}

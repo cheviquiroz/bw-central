@@ -1,0 +1,25 @@
+/* src/styles/tokens.css
+   Tokens visuales compartidos, calcados de :root en public/mockup-v1.0.html.
+   Consumidos por toolbar.css, dock.css y properties.css vía @import. */
+
+:root {
+  /* Fondo y líneas */
+  --bg-1: #171c22;
+  --bg-2: #1d232b;
+  --line: #2c3540;
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* Texto */
+  --text-hi: #e9edf1;
+  --text-mid: #a3aebb;
+  --text-low: #5d6773;
+
+  /* Acentos */
+  --blue: #4a90d9;
+  --amber: #e8a33d;
+  --green: #5fc48d;
+
+  /* Tipografía */
+  --sans: 'Inter', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}

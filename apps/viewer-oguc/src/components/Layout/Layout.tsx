@@ -1,0 +1,241 @@
+// src/components/Layout/Layout.tsx
+import React, { useEffect, useState } from "react";
+import "./Layout.css";
+import Viewport from "../../ui/Viewport/Viewport";
+import PropertiesPanel from "../PropertiesPanel/PropertiesPanel";
+import { DockLeft } from "../../ui/Dock/DockLeft";
+import { StatusBar } from "../../ui/StatusBar/StatusBar";
+import { ViewerActionsAdapter } from "../../engine/adapters/ViewerActionsAdapter";
+import { SearchManager } from "../../viewer/SearchManager";
+import { SearchBar } from "../../ui/Search/SearchBar";
+import { Toolbar } from "../../ui/Toolbar/Toolbar";
+import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
+import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
+import { useApp } from "../../ui/AppContext";
+import { PanelWidthProvider } from "../../ui/PanelWidthContext";
+import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
+import type { ModelDisplayNames } from "../../engine/createApplication";
+import { BcfManager } from "../../viewer/bcf/BcfManager";
+import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+
+export default function Layout() {
+  const app = useApp();
+  const [actionsAdapter, setActionsAdapter] = useState<ViewerActionsAdapter | null>(null);
+  const [searchManager, setSearchManager] = useState<SearchManager | null>(null);
+  const [isSectionBoxActive, setIsSectionBoxActive] = useState(false);
+  const [isMeasuring, setIsMeasuring] = useState(false);
+  const [externalQuery, setExternalQuery] = useState<{ value: string; nonce: number } | null>(null);
+  const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; nonce: number } | null>(null);
+  const [modelDisplayNames, setModelDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | undefined>(undefined);
+  const [bcfManager] = useState(() => new BcfManager());
+  const [bcfState, setBcfState] = useState<BcfManagerState>(bcfManager.getState());
+  const viewportRef = React.useRef<HTMLDivElement>(null);
+  const btnIsolateRef = React.useRef<HTMLDivElement>(null);
+  const btnClipRef = React.useRef<HTMLDivElement>(null);
+  const btnHidePlaneRef = React.useRef<HTMLDivElement>(null);
+  const btnAxesRef = React.useRef<HTMLDivElement>(null);
+
+  const handleViewerReady = (viewerHandles: any) => {
+    const adapter = new ViewerActionsAdapter(viewerHandles);
+    setActionsAdapter(adapter);
+    setSearchManager(new SearchManager(viewerHandles, app));
+  };
+
+  const handleIsolateClick = () => {
+    if (actionsAdapter && viewportRef.current && btnIsolateRef.current) {
+      actionsAdapter.toggleIsolate(viewportRef.current, btnIsolateRef.current);
+    } else {
+      console.warn("Por favor, selecciona un elemento en el modelo 3D primero.");
+    }
+  };
+
+  const handleClipClick = () => {
+    if (actionsAdapter && btnClipRef.current) {
+      actionsAdapter.toggleClipPlane(btnClipRef.current);
+      setIsSectionBoxActive((prev) => !prev);
+    }
+  };
+
+  const handleHidePlaneClick = () => {
+    if (actionsAdapter && btnHidePlaneRef.current) {
+      actionsAdapter.toggleClipperVisibility(btnHidePlaneRef.current);
+    }
+  };
+
+  const handleFitAllClick = () => {
+    fitCameraToAllLoadedModels();
+  };
+
+  const handleAxesClick = () => {
+    if (actionsAdapter && btnAxesRef.current) {
+      actionsAdapter.toggleAxes(btnAxesRef.current);
+    }
+  };
+
+  const handleMeasureClick = () => {
+    setIsMeasuring((prev) => !prev);
+  };
+
+  // Click-to-filter: PropertiesPanel (Shift+click en una propiedad) publica
+  // acá su query armada ("Material:Vidrio templado") vía
+  // app.requestSearchQuery - Layout no conoce el detalle de quién la pidió,
+  // solo la reenvía a SearchBar como comando de un solo uso.
+  useEffect(() => {
+    return app.subscribeToSearchQueryRequests((query) => {
+      setExternalQuery({ value: query, nonce: Date.now() });
+    });
+  }, [app]);
+
+  // El modal de carga inicial se oculta solo (nada de un setState manual
+  // en el handler) - se deriva de si ya hay algún modelo federado, la misma
+  // fuente de verdad que ya usan DockLeft/StatusBar. Así queda correcto
+  // incluso si un modelo llega a cargarse por otra vía (ej. el "Add" del
+  // dock) antes de que el usuario suelte un archivo en el modal.
+  useEffect(() => {
+    return app.subscribeToModelDisplayNames(setModelDisplayNames);
+  }, [app]);
+
+  useEffect(() => {
+    return bcfManager.subscribe(setBcfState);
+  }, [bcfManager]);
+
+  const hasModels = Object.keys(modelDisplayNames).length > 0;
+
+  const handleImportBcf = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".bcf,.bcfzip";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        await bcfManager.loadBcf(file);
+      } catch (err) {
+        console.error("Error importando BCF:", err);
+        alert("No se pudo cargar el archivo BCF.");
+      }
+    };
+    input.click();
+  };
+
+  const handleExportBcf = async () => {
+    try {
+      const blob = await bcfManager.exportBcf();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "issues.bcf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error exportando BCF:", err);
+      alert(err instanceof Error ? err.message : "No se pudo exportar el BCF.");
+    }
+  };
+
+  const handleBcfFilterChange = (status: BcfFilterStatus) => {
+    bcfManager.setFilter(status);
+  };
+
+  const handleBcfTopicSelect = (topic: BcfTopic | null) => {
+    bcfManager.setActiveTopic(topic);
+  };
+
+  // Comando de un solo uso, mismo patrón que externalQuery más arriba - el
+  // nonce (no el topic en sí) es lo que dispara el efecto en Viewport.tsx,
+  // así doble-clickear el MISMO topic dos veces seguidas sigue re-centrando
+  // la cámara la segunda vez (si comparara solo el topic, React vería el
+  // mismo valor y no dispararía el efecto de nuevo). cameraControls no vive
+  // acá - Layout.tsx no tiene acceso a él (es estado local de Viewport.tsx,
+  // igual que el resto de la lógica de interacción con la cámara/escena).
+  const handleBcfTopicActivate = (topic: BcfTopic) => {
+    bcfManager.setActiveTopic(topic);
+    setBcfSyncRequest({ topic, nonce: Date.now() });
+  };
+
+  // importNewModel no rechaza la Promise ante un IFC inválido - devuelve
+  // { success: false, error } (mismo Result que usa DockLeft.handleFileChange)
+  // - un try/catch solo no alcanza para mostrar el mensaje de error real.
+  const handleFilesSelected = async (files: File[]) => {
+    setIsUploading(true);
+    setUploadError(undefined);
+
+    const failed: { name: string; error: string }[] = [];
+
+    for (const file of files) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const result = await app.importNewModel(file.name, bytes);
+        if (!result.success) failed.push({ name: file.name, error: result.error });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Error inesperado al leer el archivo.";
+        failed.push({ name: file.name, error: message });
+        console.error(err);
+      }
+    }
+
+    setIsUploading(false);
+    if (failed.length > 0) {
+      setUploadError(failed.map((f) => `${f.name}: ${f.error}`).join(" — "));
+    }
+  };
+
+  return (
+    <div className="layout">
+      {!hasModels && (
+        <FileUploadModal onFilesSelected={handleFilesSelected} isLoading={isUploading} error={uploadError} />
+      )}
+
+      {/* 1. TOOLBAR */}
+      <Toolbar
+        searchBar={<SearchBar searchManager={searchManager} externalQuery={externalQuery} />}
+        onIsolateClick={handleIsolateClick}
+        onSectionBoxClick={handleClipClick}
+        onHidePlaneClick={handleHidePlaneClick}
+        onFitAllClick={handleFitAllClick}
+        onAxesClick={handleAxesClick}
+        onMeasureClick={handleMeasureClick}
+        isMeasuring={isMeasuring}
+        onImportBcf={handleImportBcf}
+        onExportBcf={handleExportBcf}
+        btnIsolateRef={btnIsolateRef}
+        btnSectionBoxRef={btnClipRef}
+        btnHidePlaneRef={btnHidePlaneRef}
+        btnAxesRef={btnAxesRef}
+      />
+
+      {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO Y PROPERTIES PANEL FLOTANTES */}
+      {/* Respetamos la clase 'viewport' idéntica a tu CSS original para que no pierda su posición */}
+      {/* PanelWidthProvider envuelve solo el main: OrientationCube (dentro de
+          Viewport) y PropertiesPanel necesitan sincronizar el ancho del panel
+          para que el cubo no quede tapado cuando el panel expande - ver
+          src/ui/PanelWidthContext.tsx. StatusBar no lo necesita. */}
+      <PanelWidthProvider>
+        <main ref={viewportRef} className="viewport" style={{ position: "relative", width: "100%", height: "100%", padding: 0, display: "block" }}>
+          <Viewport
+            onViewerReady={handleViewerReady}
+            isSectionBoxActive={isSectionBoxActive}
+            isMeasuring={isMeasuring}
+            bcfTopics={bcfState.topics}
+            bcfActiveTopic={bcfState.activeTopic}
+            bcfSyncRequest={bcfSyncRequest}
+          />
+          <DockLeft />
+          <PropertiesPanel />
+          <BcfPanel
+            state={bcfState}
+            onFilterChange={handleBcfFilterChange}
+            onTopicSelect={handleBcfTopicSelect}
+            onTopicActivate={handleBcfTopicActivate}
+          />
+        </main>
+      </PanelWidthProvider>
+
+      {/* 5. STATUSBAR */}
+      <StatusBar />
+    </div>
+  );
+}
