@@ -5,7 +5,6 @@
 // without ever looking at occupancy/stair-count data when stairs are not
 // needed, per this task's explicit two-question sequencing.
 
-import type { IfcRamp, IfcElevator } from "@bw-central/ifc-headless";
 import { determineStairRequirement } from "./stairRequirement.js";
 import { lookupStairsRequirement, STAIRS_STUDY_REQUIRED_ABOVE_PERSONS } from "../dictionary/stairs.js";
 
@@ -31,8 +30,6 @@ export interface StairComplianceInput {
   storeyCount: number;
   occupancyLoad: number;
   confirmedStairCount: number;
-  ramps: IfcRamp[];
-  elevators: IfcElevator[];
 }
 
 function formatOccupancyRange(occupancyLoad: number): string {
@@ -43,7 +40,7 @@ function formatOccupancyRange(occupancyLoad: number): string {
 }
 
 export function evaluateStairCompliance(input: StairComplianceInput): StairComplianceResult {
-  const requirement = determineStairRequirement({ storeyCount: input.storeyCount, ramps: input.ramps, elevators: input.elevators });
+  const requirement = determineStairRequirement({ storeyCount: input.storeyCount });
 
   if (!requirement.stairsRequired) {
     return {
@@ -61,8 +58,7 @@ export function evaluateStairCompliance(input: StairComplianceInput): StairCompl
       stairsRequired: true,
       verdict: "INCOMPLETE_DATA",
       occupancyLoad: input.occupancyLoad,
-      message:
-        "Stairs are required (2+ storeys, no verified accessible ramp/elevator), but occupancy load is zero or not a valid positive number - Art. 4.2.10 cannot be validated without a real occupancy load.",
+      message: "Stairs are required (2+ storeys), but occupancy load is zero or not a valid positive number - Art. 4.2.10 cannot be validated without a real occupancy load.",
     };
   }
 

@@ -36,10 +36,8 @@ describe("Art. 4.2.10 full compliance evaluation on CASA-ARQ.ifc (real fixture)"
     occupancyLoad = calculateOccupancyLoad(doc).totalOcupantes;
   }, 30_000);
 
-  test("CASA-ARQ has zero ramps and zero elevators (confirmed in Fase 1.1 Part C) - so with 8 real storeys, stairs ARE required", () => {
-    expect(doc.ramps).toEqual([]);
-    expect(doc.elevators).toEqual([]);
-    const requirement = determineStairRequirement({ storeyCount: REAL_CASA_ARQ_STOREY_COUNT, ramps: doc.ramps, elevators: doc.elevators });
+  test("8 real storeys -> stairs ARE required, regardless of ramps/elevators (Art. 4.2.8: neither is an evacuation route)", () => {
+    const requirement = determineStairRequirement({ storeyCount: REAL_CASA_ARQ_STOREY_COUNT });
     expect(requirement.stairsRequired).toBe(true);
   });
 
@@ -48,8 +46,6 @@ describe("Art. 4.2.10 full compliance evaluation on CASA-ARQ.ifc (real fixture)"
       storeyCount: REAL_CASA_ARQ_STOREY_COUNT,
       occupancyLoad,
       confirmedStairCount: doc.stairs.length,
-      ramps: doc.ramps,
-      elevators: doc.elevators,
     });
 
     expect(result.stairsRequired).toBe(true);
@@ -64,8 +60,6 @@ describe("Art. 4.2.10 full compliance evaluation on CASA-ARQ.ifc (real fixture)"
       storeyCount: 1,
       occupancyLoad,
       confirmedStairCount: 0,
-      ramps: doc.ramps,
-      elevators: doc.elevators,
     });
     expect(result.verdict).toBe("NOT_REQUIRED");
     expect(result.stairsRequired).toBe(false);
@@ -86,10 +80,7 @@ describe("Art. 4.2.10 full compliance evaluation on OLAS-ARQ-05.ifc (real fixtur
     doc = await readIfcFile(bytes);
   }, 30_000);
 
-  test("15 storeys, zero ramps/elevators (confirmed in Fase 1.1 Part C) -> stairs ARE structurally required, but occupancy load is 0 (no IfcSpace at all) -> INCOMPLETE_DATA, never a fabricated PASS/FAIL", () => {
-    expect(doc.ramps).toEqual([]);
-    expect(doc.elevators).toEqual([]);
-
+  test("15 storeys -> stairs ARE structurally required, but occupancy load is 0 (no IfcSpace at all) -> INCOMPLETE_DATA, never a fabricated PASS/FAIL", () => {
     const occupancyLoad = calculateOccupancyLoad(doc).totalOcupantes;
     expect(occupancyLoad).toBe(0);
 
@@ -97,8 +88,6 @@ describe("Art. 4.2.10 full compliance evaluation on OLAS-ARQ-05.ifc (real fixtur
       storeyCount: REAL_OLAS_STOREY_COUNT,
       occupancyLoad,
       confirmedStairCount: doc.stairs.length,
-      ramps: doc.ramps,
-      elevators: doc.elevators,
     });
 
     expect(result.stairsRequired).toBe(true);
@@ -110,8 +99,6 @@ describe("Art. 4.2.10 full compliance evaluation on OLAS-ARQ-05.ifc (real fixtur
       storeyCount: REAL_OLAS_STOREY_COUNT,
       occupancyLoad: 350,
       confirmedStairCount: doc.stairs.length,
-      ramps: doc.ramps,
-      elevators: doc.elevators,
     });
     expect(result.stairsRequired).toBe(true);
     expect(result.verdict).toBe("PASS");
@@ -120,57 +107,40 @@ describe("Art. 4.2.10 full compliance evaluation on OLAS-ARQ-05.ifc (real fixtur
   });
 });
 
-describe("synthetic: a 2+ storey building with a verified accessible ramp or elevator is NOT_REQUIRED to have stairs, per this task's own rule (see stairRequirement.ts's header comment for the unresolved Art. 4.2.8 conflict this flags)", () => {
-  test("2 storeys + an accessible ramp (isAccessible=true, slope 8% <= 8.33% cap): NOT_REQUIRED", () => {
-    const ramp = makeRamp({ isAccessible: true, slopePercentage: 8 });
-    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 100, confirmedStairCount: 0, ramps: [ramp], elevators: [] });
-    expect(result.verdict).toBe("NOT_REQUIRED");
-    expect(isAccessibleRamp(ramp)).toBe(true);
+describe("synthetic: stair requirement depends ONLY on storey count - ramps/elevators (accessible or not) never exempt a building from Art. 4.2.10 (Art. 4.2.8: neither counts as an evacuation route)", () => {
+  test("isAccessibleRamp/isAccessibleElevator remain correct on their own terms (see accessibleAlternatives.ts) - they simply aren't consulted by evaluateStairCompliance's input anymore, which no longer even accepts ramps/elevators", () => {
+    const accessibleRamp = makeRamp({ isAccessible: true, slopePercentage: 8 });
+    const accessibleElevator = makeElevator({ isAccessible: true });
+    expect(isAccessibleRamp(accessibleRamp)).toBe(true);
+    expect(isAccessibleElevator(accessibleElevator)).toBe(true);
   });
 
-  test("2 storeys + a ramp marked accessible but with slope OVER the 8.33% cap: NOT a verified accessible alternative - stairs still required", () => {
-    const steepRamp = makeRamp({ isAccessible: true, slopePercentage: 15 });
-    expect(isAccessibleRamp(steepRamp)).toBe(false);
-    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 30, confirmedStairCount: 1, ramps: [steepRamp], elevators: [] });
+  test("2 storeys, zero detected stairs: stairs are required and FAIL - having ramps/elevators elsewhere in the building would not change this, since evaluateStairCompliance's input has no way to even express them", () => {
+    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 100, confirmedStairCount: 0 });
     expect(result.stairsRequired).toBe(true);
+    expect(result.verdict).toBe("FAIL");
   });
 
-  test("2 storeys + a ramp marked accessible but with NO declared slope: not verified, stairs still required (an unmeasurable claim is not a compliance fact)", () => {
-    const undeclaredSlopeRamp = makeRamp({ isAccessible: true, slopePercentage: null });
-    expect(isAccessibleRamp(undeclaredSlopeRamp)).toBe(false);
-  });
-
-  test("2 storeys + an accessible elevator (isAccessible=true): NOT_REQUIRED", () => {
-    const elevator = makeElevator({ isAccessible: true });
-    const result = evaluateStairCompliance({ storeyCount: 3, occupancyLoad: 100, confirmedStairCount: 0, ramps: [], elevators: [elevator] });
-    expect(result.verdict).toBe("NOT_REQUIRED");
-    expect(isAccessibleElevator(elevator)).toBe(true);
-  });
-
-  test("2+ storeys, neither ramp nor elevator (or only isAccessible='unknown' ones): stairs ARE required - 'unknown' is never treated as accessible", () => {
-    const unknownRamp = makeRamp({ isAccessible: "unknown", slopePercentage: 5 });
-    const unknownElevator = makeElevator({ isAccessible: "unknown" });
-    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 30, confirmedStairCount: 1, ramps: [unknownRamp], elevators: [unknownElevator] });
+  test("2+ storeys, no accessible alternatives at all: stairs required (same outcome as with alternatives - they never change this)", () => {
+    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 30, confirmedStairCount: 1 });
     expect(result.stairsRequired).toBe(true);
-    expect(isAccessibleRamp(unknownRamp)).toBe(false);
-    expect(isAccessibleElevator(unknownElevator)).toBe(false);
   });
 
   test("occupancy of exactly 50 ('hasta 50' bracket): requires 1 stair @ 1.10m", () => {
-    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 50, confirmedStairCount: 1, ramps: [], elevators: [] });
+    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 50, confirmedStairCount: 1 });
     expect(result.required).toEqual({ stairCount: 1, stairWidth: 1.1 });
     expect(result.verdict).toBe("PASS");
   });
 
   test("occupancy of 1001: EXCEEDS_TABLE, never an extrapolated row", () => {
-    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 1001, confirmedStairCount: 2, ramps: [], elevators: [] });
+    const result = evaluateStairCompliance({ storeyCount: 2, occupancyLoad: 1001, confirmedStairCount: 2 });
     expect(result.verdict).toBe("EXCEEDS_TABLE");
     expect(result.stairsRequired).toBe(true);
     expect(result.required).toBeUndefined();
   });
 
-  test("single-storey building: NOT_REQUIRED regardless of ramps/elevators/occupancy", () => {
-    const result = evaluateStairCompliance({ storeyCount: 1, occupancyLoad: 500, confirmedStairCount: 0, ramps: [], elevators: [] });
+  test("single-storey building: NOT_REQUIRED regardless of occupancy or detected stairs", () => {
+    const result = evaluateStairCompliance({ storeyCount: 1, occupancyLoad: 500, confirmedStairCount: 0 });
     expect(result.verdict).toBe("NOT_REQUIRED");
   });
 });
