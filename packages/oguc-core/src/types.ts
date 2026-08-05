@@ -27,3 +27,6 @@ export type {
   StairValidationResult,
   StairValidationInput,
 } from "./engine/stairValidation.js";
+export type { AccessibleRampSlopeRule } from "./dictionary/accessibility.js";
+export type { StairRequirementInput, StairRequirementResult } from "./engine/stairRequirement.js";
+export type { StairComplianceVerdict, StairComplianceResult, StairComplianceInput } from "./engine/evaluateStairCompliance.js";

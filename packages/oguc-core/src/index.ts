@@ -9,3 +9,7 @@ export { evaluateStairs } from "./engine/evaluateStairs.js";
 export { evaluateEvacuationRoutes, evaluateHeightRule, evaluateWidthRule, evaluateTerraceRule } from "./engine/evaluateEvacuationRoutes.js";
 export { validateStairs, measureStairWidthM } from "./engine/stairValidation.js";
 export { STAIRS_TABLE as ART_4210_STAIRS_TABLE } from "./rules/art4210StairsTable.js";
+export { ACCESSIBLE_RAMP_SLOPE_RULE } from "./dictionary/accessibility.js";
+export { isAccessibleRamp, isAccessibleElevator } from "./engine/accessibleAlternatives.js";
+export { determineStairRequirement } from "./engine/stairRequirement.js";
+export { evaluateStairCompliance } from "./engine/evaluateStairCompliance.js";
