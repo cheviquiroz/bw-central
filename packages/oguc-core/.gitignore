@@ -1,0 +1,15 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Real IFC test fixtures (CASA-ARQ.ifc, CASA-MEP.ifc, EOFF-*.ifc) - kept
+# out of git deliberately. Combined they are ~450MB of binary data with
+# no Git LFS configured in this repo; committing them would permanently
+# bloat clone size for everyone. They stay on disk locally and are
+# referenced by ../../oguc-core/fixtures/*.ifc from
+# packages/ifc-headless's tests, but are not tracked here. If these need
+# to be reproducible for a fresh clone or CI, that needs an explicit
+# fixture-distribution decision (Git LFS, a download step, or similar) -
+# not a decision this gitignore makes on its own.
+fixtures/

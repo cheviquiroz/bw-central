@@ -15,6 +15,13 @@
       "to": { "path": "^node_modules/three" }
     },
     {
+      "name": "packages-no-thatopen",
+      "comment": "@thatopen/components y @thatopen/fragments son la capa atada a DOM/Worker (ver el commit que agrega ifc-headless) - ningún package headless debería depender de ellos. Solo la app (viewer-oguc) los usa.",
+      "severity": "error",
+      "from": { "path": "^packages/[^/]+/src" },
+      "to": { "path": "^node_modules/@thatopen" }
+    },
+    {
       "name": "bcf-core-no-report-core",
       "comment": "report-core depende de bcf-core (usa sus tipos en el adapter), nunca al revés - la dirección es de una sola vía.",
       "severity": "error",
@@ -26,6 +33,13 @@
       "comment": "ifc-core es el package más fundacional (cero dependencias de workspace) - no debería depender de ningún otro package.",
       "severity": "error",
       "from": { "path": "^packages/ifc-core/src" },
+      "to": { "path": "^packages/(bcf-core|ids-core|report-core|oguc-core|ifc-headless)" }
+    },
+    {
+      "name": "ifc-headless-no-thatopen-or-app",
+      "comment": "ifc-headless corre en Node puro (ver la investigación empírica en el commit que lo agrega) - depende solo de web-ifc + ifc-core, nunca de @thatopen/* (ya cubierto por packages-no-thatopen) ni de ningún otro package de dominio.",
+      "severity": "error",
+      "from": { "path": "^packages/ifc-headless/src" },
       "to": { "path": "^packages/(bcf-core|ids-core|report-core|oguc-core)" }
     },
     {

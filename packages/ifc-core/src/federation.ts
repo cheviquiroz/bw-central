@@ -1,4 +1,4 @@
-import type { Federation, FederatedModelEntry, ModelId } from "./types";
+import type { Federation, FederatedModelEntry, ModelId } from "./types.js";
 
 export type RegisterModelInFederationResult =
   | { success: true; value: Federation; resolvedName: string }
