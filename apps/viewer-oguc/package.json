@@ -12,11 +12,11 @@
     "test:smoke": "tsx tests/smoke-harness.ts"
   },
   "dependencies": {
+    "@bw-central/bcf-core": "workspace:*",
     "@bw-central/ifc-core": "workspace:*",
     "@thatopen/components": "^3.4.6",
     "@thatopen/components-front": "^3.4.3",
     "@thatopen/fragments": "^3.4.6",
-    "jszip": "^3.10.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "three": "^0.185.1",

@@ -10,6 +10,9 @@ importers:
 
   apps/viewer-oguc:
     dependencies:
+      '@bw-central/bcf-core':
+        specifier: workspace:*
+        version: link:../../packages/bcf-core
       '@bw-central/ifc-core':
         specifier: workspace:*
         version: link:../../packages/ifc-core
@@ -22,9 +25,6 @@ importers:
       '@thatopen/fragments':
         specifier: ^3.4.6
         version: 3.4.7(three@0.185.1)(web-ifc@0.0.77)
-      jszip:
-        specifier: ^3.10.1
-        version: 3.10.1
       react:
         specifier: ^19.2.7
         version: 19.2.8

@@ -52,7 +52,10 @@ export interface BcfProject {
   guid: string;
   name: string;
   topics: BcfTopic[];
-  version: "2.0" | "2.1" | "3.0";
+  // Pass-through de VersionId (ver @bw-central/bcf-core) - el estándar BCF
+  // no está limitado a "2.0"/"2.1"/"3.0" en la práctica, y este campo no se
+  // usa para ninguna decisión de UI, solo se reescribe tal cual al exportar.
+  version: string;
 }
 
 export type BcfFilterStatus = "All" | BcfStatus;
