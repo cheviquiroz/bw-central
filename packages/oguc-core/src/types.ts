@@ -18,3 +18,12 @@ export type { DestinoMatch, DestinoMatchConfidence } from "./engine/matchDestino
 export type { ManualOccupancyOverride, SpaceOccupancyStatus, SpaceOccupancyResult, BuildingOccupancyResult } from "./engine/calculateOccupancyLoad.js";
 export type { StairsEvaluation } from "./engine/evaluateStairs.js";
 export type { RuleEvaluationStatus, RuleEvaluationResult, SpaceEvacuationRuleSet, EvacuationRoutesEvaluation } from "./engine/evaluateEvacuationRoutes.js";
+export type {
+  StairDetectionConfidence,
+  StairValidationRequirement,
+  StairValidationDetected,
+  StairValidationVerdict,
+  StairValidationDetails,
+  StairValidationResult,
+  StairValidationInput,
+} from "./engine/stairValidation.js";

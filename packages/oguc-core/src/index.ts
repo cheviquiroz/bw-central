@@ -7,3 +7,5 @@ export { matchDestino } from "./engine/matchDestino.js";
 export { calculateOccupancyLoad } from "./engine/calculateOccupancyLoad.js";
 export { evaluateStairs } from "./engine/evaluateStairs.js";
 export { evaluateEvacuationRoutes, evaluateHeightRule, evaluateWidthRule, evaluateTerraceRule } from "./engine/evaluateEvacuationRoutes.js";
+export { validateStairs, measureStairWidthM } from "./engine/stairValidation.js";
+export { STAIRS_TABLE as ART_4210_STAIRS_TABLE } from "./rules/art4210StairsTable.js";
