@@ -11,6 +11,7 @@
 import { parseBcf, normalizePriority, normalizeStatus } from "@bw-central/bcf-core";
 import type { BcfTopic as CoreBcfTopic, BcfViewpoint as CoreBcfViewpoint, BcfComment as CoreBcfComment } from "@bw-central/bcf-core";
 import type { BcfComment, BcfProject, BcfTopic, BcfViewpoint } from "./types/bcf";
+import { bytesToBase64 } from "./base64";
 
 const DEFAULT_VIEWPOINT: BcfViewpoint = {
   guid: "default",
@@ -20,18 +21,6 @@ const DEFAULT_VIEWPOINT: BcfViewpoint = {
     up: { x: 0, y: 1, z: 0 },
   },
 };
-
-// btoa espera un string binario ("un char = un byte"), no bytes crudos -
-// String.fromCharCode(...bytes) de una sola pasada revienta el límite de
-// argumentos del engine en snapshots grandes, por eso se arma en chunks.
-function bytesToBase64(bytes: Uint8Array): string {
-  const CHUNK_SIZE = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK_SIZE));
-  }
-  return btoa(binary);
-}
 
 function adaptViewpoint(vp: CoreBcfViewpoint | undefined): BcfViewpoint {
   if (!vp) return DEFAULT_VIEWPOINT;

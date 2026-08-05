@@ -10,13 +10,7 @@
 import { writeBcf } from "@bw-central/bcf-core";
 import type { BcfTopic as CoreBcfTopic, BcfViewpoint as CoreBcfViewpoint, BcfComment as CoreBcfComment, BcfProject as CoreBcfProject } from "@bw-central/bcf-core";
 import type { BcfProject, BcfTopic, BcfViewpoint } from "./types/bcf";
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
+import { base64ToBytes } from "./base64";
 
 function parseDataUri(dataUri: string): { bytes: Uint8Array; mimeType: string } | null {
   const match = /^data:([^;]+);base64,([\s\S]*)$/.exec(dataUri);
