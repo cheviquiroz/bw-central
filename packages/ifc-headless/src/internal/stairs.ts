@@ -16,47 +16,12 @@
 import * as WebIFC from "web-ifc";
 import { getLine, getLineIds, unwrap, unwrapId, unwrapIdList, unwrapString, type IfcApi, type RawLine } from "./webifc.js";
 import { worldAabb, unionAabb } from "./geometry.js";
+import { indexAggregatesByParent, indexStoreyContainment } from "./spatialIndex.js";
 import type { BoundingBox, DeclaredUnit, FileUnits, IfcStair, IfcStairFlight } from "../types.js";
 
 function readNumberAttr(line: RawLine, key: string): number | null {
   const v = unwrap(line[key]);
   return typeof v === "number" ? v : null;
-}
-
-/** parent expressId -> direct children expressIds, via IfcRelAggregates (IsDecomposedBy). */
-function indexAggregatesByParent(api: IfcApi, modelID: number): Map<number, number[]> {
-  const relIds = getLineIds(api, modelID, WebIFC.IFCRELAGGREGATES);
-  const byParent = new Map<number, number[]>();
-  for (const relId of relIds) {
-    const rel = getLine(api, modelID, relId);
-    const parentId = unwrapId(rel.RelatingObject);
-    if (parentId === null) continue;
-    byParent.set(parentId, unwrapIdList(rel.RelatedObjects));
-  }
-  return byParent;
-}
-
-/**
- * element expressId -> containing IfcBuildingStorey expressId, via
- * IfcRelContainedInSpatialStructure. Deliberately only accepts a
- * RelatingStructure whose entity type is IfcBuildingStorey - a real
- * fixture (CASA-ARQ) has a stair contained directly at IfcSite level,
- * which is not a storey and must not be reported as one.
- */
-function indexStoreyContainment(api: IfcApi, modelID: number): Map<number, number> {
-  const relIds = getLineIds(api, modelID, WebIFC.IFCRELCONTAINEDINSPATIALSTRUCTURE);
-  const byElement = new Map<number, number>();
-  for (const relId of relIds) {
-    const rel = getLine(api, modelID, relId);
-    const structureId = unwrapId(rel.RelatingStructure);
-    if (structureId === null) continue;
-    const structureLine = getLine(api, modelID, structureId);
-    if (structureLine.type !== WebIFC.IFCBUILDINGSTOREY) continue;
-    for (const elementId of unwrapIdList(rel.RelatedElements)) {
-      byElement.set(elementId, structureId);
-    }
-  }
-  return byElement;
 }
 
 // "Zona vertical de seguridad" is an OGUC term (Art. 4.2.10/4.2.11), not

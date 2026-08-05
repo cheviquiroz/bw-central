@@ -28,6 +28,8 @@ function makeDoc(spaces: IfcSpaceRecord[]): IfcHeadlessDocument {
     hasDeclaredSpaceBoundaries: false,
     spaces,
     stairs: [],
+    ramps: [],
+    elevators: [],
   };
 }
 

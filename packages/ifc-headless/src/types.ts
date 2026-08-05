@@ -199,6 +199,123 @@ export interface IfcStair {
   boundingBox: BoundingBox | null;
 }
 
+/**
+ * A ramp's declared slope, kept together with the IFC measure type it
+ * was wrapped in. Neither IfcRamp nor IfcRampFlight has a Slope
+ * ATTRIBUTE in any IFC schema version (confirmed against web-ifc's own
+ * generated schema, not assumed) - a declared slope, if present at all,
+ * only ever comes from a property (typically named "Slope" in a project
+ * or Pset_RampFlightCommon-style property set). Real-world exports are
+ * not consistent about whether that property is a ratio (e.g. 0.0833 for
+ * "1:12") or a plane angle in degrees - this reader does not guess which
+ * one a given file means. `measureType` is the IFC measure type name the
+ * property's value was actually wrapped in (e.g.
+ * "IFCPOSITIVERATIOMEASURE", "IFCPLANEANGLEMEASURE"), read from the
+ * file, not inferred from the number's magnitude.
+ */
+export interface DeclaredSlope {
+  value: number;
+  measureType: string;
+}
+
+/**
+ * A vertical circulation element - first-class output, parallel to
+ * stairs. UNTESTED AGAINST REAL DATA: none of this reader's five real
+ * fixtures (CASA-ARQ, CASA-MEP, EOFF-ARQ, EOFF-SPC, OLAS-ARQ-05) contain
+ * a single IfcRamp - every field below is implemented per the IFC schema
+ * and this package's usual "never fabricate" discipline, but none of its
+ * behavior on a real declared slope/accessibility marker has been
+ * exercised against a real file. Flagged, not hidden.
+ */
+export interface IfcRamp {
+  expressId: number;
+  globalId: string | null;
+  /** Raw, byte-identical to the source file. */
+  name: string | null;
+  /** Raw, byte-identical to the source file. */
+  objectType: string | null;
+  /** Raw declared slope + the measure type it came wrapped in, or null if no property named "Slope"/"Pendiente" was found on this ramp or its flights. */
+  slope: DeclaredSlope | null;
+  /**
+   * Only ever computed when `slope.measureType` is a ratio measure
+   * (IFCPOSITIVERATIOMEASURE/IFCRATIOMEASURE, i.e. rise/run - the
+   * percentage is that ratio x 100). Null when slope is null OR when
+   * slope was declared as a different kind of measure (e.g. a plane
+   * angle) this reader does not convert, since angle-to-percentage would
+   * require trigonometry this reader has no real declared-angle fixture
+   * to validate against.
+   */
+  slopePercentage: number | null;
+  /**
+   * NOTE: this reader does NOT compute an "exceeds OGUC maximum slope"
+   * flag. The 8.33% (1:12) accessibility threshold is an OGUC number
+   * (Art. 4.1.7) - embedding it here would put a regulation constant
+   * inside the facts-only reader, the exact boundary this whole package
+   * exists to keep (see packages/oguc-core, which is the only place OGUC
+   * numbers are allowed to live). A compliance check comparing
+   * slopePercentage against that threshold belongs in oguc-core, the
+   * same way Art. 4.2.10's stair count/width check does, not here.
+   */
+  storeyExpressId: number | null;
+  /**
+   * Explicit keyword search only (ObjectType/Name for "accesible" /
+   * "accessible" / "sin barrera", or a property set marker with the same
+   * names) - never inferred from slope or geometry. "unknown" when no
+   * such marking exists, never coerced to false.
+   */
+  isAccessible: boolean | "unknown";
+  /** Real geometry: the ramp's own Representation if it has one, otherwise the union of its real decomposed children's geometry (see IfcStair.boundingBox for the same pattern). Null only if neither has real geometry. */
+  boundingBox: BoundingBox | null;
+}
+
+/**
+ * IFC2X3/IFC4/IFC4X3 have no dedicated "IfcElevator" entity - a fact
+ * confirmed against web-ifc's own type registry (WebIFC.IFCELEVATOR is
+ * undefined in all three schemas this reader targets; IfcElevator only
+ * exists starting IFC4.3, which none of this reader's fixtures use).
+ * Elevators are modeled as IfcTransportElement with a discriminator set
+ * to ELEVATOR - OperationType in IFC2X3, PredefinedType in IFC4/IFC4X3
+ * (also confirmed against web-ifc's generated schema, not assumed - see
+ * internal/elevators.ts). UNTESTED AGAINST REAL DATA for the same reason
+ * as IfcRamp: none of the five real fixtures contain an elevator-typed
+ * IfcTransportElement.
+ */
+export interface IfcElevator {
+  expressId: number;
+  globalId: string | null;
+  /** Raw, byte-identical to the source file. */
+  name: string | null;
+  /** Raw, byte-identical to the source file. */
+  objectType: string | null;
+  /** Same keyword-search discipline as IfcRamp.isAccessible - never inferred, "unknown" when unmarked. */
+  isAccessible: boolean | "unknown";
+  /** Real geometry, same pattern as IfcStair/IfcRamp. */
+  boundingBox: BoundingBox | null;
+  /**
+   * Only the single storey this element is directly contained in via
+   * IfcRelContainedInSpatialStructure (an elevator car's "home"
+   * position), wrapped in a one-element array for forward-compatibility
+   * with a real multi-storey range - NOT the full set of storeys the
+   * elevator shaft actually serves. Determining that would need either a
+   * declared property this reader has never seen in a real file, or
+   * geometric reasoning (matching the shaft's vertical extent against
+   * every storey's elevation) this reader does not attempt without a
+   * real fixture to validate the result against. Null if even the home
+   * storey is unresolvable.
+   */
+  servedStoreyExpressIds: number[] | null;
+  /**
+   * From IfcTransportElement's own CapacityByNumber attribute (persons) -
+   * IFC2X3 only. IFC4/IFC4X3 dropped this as a direct attribute
+   * entirely; a capacity for those schemas, if declared, would live in a
+   * property set this reader does not currently search (no real fixture
+   * to confirm a property name convention against). Null under both
+   * "not declared" and "this schema version doesn't carry it as an
+   * attribute" - this reader does not distinguish the two.
+   */
+  carryingCapacity: number | null;
+}
+
 export interface IfcHeadlessDocument {
   schema: IfcSchemaVersion;
   units: FileUnits;
@@ -207,4 +324,8 @@ export interface IfcHeadlessDocument {
   spaces: IfcSpaceRecord[];
   /** Every IfcStair in the model, first-class output parallel to spaces. Empty array (never undefined, never an error) for files with no stairs. */
   stairs: IfcStair[];
+  /** Every IfcRamp in the model. Empty array (never undefined, never an error) for files with none. */
+  ramps: IfcRamp[];
+  /** Every elevator-typed IfcTransportElement in the model (see IfcElevator's own doc comment for why it isn't a literal "IfcElevator" entity). Empty array for files with none. */
+  elevators: IfcElevator[];
 }
