@@ -43,6 +43,13 @@
       "to": { "path": "^packages/(bcf-core|ids-core|report-core|oguc-core)" }
     },
     {
+      "name": "oguc-core-no-other-packages",
+      "comment": "oguc-core es el motor de reglas OGUC construido sobre el output de ifc-headless - depende solo de @bw-central/ifc-headless (y de ifc-core si alguna vez hace falta un primitivo geométrico/de propiedades), nunca de bcf-core/ids-core/report-core, ni de @thatopen/* (ya cubierto por packages-no-thatopen) ni de ninguna app.",
+      "severity": "error",
+      "from": { "path": "^packages/oguc-core/src" },
+      "to": { "path": "^packages/(bcf-core|ids-core|report-core)" }
+    },
+    {
       "name": "no-package-depends-on-app",
       "comment": "Los packages/* son librerías reutilizables por definición - depender de una app específica (apps/*) invertiría la dirección real de dependencia.",
       "severity": "error",
