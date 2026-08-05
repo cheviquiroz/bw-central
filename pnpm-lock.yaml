@@ -72,7 +72,24 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(tsx@4.23.5))
 
-  packages/bcf-core: {}
+  packages/bcf-core:
+    dependencies:
+      fast-xml-parser:
+        specifier: ^4.5.0
+        version: 4.5.7
+      jszip:
+        specifier: ^3.10.1
+        version: 3.10.1
+    devDependencies:
+      '@types/node':
+        specifier: ^24.13.2
+        version: 24.13.3
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(happy-dom@20.11.1)(vite@8.2.0(@types/node@24.13.3)(esbuild@0.28.1)(tsx@4.23.5))
 
   packages/ids-core:
     dependencies:
