@@ -1,0 +1,55 @@
+{
+  "forbidden": [
+    {
+      "name": "packages-no-react",
+      "comment": "Los packages/* son dominio puro, ninguno debería necesitar React (eso es responsabilidad de la app que los consume).",
+      "severity": "error",
+      "from": { "path": "^packages/[^/]+/src" },
+      "to": { "path": "^node_modules/react" }
+    },
+    {
+      "name": "packages-no-three",
+      "comment": "Three.js es específico del viewer 3D - ningún package de dominio debería depender de él.",
+      "severity": "error",
+      "from": { "path": "^packages/[^/]+/src" },
+      "to": { "path": "^node_modules/three" }
+    },
+    {
+      "name": "bcf-core-no-report-core",
+      "comment": "report-core depende de bcf-core (usa sus tipos en el adapter), nunca al revés - la dirección es de una sola vía.",
+      "severity": "error",
+      "from": { "path": "^packages/bcf-core/src" },
+      "to": { "path": "^packages/report-core" }
+    },
+    {
+      "name": "ifc-core-no-other-packages",
+      "comment": "ifc-core es el package más fundacional (cero dependencias de workspace) - no debería depender de ningún otro package.",
+      "severity": "error",
+      "from": { "path": "^packages/ifc-core/src" },
+      "to": { "path": "^packages/(bcf-core|ids-core|report-core|oguc-core)" }
+    },
+    {
+      "name": "no-package-depends-on-app",
+      "comment": "Los packages/* son librerías reutilizables por definición - depender de una app específica (apps/*) invertiría la dirección real de dependencia.",
+      "severity": "error",
+      "from": { "path": "^packages/[^/]+/src" },
+      "to": { "path": "^apps/" }
+    },
+    {
+      "name": "no-circular",
+      "comment": "Ninguna dependencia circular entre módulos, en ningún package o app.",
+      "severity": "error",
+      "from": {},
+      "to": { "circular": true }
+    }
+  ],
+  "options": {
+    "tsPreCompilationDeps": true,
+    "doNotFollow": {
+      "path": "node_modules"
+    },
+    "exclude": {
+      "path": "(^|/)(dist|__tests__|.*\\.spec\\.ts)($|/)"
+    }
+  }
+}

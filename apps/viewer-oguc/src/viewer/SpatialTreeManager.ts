@@ -1,4 +1,5 @@
 // src/viewer/SpatialTreeManager.ts
+import { readIfcName } from "@bw-central/ifc-core";
 import type { IfcViewerHandles } from "../core/IfcBootstrap";
 import type { ApplicationInstance, ModelTreeNode } from "../engine/createApplication";
 
@@ -31,10 +32,7 @@ export class SpatialTreeManager {
             attributesDefault: true,
           });
           for (let i = 0; i < allLocalIds.length; i++) {
-            const data = dataList[i] as any;
-            const rawName = data?.Name?.value;
-            const name = typeof rawName === "string" ? rawName : null;
-            namesById.set(allLocalIds[i], name);
+            namesById.set(allLocalIds[i], readIfcName(dataList[i] as any));
           }
         }
 

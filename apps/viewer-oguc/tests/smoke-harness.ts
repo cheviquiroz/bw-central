@@ -2,7 +2,7 @@
 /// <reference types="node" />
 import { registerModel } from "../src/engine/application/registerModel";
 import { InMemoryFederationRepository } from "../src/engine/adapters/InMemoryFederationRepository";
-import type { FederationId } from "../src/engine/domain/federation/FederationId";
+import type { FederationId } from "@bw-central/ifc-core";
 import type { ModelLoader } from "../src/engine/application/registerModel";
 
 /**
@@ -34,7 +34,7 @@ async function runSmokeTest() {
   console.log("🚀 Iniciando Smoke-Test Headless del Engine...\n");
 
   const repository = new InMemoryFederationRepository();
-  repository.seed({ id: federationId, modelIds: [] });
+  repository.seed({ id: federationId, models: [] });
   console.log("✅ Federación inicial creada en memoria.");
 
   // --- Caso 1: registrar un modelo nuevo debe funcionar ---

@@ -5,6 +5,10 @@
   "type": "module",
   "scripts": {
     "dev:viewer-oguc": "pnpm --filter bwise-viewer-oguc dev",
-    "build:viewer-oguc": "pnpm --filter bwise-viewer-oguc build"
+    "build:viewer-oguc": "pnpm --filter bwise-viewer-oguc build",
+    "check:architecture": "depcruise --config .dependency-cruiser.json packages apps/*/src"
+  },
+  "devDependencies": {
+    "dependency-cruiser": "^18.1.0"
   }
 }
