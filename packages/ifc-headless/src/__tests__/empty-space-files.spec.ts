@@ -17,6 +17,7 @@ describe("ifc-headless: files with zero IfcSpace (by design, not by error)", () 
     const doc = await readIfcFile(bytes);
     expect(doc.schema).toBe("IFC2X3");
     expect(doc.spaces).toEqual([]);
+    expect(doc.stairs).toEqual([]);
   }, 30_000);
 
   test("EOFF-ARQ-IFC-I01.ifc (IFC4, architecture only - spaces live in EOFF-SPC instead) returns a valid empty result", async () => {

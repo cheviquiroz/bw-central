@@ -76,3 +76,25 @@ export function intersectsExpanded(space: Aabb, box: Aabb, tolerance: number): b
 export function intersects(space: Aabb, box: Aabb): boolean {
   return intersectsExpanded(space, box, 0);
 }
+
+/**
+ * Unions real AABBs (e.g. an element's own geometry plus its decomposed
+ * children's geometry, via IfcRelAggregates - see internal/stairs.ts,
+ * where an IfcStair with no direct Representation of its own, common in
+ * real ArchiCAD exports, is bounded by the union of its actual
+ * IfcBuildingElementProxy children's real vertex data). Never an
+ * estimate - every input box already came from worldAabb reading real
+ * geometry of a real model element.
+ */
+export function unionAabb(boxes: Aabb[]): Aabb | null {
+  if (boxes.length === 0) return null;
+  const min: [number, number, number] = [Infinity, Infinity, Infinity];
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+  for (const box of boxes) {
+    for (let axis = 0; axis < 3; axis++) {
+      if (box.min[axis] < min[axis]) min[axis] = box.min[axis];
+      if (box.max[axis] > max[axis]) max[axis] = box.max[axis];
+    }
+  }
+  return { min, max };
+}

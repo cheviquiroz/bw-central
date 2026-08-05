@@ -27,6 +27,7 @@ function makeDoc(spaces: IfcSpaceRecord[]): IfcHeadlessDocument {
     units: { length: { name: "METRE", prefix: null }, area: { name: "SQUARE_METRE", prefix: null }, volume: { name: "CUBIC_METRE", prefix: null } },
     hasDeclaredSpaceBoundaries: false,
     spaces,
+    stairs: [],
   };
 }
 

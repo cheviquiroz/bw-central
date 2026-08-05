@@ -105,10 +105,106 @@ export interface IfcSpaceRecord {
   adjacentSpaces: AdjacentSpaceRef[];
 }
 
+/** World-space axis-aligned bounding box from real geometry (vertex data), never declared/estimated dimensions. Null when no real geometry could be found for this element (see IfcStair.boundingBox for the one case where that's resolved by unioning real children geometry instead of giving up immediately). */
+export interface BoundingBox {
+  min: [number, number, number];
+  max: [number, number, number];
+}
+
+/**
+ * A single continuous run of steps between landings. Reused ifc-core's
+ * unit-attachment convention (DeclaredUnit, not a synthesized string like
+ * "MILLIMETRE") rather than the ad-hoc unitsContext shape sketched for
+ * this task - IFC itself has no such unit name; MILLI+METRE is how a
+ * file actually declares a millimetre. NumberOfRiser/TreadLength/
+ * RiserHeight are direct IfcStairFlight attributes (confirmed against
+ * real fixtures, not IfcPropertySet values) - riserCount, treadDepth,
+ * and riserHeight are all null when a file simply does not declare them
+ * (common - see the commit that adds this: CASA-ARQ's 19 real
+ * IfcStairFlight entities all leave these attributes null). Never
+ * defaulted to 0 or otherwise guessed to fill the gap.
+ */
+export interface IfcStairFlight {
+  globalId: string | null;
+  name: string | null;
+  riserCount: number | null;
+  /** Horizontal projection of one step, in `lengthUnit`. */
+  treadDepth: number | null;
+  /** Vertical rise of one step, in `lengthUnit`. */
+  riserHeight: number | null;
+  /**
+   * Always "unknown" in this version: IFC2X3/IFC4 do not carry a
+   * direction attribute on IfcStairFlight, and deriving it from geometry
+   * (e.g. walking-line ordering) has no fixture in this reader's test
+   * set with a verifiable ground truth to validate a derivation against -
+   * exactly the "confident wrong answer" this package's whole design
+   * discipline exists to avoid. Flagged, not guessed.
+   */
+  direction: "ascending" | "descending" | "unknown";
+  /** Real geometry of this flight's own representation, or null if it has none (e.g. this file models geometry only on the parent IfcStair or on unrelated decomposition children - see IfcStair.boundingBox). */
+  boundingBox: BoundingBox | null;
+  /** The length unit treadDepth/riserHeight are expressed in - the file's own declared LENGTHUNIT (see FileUnits.length), repeated here so a stair record is self-contained without needing the document's top-level units. Null under the same conditions FileUnits.length is null. */
+  lengthUnit: DeclaredUnit | null;
+}
+
+/**
+ * A vertical circulation element - first-class output, parallel to
+ * spaces, never folded into a space's boundingElements (stairs are
+ * structural, not a space's surface boundary).
+ */
+export interface IfcStair {
+  expressId: number;
+  globalId: string | null;
+  /** Raw, byte-identical to the source file. */
+  name: string | null;
+  /** Raw, byte-identical to the source file. */
+  objectType: string | null;
+  /**
+   * Only ever populated from real IfcStairFlight entities decomposing
+   * this stair via IfcRelAggregates. A real fixture (OLAS-ARQ-05.ifc, an
+   * ArchiCAD export) has 24 real IfcStair entities and ZERO
+   * IfcStairFlight anywhere in the file - each stair decomposes into
+   * generic IfcBuildingElementProxy children instead. This reader does
+   * NOT reinterpret those proxies as flights; such stairs correctly
+   * return an empty array here, not a guess.
+   */
+  flights: IfcStairFlight[];
+  /**
+   * The IfcBuildingStorey containing this stair via
+   * IfcRelContainedInSpatialStructure, or null if unresolvable. Matches
+   * IfcSpaceRecord's storeyExpressId convention (an express-ID, not a
+   * GlobalId) for consistency within this package. Deliberately only
+   * resolves an actual IfcBuildingStorey - a stair contained directly at
+   * IfcSite level (observed in a real fixture) has no storey to report
+   * and correctly comes back null here, not the site's ID.
+   */
+  storeyExpressId: number | null;
+  /**
+   * "Zona vertical de seguridad" is an OGUC concept (Art. 4.2.10/4.2.11),
+   * not a standard IFC one - no IFC schema attribute carries it. Read
+   * only from an explicitly-named property (IsSecurityZone /
+   * ZonaVerticalSeguridad, case-insensitive) in this stair's own property
+   * sets. Absence of such a property means "unknown", never "false" -
+   * there is no way to distinguish "not a safety stair" from "not marked
+   * either way" from data alone.
+   */
+  isSecurityZone: boolean | "unknown";
+  /**
+   * Real geometry: the stair's own Representation if it has one,
+   * otherwise the union of its real decomposed children's geometry (via
+   * IfcRelAggregates - see internal/geometry.ts's unionAabb). Null only
+   * if neither the stair nor any of its children have real geometry.
+   * Never estimated from declared dimensions.
+   */
+  boundingBox: BoundingBox | null;
+}
+
 export interface IfcHeadlessDocument {
   schema: IfcSchemaVersion;
   units: FileUnits;
   /** Whether this file declares any IfcRelSpaceBoundary at all. When false, every space's boundingElements/adjacentSpaces (if any) were geometrically inferred, not read from the file. */
   hasDeclaredSpaceBoundaries: boolean;
   spaces: IfcSpaceRecord[];
+  /** Every IfcStair in the model, first-class output parallel to spaces. Empty array (never undefined, never an error) for files with no stairs. */
+  stairs: IfcStair[];
 }

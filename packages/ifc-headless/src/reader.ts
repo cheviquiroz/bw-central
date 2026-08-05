@@ -16,6 +16,7 @@ import { resolveSpaceProperties } from "./internal/propertySets.js";
 import { hasAnySpaceBoundaries, resolveAuthoritativeBoundaries } from "./internal/authoritativeBoundaries.js";
 import { resolveGeometricBoundaries } from "./internal/geometricBoundaries.js";
 import { resolveAdjacentSpaces } from "./internal/adjacency.js";
+import { resolveStairs } from "./internal/stairs.js";
 import type { IfcHeadlessDocument, IfcSpaceRecord, BoundingElementRef } from "./types.js";
 
 export * from "./types.js";
@@ -80,11 +81,13 @@ function buildDocument(api: IfcApi, modelID: number): IfcHeadlessDocument {
   const schema = readSchema(api, modelID);
   const units = readFileUnits(api, modelID);
 
+  const stairs = resolveStairs(api, modelID, units);
+
   const spaceIds = getLineIds(api, modelID, WebIFC.IFCSPACE);
   const spaceIdSet = new Set(spaceIds);
 
   if (spaceIds.length === 0) {
-    return { schema, units, hasDeclaredSpaceBoundaries: hasAnySpaceBoundaries(api, modelID), spaces: [] };
+    return { schema, units, hasDeclaredSpaceBoundaries: hasAnySpaceBoundaries(api, modelID), spaces: [], stairs };
   }
 
   const { spaceStorey, storeyElements } = resolveSpatialHierarchy(api, modelID, spaceIdSet);
@@ -133,5 +136,5 @@ function buildDocument(api: IfcApi, modelID: number): IfcHeadlessDocument {
     };
   });
 
-  return { schema, units, hasDeclaredSpaceBoundaries: hasBoundaries, spaces };
+  return { schema, units, hasDeclaredSpaceBoundaries: hasBoundaries, spaces, stairs };
 }
