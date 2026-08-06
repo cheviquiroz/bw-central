@@ -130,6 +130,19 @@ body {
   grid-row: 2;
 }
 
+/* /revision's Pre-Check gate (PreCheckGate.tsx) - spans every column/row
+   of this grid, on top of DockLeft/Viewport/DockRight/DockBottom (all of
+   which stay MOUNTED underneath, never disposed, while the gate is up -
+   see RevisionLayout.tsx's own comment on why). Only "/revision" ever
+   renders this class; harmless no-op CSS on "/". */
+.viewport > .precheck-overlay {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  z-index: 150;
+  background: rgba(10, 13, 17, 0.85);
+  backdrop-filter: blur(4px);
+}
+
 /* Estilos visuales reales de .status-bar viven en
    src/ui/StatusBar/status-bar.css (importado por StatusBar.tsx) - acá solo
    se fija la posición dentro del grid del layout. */

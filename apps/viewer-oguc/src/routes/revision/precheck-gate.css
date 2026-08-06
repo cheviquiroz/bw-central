@@ -1,0 +1,235 @@
+/* src/routes/revision/precheck-gate.css */
+@import "../../styles/tokens.css";
+
+.precheck-gate {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: auto;
+  padding: 40px 24px;
+  font-family: var(--sans);
+  color: var(--text-mid);
+}
+
+.precheck-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin: auto;
+  color: var(--text-low);
+  font-size: 13px;
+}
+
+.precheck-panel {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(23, 28, 34, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+}
+
+.precheck-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.precheck-header h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+
+.precheck-subtitle {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-low);
+  line-height: 1.5;
+}
+
+.precheck-blocking-banner {
+  margin: 16px 24px 0;
+  padding: 12px 14px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.precheck-blocking-banner strong {
+  color: #ff8080;
+}
+
+.precheck-section {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.precheck-section:last-of-type {
+  border-bottom: none;
+}
+
+.precheck-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-hi);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.precheck-section-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.precheck-section-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0d1117;
+}
+
+.precheck-section-title {
+  flex: 1;
+}
+
+.precheck-section-chevron {
+  color: var(--text-low);
+  transition: transform 0.15s;
+}
+
+.precheck-section-chevron.open {
+  transform: rotate(180deg);
+}
+
+.precheck-section-body {
+  padding: 0 24px 16px;
+}
+
+.precheck-section-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-low);
+}
+
+.precheck-issue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.precheck-issue {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.precheck-checkbox {
+  margin-top: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.precheck-issue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+
+.precheck-issue-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.precheck-issue-message {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-hi);
+  line-height: 1.5;
+}
+
+.precheck-issue-detail {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--text-low);
+  line-height: 1.4;
+}
+
+.precheck-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.precheck-ack-hint {
+  flex: 1;
+  font-size: 11.5px;
+  color: var(--amber);
+  text-align: right;
+}
+
+.precheck-back-btn {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.precheck-back-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-hi);
+}
+
+.precheck-continue-btn {
+  margin-left: auto;
+  padding: 8px 18px;
+  background: var(--blue);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.precheck-continue-btn:hover:not(:disabled) {
+  background: #5a9de0;
+}
+
+.precheck-continue-btn:disabled {
+  background: var(--line);
+  color: var(--text-low);
+  cursor: not-allowed;
+}

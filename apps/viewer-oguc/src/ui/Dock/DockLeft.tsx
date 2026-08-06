@@ -19,6 +19,7 @@ import { useLayoutState } from "../LayoutStateContext";
 import { DockPanel } from "./DockPanel";
 import { DockHeader } from "./DockHeader";
 import { ModelTree } from "./ModelTree";
+import { setModelBytes } from "../../core/ModelBytesRegistry";
 import "../../styles/dock.css";
 
 interface DockLeftProps {
@@ -58,8 +59,15 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
           setProgressMessage(`"${file.name}": ${progress.statusMessage}`);
         });
 
-        if (result.success) succeeded.push(file.name);
-        else failed.push({ name: file.name, error: result.error });
+        if (result.success) {
+          succeeded.push(file.name);
+          // Retiene los bytes crudos para /revision (Pre-Check gate) -
+          // ver ModelBytesRegistry.ts, el visor 3D en sí no los conserva
+          // después de importar.
+          setModelBytes(result.modelId, bytes);
+        } else {
+          failed.push({ name: file.name, error: result.error });
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Error inesperado al leer el archivo.";
         failed.push({ name: file.name, error: message });

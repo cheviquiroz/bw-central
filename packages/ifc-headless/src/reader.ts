@@ -23,8 +23,29 @@ import type { IfcHeadlessDocument, IfcSpaceRecord, BoundingElementRef } from "./
 
 export * from "./types.js";
 
-async function withApi<T>(fn: (api: IfcApi) => Promise<T> | T): Promise<T> {
+/**
+ * Where to fetch the web-ifc WASM binary from, forwarded verbatim to
+ * IfcAPI.SetWasmPath() before Init(). Optional and additive - Node
+ * callers (every test in this package) never pass this, and web-ifc's
+ * own default resolution (relative to node_modules) keeps working
+ * unchanged. A browser caller (viewer-oguc, which already points its own
+ * @thatopen/components IfcLoader at a CDN URL for the same wasm binary -
+ * see IfcBootstrap.ts) needs this because a bare `new WebIFC.IfcAPI()`
+ * in a Vite/browser bundle has no node_modules to resolve against.
+ */
+export interface ReadIfcFileOptions {
+  wasmPath?: string;
+  wasmAbsolute?: boolean;
+}
+
+async function withApi<T>(fn: (api: IfcApi) => Promise<T> | T, options?: ReadIfcFileOptions): Promise<T> {
   const api = new WebIFC.IfcAPI();
+  if (options?.wasmPath) {
+    (api as unknown as { SetWasmPath: (path: string, absolute?: boolean) => void }).SetWasmPath(
+      options.wasmPath,
+      options.wasmAbsolute,
+    );
+  }
   await api.Init();
   try {
     return await fn(api);
@@ -36,7 +57,7 @@ async function withApi<T>(fn: (api: IfcApi) => Promise<T> | T): Promise<T> {
 }
 
 /** Reads a single IFC file (already-read bytes) into the headless document model. Throws with a clear message on malformed/truncated input - never returns a silent empty result for a file that failed to parse. */
-export async function readIfcFile(bytes: Uint8Array): Promise<IfcHeadlessDocument> {
+export async function readIfcFile(bytes: Uint8Array, options?: ReadIfcFileOptions): Promise<IfcHeadlessDocument> {
   return withApi(async (api) => {
     let modelID: number;
     try {
@@ -69,7 +90,7 @@ export async function readIfcFile(bytes: Uint8Array): Promise<IfcHeadlessDocumen
     } finally {
       api.CloseModel(modelID);
     }
-  });
+  }, options);
 }
 
 /** Convenience wrapper: reads the file at `filePath` from disk (Node fs) and calls readIfcFile. */

@@ -11,7 +11,12 @@ export interface ModelProgress {
 }
 
 export type RegisterModelResult =
-  | { success: true; value: { name: string } }
+  // modelId is the same key modelDisplayNames/getModelTrees() use for
+  // this model - added so callers can correlate a freshly-imported
+  // model with a side-channel keyed the same way (see
+  // core/ModelBytesRegistry.ts, which retains raw import bytes for the
+  // /revision Pre-Check gate to re-read via ifc-headless).
+  | { success: true; value: { name: string }; modelId: string }
   | { success: false; error: string };
 
 export type SelectionState = Record<string, string[]>;
@@ -150,6 +155,8 @@ export function createApplication(): ApplicationInstance {
         notifyModelDisplayNamesChanged();
 
         technicalToDomainModelId.set(result.technicalModelId, result.value.id);
+
+        return { success: true, value: { name: result.value.name }, modelId: result.technicalModelId };
       }
 
       return result;

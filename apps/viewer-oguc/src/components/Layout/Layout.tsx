@@ -13,6 +13,7 @@ import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../../ui/LayoutStateContext";
 import { useModelToolActions } from "./useModelToolActions";
+import { setModelBytes } from "../../core/ModelBytesRegistry";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
@@ -219,7 +220,13 @@ function LayoutInner() {
         const arrayBuffer = await file.arrayBuffer();
         const bytes = new Uint8Array(arrayBuffer);
         const result = await app.importNewModel(file.name, bytes);
-        if (!result.success) failed.push({ name: file.name, error: result.error });
+        if (result.success) {
+          // Retiene los bytes crudos para /revision (Pre-Check gate) -
+          // ver ModelBytesRegistry.ts.
+          setModelBytes(result.modelId, bytes);
+        } else {
+          failed.push({ name: file.name, error: result.error });
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "Error inesperado al leer el archivo.";
         failed.push({ name: file.name, error: message });

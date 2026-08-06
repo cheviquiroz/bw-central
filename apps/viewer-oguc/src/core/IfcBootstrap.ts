@@ -2,6 +2,12 @@
 import * as THREE from "three";
 import * as OBC from "@thatopen/components";
 
+// Exportado (no solo local) porque el Pre-Check gate de /revision necesita
+// apuntar una SEGUNDA instancia de web-ifc (vía ifc-headless's readIfcFile)
+// al mismo binario WASM - ver RevisionLayout.tsx. Una sola fuente de
+// verdad para esta URL evita que las dos instancias diverjan de versión.
+export const WEB_IFC_WASM_PATH = "https://unpkg.com/web-ifc@0.0.77/";
+
 export interface IfcViewerHandles {
   components: OBC.Components;
   world: OBC.World;
@@ -402,7 +408,7 @@ export async function initIfcViewer(
   await ifcLoader.setup({
     autoSetWasm: false,
     wasm: {
-      path: "https://unpkg.com/web-ifc@0.0.77/",
+      path: WEB_IFC_WASM_PATH,
       absolute: true,
     },
   });

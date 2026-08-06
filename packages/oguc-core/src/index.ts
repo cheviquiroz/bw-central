@@ -13,3 +13,5 @@ export { ACCESSIBLE_RAMP_SLOPE_RULE } from "./dictionary/accessibility.js";
 export { isAccessibleRamp, isAccessibleElevator } from "./engine/accessibleAlternatives.js";
 export { determineStairRequirement } from "./engine/stairRequirement.js";
 export { evaluateStairCompliance } from "./engine/evaluateStairCompliance.js";
+export { runPreCheck } from "./precheck.js";
+export type { PreCheckSeverity, PreCheckIssue, PreCheckResult } from "./precheck.js";

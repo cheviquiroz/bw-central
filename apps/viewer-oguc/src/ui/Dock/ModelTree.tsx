@@ -5,6 +5,7 @@ import type { ModelTrees, ModelTreeNode, ApplicationInstance, SelectionState, Mo
 import type { ProximityWarning } from "@bw-central/ifc-core";
 import { IconChevron, IconFolder, IconEye, IconTrash } from "../icons/dock";
 import { Tooltip } from "../Tooltip/Tooltip";
+import { clearModelBytes } from "../../core/ModelBytesRegistry";
 
 function findPathToLocalId(node: ModelTreeNode, targetLocalId: number): number[] | null {
   if (node.localId === targetLocalId) {
@@ -182,6 +183,7 @@ function ModelHeader({ modelId, app, displayNames, proximityWarning }: { modelId
     setIsRemoving(true);
     try {
       await app.unloadModel(modelId);
+      clearModelBytes(modelId);
     } catch (error) {
       console.error("Error al eliminar el modelo:", error);
       setIsRemoving(false);

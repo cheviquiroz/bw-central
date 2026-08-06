@@ -10,8 +10,16 @@ describe("ifc-headless: runs in plain Node, no DOM", () => {
     expect(typeof window).toBe("undefined");
   });
 
-  test("readIfcFile takes exactly one argument (no multi-file/merge overload exists)", () => {
-    expect(readIfcFile.length).toBe(1);
+  // readIfcFile gained a second parameter (ReadIfcFileOptions, so
+  // viewer-oguc's /revision Pre-Check gate can point web-ifc's WASM
+  // binary at a browser URL instead of Node's default resolution) -
+  // Function.length is 2 now, not 1. It is a WASM-config options object
+  // (wasmPath/wasmAbsolute), typed in reader.ts - not a second IFC file:
+  // the "no multi-file/merge overload" contract this test originally
+  // guarded still holds, just no longer expressible as a bare arity
+  // check now that a second, non-file parameter legitimately exists.
+  test("readIfcFile has exactly two parameters: the IFC bytes and an optional WASM-config object", () => {
+    expect(readIfcFile.length).toBe(2);
   });
 });
 
