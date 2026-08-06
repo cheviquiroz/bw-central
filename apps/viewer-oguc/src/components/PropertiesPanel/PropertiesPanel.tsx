@@ -8,8 +8,6 @@ import { IconLock } from "../../ui/icons/dock";
 import { useLayoutState } from "../../ui/LayoutStateContext";
 import "../../styles/properties.css";
 
-type TabType = "PROPERTIES" | "QUANTITIES" | "BSDD";
-
 const BASE_QUANTITIES_KEY = "BaseQuantities";
 
 function getPropertyValue(prop: any): string {
@@ -87,13 +85,14 @@ function ExpandibleSection({
 export default function PropertiesPanel() {
   const app = useApp();
   const [selection, setSelection] = useState<SelectionState>(app.getSelection());
-  const [activeTab, setActiveTab] = useState<TabType>("PROPERTIES");
   const [expandedPsets, setExpandedPsets] = useState<Record<string, boolean>>({});
-  // zones.right compartido con BcfPanel (mismo dock desde la Fase 3) - ver
-  // LayoutStateContext.tsx. Este panel ya no tiene un ancho propio que
-  // calcular: mientras está montado, ocupa su ancho fijo completo (ver
-  // properties.css) - la única pregunta binaria es si está montado o no.
-  const { setZoneVisible } = useLayoutState();
+  // activeTab vive en LayoutStateContext (propertiesTab), no en un
+  // useState local - Fase 5b lo persiste en localStorage junto con la
+  // visibilidad de los paneles. zones.right ya no comparte dock con
+  // BcfPanel (Fase 3 lo mudó a DockBottom) - este panel ocupa su ancho
+  // fijo completo mientras está montado (ver properties.css), la única
+  // pregunta binaria es si está montado o no.
+  const { setZoneVisible, propertiesTab: activeTab, setPropertiesTab: setActiveTab } = useLayoutState();
 
   useEffect(() => {
     const unsubscribe = app.subscribeToSelection((newSelection) => {
@@ -230,10 +229,6 @@ export default function PropertiesPanel() {
         </button>
       </div>
 
-      {/* Ya no se abrevia a "P"/"Q"/"B" en collapsed: el efecto blur+opacity
-          de acá abajo (.properties-panel.collapsed .properties-tabs) ya
-          resuelve el "compacto pero presente" - abreviar Y blurrear a la vez
-          hubiera sido redundante (una letra sola, encima borrosa). */}
       <div className="properties-tabs">
         <button className={`prop-tab${activeTab === "PROPERTIES" ? " active" : ""}`} onClick={() => setActiveTab("PROPERTIES")}>
           Properties

@@ -69,11 +69,19 @@ body {
    sin DockBottom montado (zones.bottom === false) no hay contenido y la
    fila colapsa a 0px sola, mismo truco que ya usan las columnas
    laterales. */
+/* La columna central es minmax(480px, 1fr), no "1fr" a secas (Fase 5a):
+   sin un piso, un grid nunca encoge una celda "1fr" por debajo de su
+   min-content, así que si algo raro pasara con ese cálculo el canvas
+   podría, en teoría, llegar a 0 - el piso hace explícita la garantía "el
+   canvas nunca se aplasta", en vez de confiar en el comportamiento
+   default de la celda intermedia. 480px alcanza para seguir viendo el
+   modelo con algo de contexto incluso en la ventana más angosta que este
+   layout soporta sin ocultar paneles. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(480px, 1fr) auto;
   grid-template-rows: 1fr auto;
   padding: 16px;
   width: 100%;
