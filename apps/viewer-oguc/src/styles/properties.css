@@ -1,27 +1,21 @@
 /* src/styles/properties.css */
 @import "./tokens.css";
 
-/* Flotante dentro de .viewport, mismo mecanismo y "look" que .dock-panel
-   (dock.css) pero espejado al lado derecho - valores (blur, radius, sombra,
-   bg translúcido) copiados de ahí a propósito, no inventados, para lograr
-   "el mismo efecto visual que Tree" real, no una aproximación. */
+/* Ya no flotante ni position:absolute - vive dentro de DockRightWithTabs
+   (ver ui/Dock/DockRightWithTabs.tsx y dock-right-tabs.css), que a su vez
+   es la celda derecha del grid de .viewport (Layout.css). Sigue
+   controlando su propio ancho vía --properties-width (proximity-hover sin
+   cambios), pero ahora ese ancho vive dentro del flujo normal en vez de
+   flotar sobre el canvas. */
 .properties-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  bottom: 16px;
   width: var(--properties-width, 272px);
+  height: 100%;
   /* rgba en vez de un token: mismo valor que --dock-bg en dock.css (no hay
      token de bg translúcido en tokens.css, ver mismo comentario en dock.css). */
   background: rgba(23, 28, 34, 0.88);
   border: 1px solid var(--line);
   border-radius: 12px;
   backdrop-filter: blur(20px);
-  /* Sombra horizontal, no vertical - mismo criterio que .dock-panel (10px 0
-     30px), espejada en signo porque este panel cuelga del lado derecho. */
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 100;
   overflow: hidden;
   display: flex;
   flex-direction: column;

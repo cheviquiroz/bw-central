@@ -12,8 +12,12 @@ const COLLAPSED_WIDTH = 56;
 const EXPANDED_WIDTH = 320;
 const COLLAPSE_THRESHOLD = 150;
 const PROXIMITY_THRESHOLD = 30;
-const PANEL_RIGHT_BASE = 16; // igual que .properties-panel
-const PANEL_GAP = 8; // separación visual entre BcfPanel y PropertiesPanel
+// Ya no depende del ancho de PropertiesPanel (PANEL_RIGHT_BASE+PANEL_GAP+
+// panelWidth, como antes de moverse a DockRightWithTabs): los dos paneles
+// nunca se muestran a la vez ahora (tabs separados), así que BcfPanel
+// siempre ocupa el mismo hueco que PropertiesPanel ocupaba a solas - mismo
+// valor que su propio PANEL_RIGHT (properties.css/PropertiesPanel.tsx).
+const PANEL_RIGHT = 16;
 
 interface BcfPanelProps {
   state: BcfManagerState;
@@ -26,16 +30,7 @@ export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate
   const [isPinned, setIsPinned] = useState(false);
   const [width, setWidth] = useState(COLLAPSED_WIDTH);
   const panelRef = useRef<HTMLDivElement>(null);
-  const { panelWidth, setBcfPanelWidth } = usePanelWidth();
-
-  // BcfPanel cuelga a la izquierda de PropertiesPanel (ambos anclados al
-  // borde derecho) - su propio "right" es dinámico, no una constante como
-  // en PropertiesPanel/DockLeft. Se guarda en un ref (no en el cálculo del
-  // handler) para no tener que recrear el listener de mousemove cada vez
-  // que panelWidth cambia mientras el usuario hueverea cerca del borde.
-  const panelRight = PANEL_RIGHT_BASE + panelWidth + PANEL_GAP;
-  const panelRightRef = useRef(panelRight);
-  panelRightRef.current = panelRight;
+  const { setBcfPanelWidth } = usePanelWidth();
 
   const widthRef = useRef(width);
   widthRef.current = width;
@@ -52,9 +47,9 @@ export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate
   }, [width, setBcfPanelWidth]);
 
   // Mismo proximity-hover que PropertiesPanel.tsx (rAF-batched, umbral de
-  // 1px, lee e.clientX de verdad) - la única diferencia real es que acá el
-  // "borde de reposo" del panel (panelRightRef.current) es dinámico, no una
-  // constante, porque depende del ancho actual de PropertiesPanel.
+  // 1px, lee e.clientX de verdad), ahora con el mismo borde de reposo fijo
+  // (PANEL_RIGHT) que PropertiesPanel, no uno dinámico - ver la nota de
+  // PANEL_RIGHT más arriba.
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isPinnedRef.current) return;
@@ -66,16 +61,15 @@ export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate
         const mouseX = pendingMouseXRef.current;
         if (mouseX === null) return;
 
-        const right = panelRightRef.current;
         const distanceFromRight = window.innerWidth - mouseX;
-        const currentLeftEdgeFromRight = right + widthRef.current;
-        const isOverPanel = distanceFromRight >= right && distanceFromRight <= currentLeftEdgeFromRight;
+        const currentLeftEdgeFromRight = PANEL_RIGHT + widthRef.current;
+        const isOverPanel = distanceFromRight >= PANEL_RIGHT && distanceFromRight <= currentLeftEdgeFromRight;
 
         let nextWidth: number;
         if (isOverPanel) {
           nextWidth = EXPANDED_WIDTH;
         } else {
-          const edgeFromRight = right + COLLAPSED_WIDTH;
+          const edgeFromRight = PANEL_RIGHT + COLLAPSED_WIDTH;
           const distanceToEdge = Math.max(0, distanceFromRight - edgeFromRight);
           if (distanceToEdge < PROXIMITY_THRESHOLD) {
             const proximityZone = PROXIMITY_THRESHOLD - distanceToEdge;
@@ -110,7 +104,7 @@ export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate
     <div
       ref={panelRef}
       className={`bcf-panel${isCollapsed ? " collapsed" : ""}`}
-      style={{ "--bcf-panel-width": `${width}px`, right: `${panelRight}px` } as CSSProperties}
+      style={{ "--bcf-panel-width": `${width}px` } as CSSProperties}
     >
       <div className="bcf-header">
         <h3 className="bcf-title">{isCollapsed ? "BCF" : "BCF Issues"}</h3>

@@ -1,24 +1,21 @@
 /* src/ui/BcfPanel/bcf-panel.css */
 @import "../../styles/tokens.css";
 
-/* Mismo "look" flotante que .dock-panel/.properties-panel (blur, radius,
-   sombra, bg translúcido) - valores calcados de esos dos, no inventados,
-   para que los 3 paneles floating de la app se vean consistentes. right se
-   fija inline en BcfPanel.tsx (es dinámico: depende del ancho actual de
-   PropertiesPanel), por eso no aparece acá. */
+/* Ya no flotante ni position:absolute - vive dentro de DockRightWithTabs,
+   en el tab "Incidencias" (ver ui/Dock/DockRightWithTabs.tsx). Ya no
+   necesita su propio "right" (dependía del ancho de PropertiesPanel para
+   no superponerse - ya no aplica: nunca se muestran los dos a la vez,
+   están en tabs separados, ver DockRightWithTabs.tsx). Mismo "look" que
+   .dock-panel/.properties-panel (blur, radius, bg translúcido). */
 .bcf-panel {
-  position: absolute;
-  top: 16px;
-  bottom: 16px;
   width: var(--bcf-panel-width, 56px);
+  height: 100%;
   background: rgba(23, 28, 34, 0.88);
   border: 1px solid var(--line);
   border-radius: 12px;
   backdrop-filter: blur(20px);
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
-  z-index: 100;
   transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
   font-family: var(--sans);

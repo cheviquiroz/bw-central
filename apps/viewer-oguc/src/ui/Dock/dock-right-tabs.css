@@ -1,0 +1,73 @@
+/* src/ui/Dock/dock-right-tabs.css
+   --surface-1/--surface-2/--border no existen en este proyecto (ver
+   src/styles/tokens.css) - se usan los tokens reales ya establecidos por
+   dock.css/properties.css/bcf-panel.css (--dock-bg vía rgba inline,
+   --line, --text-mid/--text-hi) para que este panel se vea consistente
+   con el resto, no una paleta nueva inventada. */
+@import "../../styles/tokens.css";
+
+/* Celda derecha del grid de 3 columnas de .viewport (Layout.css). Ya no
+   flotante: el ancho lo pone --dock-right-width (el ancho del tab activo,
+   ver DockRightWithTabs.tsx), height:100% llena la celda entera. */
+.dock-right-tabs {
+  width: var(--dock-right-width, 56px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(23, 28, 34, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dock-right-tab-bar {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.dock-right-tab {
+  flex: 1;
+  padding: 10px 8px;
+  background: none;
+  border: none;
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.dock-right-tab:hover {
+  color: var(--text-hi);
+}
+
+.dock-right-tab.active {
+  color: var(--text-hi);
+  border-bottom-color: var(--blue);
+}
+
+/* Los paneles hijos (.properties-panel/.bcf-panel) ya traen su propio
+   border-radius/background - acá adentro no hace falta repetirlos, este
+   contenedor solo necesita dejarlos ocupar el espacio restante. */
+.dock-right-tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+}
+
+.dock-right-tab-content > * {
+  flex: 1;
+  border-radius: 0;
+  border: none;
+  backdrop-filter: none;
+}

@@ -40,25 +40,42 @@ body {
   z-index: 100;
 }
 
-/* 🌟 CORRECCIÓN CRÍTICA PARA EL MOTOR 3D:
-   Quitamos flex alignment para que Three.js no colapse a 0px */
+/* Grid real de 3 columnas (izquierda | centro dominante | derecha), no
+   paneles flotantes superpuestos sobre el canvas 3D - ver el commit que
+   resuelve el conflicto DockLeft/PropertiesPanel/BcfPanel por espacio.
+   Las columnas laterales son "auto": no fijamos su ancho acá, cada una se
+   ajusta al ancho que YA aplica su propio contenido (DockPanel/
+   DockRightWithTabs siguen poniendo su ancho dinámico vía style inline,
+   igual que antes de este cambio) - así el grid nunca necesita conocer
+   ese ancho por adelantado. La columna central "1fr" es la única que
+   puede crecer/achicarse: eso es lo que garantiza que el viewport 3D
+   nunca quede tapado, sin importar cuánto midan los paneles laterales.
+   gap:16px reemplaza los antiguos "top/left/right/bottom:16px" de cada
+   panel individual (ver dock.css/properties.css/bcf-panel.css) - ahora es
+   una sola separación consistente entre las 3 columnas, no tres cálculos
+   de inset repetidos. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
-  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  padding: 16px;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-/* Forzamos a que el canvas inyectado se estire completamente - excluye
-   .dock-panel, .properties-panel y .bcf-panel, hermanos directos del
-   canvas dentro de .viewport que necesitan su propio ancho controlado por
-   proximity-hover (DockLeft/PropertiesPanel/BcfPanel respectivamente) - sin
-   esta exclusión el !important de acá pisaría su width/height dinámico. */
-.viewport > div:not(.dock-panel):not(.properties-panel):not(.bcf-panel) {
-  width: 100% !important;
-  height: 100% !important;
+/* El contenedor del visor 3D (Viewport.tsx, className="viewport-container")
+   es un hijo de grid normal ahora - por defecto los hijos de grid se
+   estiran para llenar su celda (align-items/justify-items:stretch, el
+   default), así que alcanza con min-width:0 para que el propio Three.js
+   pueda encogerse por debajo de su tamaño de contenido intrínseco si la
+   ventana se achica (sin esto, un elemento de grid nunca se encoge más
+   allá de su min-content por default, y "1fr" no alcanza para forzarlo). */
+.viewport > .viewport-container {
+  min-width: 0;
+  min-height: 0;
 }
 
 /* Estilos visuales reales de .status-bar viven en

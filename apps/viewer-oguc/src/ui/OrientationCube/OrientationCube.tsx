@@ -74,11 +74,17 @@ interface OrientationCubeProps {
 export function OrientationCube({ controls }: OrientationCubeProps) {
   const [angles, setAngles] = useState({ theta: 0, phi: PI / 2 });
   const animationFrameRef = useRef<number | null>(null);
-  // BcfPanel ahora también cuelga del borde derecho, apilado a la
-  // izquierda de PropertiesPanel (ver BcfPanel.tsx) - el cubo necesita
-  // correrse más allá de AMBOS anchos, no solo el de Properties.
+  // PropertiesPanel y BcfPanel ahora viven en DockRightWithTabs, un único
+  // slot con tabs (ya no dos paneles apilados uno al lado del otro - ver
+  // el commit que resuelve el conflicto de espacio entre ambos) - así que
+  // solo UNO de panelWidth/bcfPanelWidth refleja el ancho realmente visible
+  // en cada momento; el otro queda "congelado" en lo que fuera su último
+  // valor mientras su tab no está montado (deja de publicar cuando se
+  // desmonta). Math.max, no suma: sumarlos (como antes de este cambio)
+  // duplicaría el hueco reservado, corriendo el cubo más a la izquierda de
+  // lo necesario.
   const { panelWidth, bcfPanelWidth } = usePanelWidth();
-  const cubeRightOffset = CUBE_PANEL_GAP + panelWidth + bcfPanelWidth + 16;
+  const cubeRightOffset = CUBE_PANEL_GAP + Math.max(panelWidth, bcfPanelWidth) + 16;
 
   // Sincronización real con la cámara: se lee azimuthAngle/polarAngle
   // directo de camera-controls (ya expone esos getters) en su propio

@@ -2,15 +2,14 @@
 import React, { useEffect, useState } from "react";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
-import PropertiesPanel from "../PropertiesPanel/PropertiesPanel";
 import { DockLeft } from "../../ui/Dock/DockLeft";
+import { DockRightWithTabs } from "../../ui/Dock/DockRightWithTabs";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { ViewerActionsAdapter } from "../../engine/adapters/ViewerActionsAdapter";
 import { SearchManager } from "../../viewer/SearchManager";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
 import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
-import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
 import { useApp } from "../../ui/AppContext";
 import { PanelWidthProvider } from "../../ui/PanelWidthContext";
 import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
@@ -207,14 +206,20 @@ export default function Layout() {
         btnAxesRef={btnAxesRef}
       />
 
-      {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO Y PROPERTIES PANEL FLOTANTES */}
-      {/* Respetamos la clase 'viewport' idéntica a tu CSS original para que no pierda su posición */}
+      {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO CON TABS */}
+      {/* Grid real de 3 columnas (izquierda | centro dominante | derecha) -
+          ver .viewport en Layout.css. Sin estilos inline pisando la clase:
+          antes había un style={{display:"block", ...}} inline acá que
+          hubiera ganado por encima de cualquier display:grid puesto en la
+          clase (los estilos inline siempre ganan sobre CSS de archivo) -
+          removido a propósito, el display real ahora vive solo en la clase. */}
       {/* PanelWidthProvider envuelve solo el main: OrientationCube (dentro de
-          Viewport) y PropertiesPanel necesitan sincronizar el ancho del panel
-          para que el cubo no quede tapado cuando el panel expande - ver
+          Viewport) y DockRightWithTabs necesitan sincronizar el ancho del
+          panel activo para que el cubo no quede tapado cuando expande - ver
           src/ui/PanelWidthContext.tsx. StatusBar no lo necesita. */}
       <PanelWidthProvider>
-        <main ref={viewportRef} className="viewport" style={{ position: "relative", width: "100%", height: "100%", padding: 0, display: "block" }}>
+        <main ref={viewportRef} className="viewport">
+          <DockLeft />
           <Viewport
             onViewerReady={handleViewerReady}
             isSectionBoxActive={isSectionBoxActive}
@@ -223,13 +228,11 @@ export default function Layout() {
             bcfActiveTopic={bcfState.activeTopic}
             bcfSyncRequest={bcfSyncRequest}
           />
-          <DockLeft />
-          <PropertiesPanel />
-          <BcfPanel
-            state={bcfState}
-            onFilterChange={handleBcfFilterChange}
-            onTopicSelect={handleBcfTopicSelect}
-            onTopicActivate={handleBcfTopicActivate}
+          <DockRightWithTabs
+            bcfState={bcfState}
+            onBcfFilterChange={handleBcfFilterChange}
+            onBcfTopicSelect={handleBcfTopicSelect}
+            onBcfTopicActivate={handleBcfTopicActivate}
           />
         </main>
       </PanelWidthProvider>

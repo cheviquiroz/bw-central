@@ -109,8 +109,29 @@ export default function Viewport({
       console.error('initIfcViewer failed:', err);
     });
 
+    // ResizeObserver sobre este mismo contenedor: hasta el commit que
+    // resuelve el conflicto DockLeft/PropertiesPanel/BcfPanel por espacio,
+    // este contenedor SIEMPRE medía 100% del <main> (los paneles flotaban
+    // ENCIMA del canvas, sin afectar su caja real) - el único resize que
+    // hacía falta era el de 150ms más arriba, una vez, al iniciar. Ahora
+    // que DockLeft/DockRightWithTabs son columnas reales de un grid (ver
+    // Layout.css), este contenedor SÍ cambia de tamaño de verdad cada vez
+    // que un panel lateral se expande/colapsa por proximity-hover, se fija
+    // con pin, o se cambia de tab - sin este observer, el renderer de
+    // Three.js queda con el tamaño viejo (confirmado visualmente: el
+    // modelo desaparecía del canvas después de cambiar de tab, porque el
+    // renderer seguía dibujando al ancho de antes del resize del grid).
+    let resizeObserver: ResizeObserver | null = null;
+    if (containerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        viewerHandlesRef.current?.world.renderer?.resize(undefined);
+      });
+      resizeObserver.observe(containerRef.current);
+    }
+
     return () => {
       isMounted = false;
+      resizeObserver?.disconnect();
       entitySelector?.dispose();
       measurementManagerRef.current?.dispose();
       measurementManagerRef.current = null;
