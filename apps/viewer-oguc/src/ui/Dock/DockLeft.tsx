@@ -24,9 +24,11 @@ import "../../styles/dock.css";
 interface DockLeftProps {
   hiddenByModel: Record<string, Set<number>>;
   onToggleElementVisibility: (modelId: string, localId: number) => void;
+  /** panel-tree now requires a model (see registry/modules.ts) - the toolbar toggle disables on its own, but zones.left defaults to true regardless, so this dock needs its own gate or it would render its empty state on top of FileUploadModal. */
+  hasModel: boolean;
 }
 
-export function DockLeft({ hiddenByModel, onToggleElementVisibility }: DockLeftProps) {
+export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }: DockLeftProps) {
   const app = useApp();
   const { zones, setZoneVisible } = useLayoutState();
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,7 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility }: DockLeftP
     }
   };
 
-  if (!zones.left) return null;
+  if (!zones.left || !hasModel) return null;
 
   return (
     <DockPanel>

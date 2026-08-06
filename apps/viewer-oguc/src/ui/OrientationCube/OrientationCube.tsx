@@ -66,9 +66,11 @@ function shortestTargetAngle(current: number, target: number): number {
 
 interface OrientationCubeProps {
   controls: CameraControls;
+  /** Sin modelos cargados no hay geometría que orientar - el cubo no tiene razón de existir todavía. */
+  hasModels: boolean;
 }
 
-export function OrientationCube({ controls }: OrientationCubeProps) {
+export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
   const [angles, setAngles] = useState({ theta: 0, phi: PI / 2 });
   const animationFrameRef = useRef<number | null>(null);
 
@@ -132,6 +134,12 @@ export function OrientationCube({ controls }: OrientationCubeProps) {
 
     animationFrameRef.current = requestAnimationFrame(animate);
   };
+
+  // Después de todos los hooks (reglas de Hooks: no pueden ser
+  // condicionales) - controls sigue existiendo aunque no haya modelos
+  // (es de la cámara, no del modelo), así que los efectos de arriba no
+  // necesitan este guard, solo el render final.
+  if (!hasModels) return null;
 
   const thetaDeg = (angles.theta * 180) / PI;
   const phiDeg = (angles.phi * 180) / PI;

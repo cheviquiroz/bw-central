@@ -312,7 +312,7 @@ function LayoutInner() {
           clase (los estilos inline siempre ganan sobre CSS de archivo) -
           removido a propósito, el display real ahora vive solo en la clase. */}
       <main ref={viewportRef} className="viewport">
-        <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
+        <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} hasModel={hasModels} />
         <Viewport
           onViewerReady={handleViewerReady}
           isSectionBoxActive={isSectionBoxActive}
@@ -320,6 +320,7 @@ function LayoutInner() {
           bcfTopics={bcfState.topics}
           bcfActiveTopic={bcfState.activeTopic}
           bcfSyncRequest={bcfSyncRequest}
+          hasModels={hasModels}
         />
         <DockRight />
         <DockBottom

@@ -89,8 +89,21 @@ body {
   overflow: hidden;
 }
 
-.viewport > .dock-bottom {
-  grid-column: 1 / -1;
+/* Pines explícitos de columna/fila para los 4 hijos directos de .viewport
+   (DockLeft/.dock-panel, Viewport/.viewport-container, DockRight/
+   .dock-right, DockBottom/.dock-bottom). SIN esto, un grid ubica a sus
+   hijos por auto-placement en orden de aparición en el DOM - bug real
+   encontrado al verificar este ítem: al desmontar DockLeft (zones.left
+   false), .viewport-container pasaba a ocupar la columna 1 (pensada para
+   el dock izquierdo) y .dock-right pasaba a ocupar la columna 2 (la
+   "1fr" central), dejando la columna 3 vacía y ~288px de gutter negro de
+   más flotando entre el panel derecho y el borde de la ventana - un
+   defecto visible, no solo el corrimiento del cubo que lo hizo evidente.
+   Estos pines aseguran que cada elemento vive SIEMPRE en su columna,
+   monte lo que monte a su lado. */
+.viewport > .dock-panel {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 /* El contenedor del visor 3D (Viewport.tsx, className="viewport-container")
@@ -101,8 +114,20 @@ body {
    ventana se achica (sin esto, un elemento de grid nunca se encoge más
    allá de su min-content por default, y "1fr" no alcanza para forzarlo). */
 .viewport > .viewport-container {
+  grid-column: 2;
+  grid-row: 1;
   min-width: 0;
   min-height: 0;
+}
+
+.viewport > .dock-right {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.viewport > .dock-bottom {
+  grid-column: 1 / -1;
+  grid-row: 2;
 }
 
 /* Estilos visuales reales de .status-bar viven en

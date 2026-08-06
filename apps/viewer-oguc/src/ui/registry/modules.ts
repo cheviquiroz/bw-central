@@ -217,20 +217,23 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   // ModuleIntent comment above for why this is its own axis.
   //
   // requiresModel is a per-module judgment call, not a blanket "workspace
-  // = free" rule: panel-tree stays false because DockLeft's empty state
-  // ("Sin modelos cargados todavía") is itself useful to see before
-  // anything is loaded - it's where the user goes TO load a model via its
-  // own "+" button. panel-data/panel-issues flip to true because an empty
-  // Properties tab or an empty issue table with nothing loaded has no
-  // content to show and no action to take from there - unlike the tree,
-  // neither hosts the upload entry point.
+  // = free" rule. panel-tree used to be the one exception (its empty state
+  // hosted the upload entry point) but that reasoning didn't survive
+  // contact with FileUploadModal: that full-screen overlay is the actual
+  // upload flow, and it renders BELOW the dock's z-index (see
+  // file-upload-modal.css) - so DockLeft's "Sin modelos cargados todavía"
+  // state was rendering visibly on top of the upload modal it was meant
+  // to justify, not hosting an alternate way in. All three workspace
+  // panels now require a model for the same reason: an empty panel with
+  // nothing to show and no unique action to offer has no purpose being
+  // open yet.
   {
     id: "panel-tree",
     label: "Árbol del modelo",
     intent: "workspace",
     kind: "toggle",
     icon: IconPanelTree,
-    requiresModel: false,
+    requiresModel: true,
     tier: "free",
     shortcut: "Ctrl+1",
   },

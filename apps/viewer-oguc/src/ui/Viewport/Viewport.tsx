@@ -29,6 +29,8 @@ interface ViewportProps {
   // Comando de un solo uso (nonce, no el topic solo) - ver el comentario en
   // Layout.tsx sobre por qué no alcanza con comparar el topic activo.
   bcfSyncRequest?: { topic: BcfTopic; nonce: number } | null;
+  /** OrientationCube no tiene razón de existir sin geometría que orientar. */
+  hasModels?: boolean;
 }
 
 type CameraControls = NonNullable<IfcViewerHandles["world"]["camera"]["controls"]>;
@@ -40,6 +42,7 @@ export default function Viewport({
   bcfTopics,
   bcfActiveTopic,
   bcfSyncRequest,
+  hasModels,
 }: ViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const app = useApp();
@@ -334,7 +337,7 @@ export default function Viewport({
         overflow: "hidden"
       }}
     >
-      {cameraControls && <OrientationCube controls={cameraControls} />}
+      {cameraControls && <OrientationCube controls={cameraControls} hasModels={Boolean(hasModels)} />}
 
       {isMeasuring && (
         <MeasurementToolbar
