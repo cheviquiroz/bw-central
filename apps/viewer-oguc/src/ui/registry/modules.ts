@@ -39,8 +39,18 @@ export type ModuleZone = "left" | "right" | "bottom";
  * needed it). Kept separate from `zone`, which is specifically about
  * which SIDE a `kind:'panel'` module docks to - `surface` is about which
  * PARENT COMPONENT queries the registry for this entry at all.
+ *
+ * Deliberately not a closed union of just the two surfaces that exist
+ * today: paid modules and /revision will add their own render targets
+ * (a review-results panel, a bottom drawer, etc.), and a closed union
+ * would mean editing this central file for every new consumer instead of
+ * the consumer just declaring its own surface name. The `(string & {})`
+ * member keeps autocomplete/typo-catching for the known values below
+ * while still accepting any other string a future component picks - see
+ * https://www.totaltypescript.com/the-string-and-boolean-trick for why
+ * this trick doesn't collapse the union down to plain `string`.
  */
-export type ModuleSurface = "toolbar" | "bcf-panel";
+export type ModuleSurface = "toolbar" | "bcf-panel" | (string & {});
 
 export interface ModuleDefinition {
   id: string;
