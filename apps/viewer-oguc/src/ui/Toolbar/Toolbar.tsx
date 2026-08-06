@@ -6,8 +6,6 @@ import { ToolbarButton } from "./ToolbarButton";
 import { ToolbarSeparator } from "./ToolbarSeparator";
 import { ProjectPill } from "./ProjectPill";
 import {
-  IconOpenIfc,
-  IconSaveView,
   IconSelect,
   IconMeasure,
   IconIsolate,
@@ -18,6 +16,13 @@ import {
   IconBcfImport,
   IconBcfExport,
 } from "../icons/toolbar";
+
+// IconOpenIfc/IconSaveView eran botones sin onClick (ver el resumen de la
+// Auditoría UI/UX, Paso 1) - se sacaron del render en vez de mostrarse
+// deshabilitados: un botón sin función no le dice al usuario si es "por
+// cablear" o "roto", y una lista limpia de botones reales es más clara
+// que una con relleno. Se reincorporan (con su categoría VIEW/INTERACT/
+// BCF real) el día que tengan un onClick de verdad detrás.
 
 interface ToolbarProps {
   searchBar: ReactNode;
@@ -56,13 +61,21 @@ export function Toolbar({
     <header className="toolbar">
       <Logo />
 
+      {/* VIEW: cámara/orientación - encuadrar y mostrar el origen. */}
       <div className="toolbar-group">
-        <ToolbarButton icon={<IconOpenIfc />} label="Abrir IFC" />
-        <ToolbarButton icon={<IconSaveView />} label="Guardar vista" />
+        <ToolbarButton icon={<IconFitAll />} label="Encuadrar todo (Z)" onClick={onFitAllClick} />
+        <ToolbarButton
+          id="btn-axes"
+          icon={<IconXYZ />}
+          label="Mostrar origen XYZ (0,0,0)"
+          onClick={onAxesClick}
+          isActive={isAxesActive}
+        />
       </div>
 
       <ToolbarSeparator />
 
+      {/* INTERACT: selección, medición y geometría de corte/aislamiento. */}
       <div className="toolbar-group">
         {/* isActive fijo en true, calcando el mockup - no hay un "modo
             selección" real que activar/desactivar en esta app (la
@@ -91,18 +104,11 @@ export function Toolbar({
           onClick={onHidePlaneClick}
           isActive={isHidePlaneActive}
         />
-        <ToolbarButton icon={<IconFitAll />} label="Encuadrar todo (Z)" onClick={onFitAllClick} />
-        <ToolbarButton
-          id="btn-axes"
-          icon={<IconXYZ />}
-          label="Mostrar origen XYZ (0,0,0)"
-          onClick={onAxesClick}
-          isActive={isAxesActive}
-        />
       </div>
 
       <ToolbarSeparator />
 
+      {/* BCF: coordinación de incidencias. */}
       <div className="toolbar-group">
         <ToolbarButton icon={<IconBcfImport />} label="Importar BCF" onClick={onImportBcf} />
         <ToolbarButton icon={<IconBcfExport />} label="Exportar BCF" onClick={onExportBcf} />

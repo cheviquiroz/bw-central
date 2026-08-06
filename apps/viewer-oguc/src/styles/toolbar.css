@@ -30,7 +30,10 @@ body {
   padding: 0 14px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  /* Separación entre grupos de categoría (VIEW | INTERACT | BCF), no entre
+     botones dentro de un mismo grupo - eso lo da .toolbar-group más abajo.
+     Ver el commit que reorganiza la Toolbar en categorías reales. */
+  gap: 12px;
   background: var(--toolbar-bg);
   border-bottom: 1px solid var(--toolbar-line);
   color: var(--text-primary);
@@ -67,7 +70,11 @@ body {
 .toolbar-group {
   display: flex;
   align-items: center;
-  gap: 2px;
+  /* Botones dentro de una misma categoría van más juntos entre sí que la
+     separación entre categorías (.toolbar's gap:12px + un
+     ToolbarSeparator) - así el agrupamiento visual se lee sin necesitar
+     leer los labels. */
+  gap: 8px;
   flex-shrink: 0;
 }
 
