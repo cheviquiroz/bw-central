@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { readIfcFile, type IfcHeadlessDocument } from "@bw-central/ifc-headless";
-import { runPreCheck, type Finding, type FindingState, type PreCheckResult } from "@bw-central/oguc-core";
+import { runPreCheck, type Finding, type PreCheckResult } from "@bw-central/oguc-core";
 import "../components/Layout/Layout.css";
 import Viewport from "../ui/Viewport/Viewport";
 import { DockLeft } from "../ui/Dock/DockLeft";
@@ -34,7 +34,7 @@ import { Toolbar } from "../ui/Toolbar/Toolbar";
 import { useApp } from "../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../ui/LayoutStateContext";
 import { useModelToolActions } from "../components/Layout/useModelToolActions";
-import { WEB_IFC_WASM_PATH } from "../core/IfcBootstrap";
+import { WEB_IFC_WASM_PATH, fitCameraToAllLoadedModels } from "../core/IfcBootstrap";
 import { getModelBytes } from "../core/ModelBytesRegistry";
 import { PreCheckGate } from "./revision/PreCheckGate";
 import { FindingsDock } from "./revision/FindingsDock";
@@ -146,19 +146,34 @@ function RevisionLayoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preCheckPassed]);
 
+  // Part 4's explicit fallback chain: prefer the live element's real
+  // bounding box (via searchManager.selectAndFocus -> model.getMergedBox);
+  // if the model or the element can't be found (corrupted data, a
+  // building-level finding with no elementId, or - the actual reason
+  // this currently fires on /revision, see this task's own report - the
+  // known gap where 3D geometry doesn't yet survive "/" -> /revision
+  // navigation), log a warning and fall back to framing the whole model
+  // instead. Never throws, never leaves the camera in a broken state,
+  // the finding stays selectable either way.
   const handleSelectFinding = (finding: Finding) => {
-    if (finding.elementId === 0 || !searchManager) return;
-    searchManager.selectAndFocus(finding.modelId, finding.elementId).catch((error) => {
+    if (finding.elementId === 0 || !searchManager) {
+      fitCameraToAllLoadedModels();
+      return;
+    }
+
+    const onNotFound = () => {
+      console.warn(`Element ${finding.elementId} not found in model ${finding.modelId} - falling back to fit-all.`);
+      fitCameraToAllLoadedModels();
+    };
+
+    searchManager.selectAndFocus(finding.modelId, finding.elementId, onNotFound).catch((error) => {
       console.error("❌ Error al enfocar el hallazgo en el 3D:", error);
+      fitCameraToAllLoadedModels();
     });
   };
 
-  const handleChangeFindingState = (findingId: string, state: FindingState) => {
-    setFindings((prev) => prev.map((f) => (f.id === findingId ? { ...f, state } : f)));
-  };
-
-  const handleDeleteFinding = (findingId: string) => {
-    setFindings((prev) => prev.filter((f) => f.id !== findingId));
+  const handleUpdateFinding = (findingId: string, patch: Partial<Finding>) => {
+    setFindings((prev) => prev.map((f) => (f.id === findingId ? { ...f, ...patch } : f)));
   };
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
@@ -243,8 +258,7 @@ function RevisionLayoutInner() {
         <FindingsDock
           findings={findings}
           onSelectFinding={handleSelectFinding}
-          onChangeState={handleChangeFindingState}
-          onDeleteFinding={handleDeleteFinding}
+          onUpdateFinding={handleUpdateFinding}
         />
 
         {!preCheckPassed && (

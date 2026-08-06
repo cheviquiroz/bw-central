@@ -36,6 +36,7 @@ export interface Finding {
   /** Populated only when the source data already had it (e.g. ifc-headless's IfcStair.boundingBox) - camera framing does NOT depend on this being set; it re-derives the box live from the loaded 3D model instead (see FindingsTable's onSelectFinding wiring), since ifc-headless does not compute a boundingBox for IfcSpace at all. */
   boundingBox?: FindingBoundingBox;
   state: FindingState;
-  timestamp?: number;
+  /** Date.now() when generated - required (not optional): every finding is created fresh by generateFindings.ts, there's no code path that produces one without a timestamp. */
+  timestamp: number;
   userNote?: string;
 }

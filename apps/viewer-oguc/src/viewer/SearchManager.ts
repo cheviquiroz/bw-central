@@ -311,14 +311,27 @@ export class SearchManager {
     highlighter.clear("select");
   }
 
-  async selectAndFocus(modelId: string, localId: number): Promise<void> {
+  // onNotFound: optional, additive - existing callers (the search bar on
+  // "/") pass nothing and keep their original silent-no-op behavior on a
+  // miss. /revision's findings table (RevisionLayout.tsx) passes a
+  // callback so it can log a warning and fall back to fit-all instead of
+  // just doing nothing - a search-bar miss and a findings-table miss
+  // warrant different UX, so the fallback is caller-supplied, not baked
+  // in here.
+  async selectAndFocus(modelId: string, localId: number, onNotFound?: () => void): Promise<void> {
     this.app.requestSelectByLocalId(modelId, localId);
 
     const model = this.viewer.fragments.list.get(modelId) as any;
-    if (!model) return;
+    if (!model) {
+      onNotFound?.();
+      return;
+    }
 
     const box = await model.getMergedBox([localId]);
-    if (!box || box.isEmpty()) return;
+    if (!box || box.isEmpty()) {
+      onNotFound?.();
+      return;
+    }
 
     (this.viewer.world.camera as any).controls.fitToBox(box, true, {
       paddingLeft: 1, paddingRight: 1, paddingTop: 1, paddingBottom: 1,

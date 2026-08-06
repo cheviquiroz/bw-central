@@ -22,16 +22,17 @@ function IconCamera() {
   );
 }
 
-function IconTrash() {
+function IconNote() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m-8 0 1 13a1 1 0 001 1h6a1 1 0 001-1l1-13" />
+      <path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
+      <path d="M8 10h8M8 14h5" />
     </svg>
   );
 }
 
-type SortKey = "rule" | "severity" | "state";
-type FilterKey = "all" | "pending" | "errors";
+type SortKey = "severity" | "rule" | "state" | "title";
+type FilterKey = "all" | "pending" | "errors" | "warnings";
 
 const SEVERITY_ORDER: Record<FindingSeverity, number> = { error: 0, warning: 1, info: 2 };
 const SEVERITY_COLOR: Record<FindingSeverity, string> = { error: "#ef4444", warning: "var(--amber)", info: "var(--text-low)" };
@@ -39,29 +40,49 @@ const SEVERITY_LABEL: Record<FindingSeverity, string> = { error: "Error", warnin
 const RULE_LABEL: Record<Finding["ruleId"], string> = { occupancy: "Art. 4.2.4 Ocupación", stairs: "Art. 4.2.10 Escaleras" };
 const STATE_LABEL: Record<FindingState, string> = { pending: "Pendiente", accepted: "Aceptado", rejected: "Rechazado" };
 
+const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "Todas" },
+  { key: "pending", label: "Pendientes" },
+  { key: "errors", label: "Errores" },
+  { key: "warnings", label: "Advertencias" },
+];
+
 interface FindingsTableProps {
   findings: Finding[];
   onSelectFinding: (finding: Finding) => void;
-  onChangeState: (findingId: string, state: FindingState) => void;
-  onDeleteFinding: (findingId: string) => void;
+  onUpdateFinding: (findingId: string, patch: Partial<Finding>) => void;
 }
 
-export function FindingsTable({ findings, onSelectFinding, onChangeState, onDeleteFinding }: FindingsTableProps) {
+export function FindingsTable({ findings, onSelectFinding, onUpdateFinding }: FindingsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("severity");
   const [filter, setFilter] = useState<FilterKey>("all");
+  const [noteEditingId, setNoteEditingId] = useState<string | null>(null);
+
+  const filterCounts: Record<FilterKey, number> = {
+    all: findings.length,
+    pending: findings.filter((f) => f.state === "pending").length,
+    errors: findings.filter((f) => f.severity === "error").length,
+    warnings: findings.filter((f) => f.severity === "warning").length,
+  };
 
   const visible = useMemo(() => {
     let list = findings;
     if (filter === "pending") list = list.filter((f) => f.state === "pending");
     else if (filter === "errors") list = list.filter((f) => f.severity === "error");
+    else if (filter === "warnings") list = list.filter((f) => f.severity === "warning");
 
     const sorted = [...list];
     if (sortKey === "rule") sorted.sort((a, b) => a.ruleId.localeCompare(b.ruleId));
     else if (sortKey === "severity") sorted.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
     else if (sortKey === "state") sorted.sort((a, b) => a.state.localeCompare(b.state));
+    else if (sortKey === "title") sorted.sort((a, b) => a.title.localeCompare(b.title));
     return sorted;
   }, [findings, filter, sortKey]);
 
+  // Rendered even with 0 findings (Part 7's own acceptance criterion) -
+  // the toolbar/filter chips still need a place to live conceptually,
+  // but with nothing to filter/sort, showing just the empty message is
+  // clearer than an interactive toolbar with every count at zero.
   if (findings.length === 0) {
     return <div className="findings-empty">Sin hallazgos - las reglas de cumplimiento aún no se han ejecutado, o el modelo no generó ninguno.</div>;
   }
@@ -69,15 +90,22 @@ export function FindingsTable({ findings, onSelectFinding, onChangeState, onDele
   return (
     <div className="findings-table-wrap">
       <div className="findings-toolbar">
-        <select className="findings-select" value={filter} onChange={(e) => setFilter(e.target.value as FilterKey)}>
-          <option value="all">Todas ({findings.length})</option>
-          <option value="pending">Pendientes ({findings.filter((f) => f.state === "pending").length})</option>
-          <option value="errors">Errores ({findings.filter((f) => f.severity === "error").length})</option>
-        </select>
+        <div className="findings-filter-chips">
+          {FILTER_CHIPS.map((chip) => (
+            <button
+              key={chip.key}
+              className={`findings-filter-chip${filter === chip.key ? " active" : ""}`}
+              onClick={() => setFilter(chip.key)}
+            >
+              {chip.label} <span className="findings-filter-count">{filterCounts[chip.key]}</span>
+            </button>
+          ))}
+        </div>
         <select className="findings-select" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
           <option value="severity">Ordenar por severidad</option>
           <option value="rule">Ordenar por regla</option>
           <option value="state">Ordenar por estado</option>
+          <option value="title">Ordenar por título</option>
         </select>
       </div>
       <table className="findings-table">
@@ -96,9 +124,14 @@ export function FindingsTable({ findings, onSelectFinding, onChangeState, onDele
             <FindingRow
               key={finding.id}
               finding={finding}
+              isEditingNote={noteEditingId === finding.id}
               onSelect={() => onSelectFinding(finding)}
-              onChangeState={(state) => onChangeState(finding.id, state)}
-              onDelete={() => onDeleteFinding(finding.id)}
+              onChangeState={(state) => onUpdateFinding(finding.id, { state })}
+              onToggleNoteEditor={() => setNoteEditingId((prev) => (prev === finding.id ? null : finding.id))}
+              onSaveNote={(userNote) => {
+                onUpdateFinding(finding.id, { userNote });
+                setNoteEditingId(null);
+              }}
             />
           ))}
         </tbody>
@@ -109,54 +142,82 @@ export function FindingsTable({ findings, onSelectFinding, onChangeState, onDele
 
 function FindingRow({
   finding,
+  isEditingNote,
   onSelect,
   onChangeState,
-  onDelete,
+  onToggleNoteEditor,
+  onSaveNote,
 }: {
   finding: Finding;
+  isEditingNote: boolean;
   onSelect: () => void;
   onChangeState: (state: FindingState) => void;
-  onDelete: () => void;
+  onToggleNoteEditor: () => void;
+  onSaveNote: (userNote: string) => void;
 }) {
   const canJumpToElement = finding.elementId !== 0;
+  const [draftNote, setDraftNote] = useState(finding.userNote ?? "");
 
   return (
-    <tr className={`findings-row state-${finding.state}`} onClick={canJumpToElement ? onSelect : undefined}>
-      <td className="findings-col-icon">
-        <span className="findings-severity-dot" style={{ background: SEVERITY_COLOR[finding.severity] }} title={SEVERITY_LABEL[finding.severity]} />
-      </td>
-      <td className="findings-col-rule">{RULE_LABEL[finding.ruleId]}</td>
-      <td className="findings-col-title">
-        <div className="findings-title-text">{finding.title}</div>
-        <div className="findings-description-text">{finding.description}</div>
-      </td>
-      <td className="findings-col-element">
-        {canJumpToElement ? (
-          <>
-            {finding.elementName ?? "Sin nombre"} <span className="findings-element-id">#{finding.elementId}</span>
-            <span className="findings-camera-hint" title="Ver en 3D"><IconCamera /></span>
-          </>
-        ) : (
-          <span className="findings-element-none">Edificio completo</span>
-        )}
-      </td>
-      <td className="findings-col-state" onClick={(e) => e.stopPropagation()}>
-        <select
-          className={`findings-state-select state-${finding.state}`}
-          value={finding.state}
-          onChange={(e) => onChangeState(e.target.value as FindingState)}
-        >
-          <option value="pending">{STATE_LABEL.pending}</option>
-          <option value="accepted">{STATE_LABEL.accepted}</option>
-          <option value="rejected">{STATE_LABEL.rejected}</option>
-        </select>
-      </td>
-      <td className="findings-col-actions" onClick={(e) => e.stopPropagation()}>
-        {canJumpToElement && (
-          <button className="findings-action-btn" onClick={onSelect} title="Ver en 3D"><IconCamera /></button>
-        )}
-        <button className="findings-action-btn findings-delete-btn" onClick={onDelete} title="Eliminar hallazgo"><IconTrash /></button>
-      </td>
-    </tr>
+    <>
+      <tr className={`findings-row state-${finding.state}`} onClick={onSelect}>
+        <td className="findings-col-icon">
+          <span className="findings-severity-dot" style={{ background: SEVERITY_COLOR[finding.severity] }} title={SEVERITY_LABEL[finding.severity]} />
+        </td>
+        <td className="findings-col-rule">{RULE_LABEL[finding.ruleId]}</td>
+        <td className="findings-col-title">
+          <div className="findings-title-text">{finding.title}</div>
+          <div className="findings-description-text">{finding.description}</div>
+          {finding.userNote && (
+            <div className="findings-note-text">
+              <IconNote /> {finding.userNote}
+            </div>
+          )}
+        </td>
+        <td className="findings-col-element">
+          {canJumpToElement ? (
+            <>
+              {finding.elementName ?? "Sin nombre"} <span className="findings-element-id">#{finding.elementId}</span>
+              <span className="findings-camera-hint" title="Ver en 3D"><IconCamera /></span>
+            </>
+          ) : (
+            <span className="findings-element-none">Edificio completo</span>
+          )}
+        </td>
+        <td className="findings-col-state" onClick={(e) => e.stopPropagation()}>
+          <select
+            className={`findings-state-select state-${finding.state}`}
+            value={finding.state}
+            onChange={(e) => onChangeState(e.target.value as FindingState)}
+          >
+            <option value="pending">{STATE_LABEL.pending}</option>
+            <option value="accepted">{STATE_LABEL.accepted}</option>
+            <option value="rejected">{STATE_LABEL.rejected}</option>
+          </select>
+        </td>
+        <td className="findings-col-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="findings-action-btn" onClick={onSelect} title="Ver detalles en 3D"><IconCamera /></button>
+          <button className="findings-action-btn" onClick={onToggleNoteEditor} title="Agregar/editar nota">
+            <IconNote />
+          </button>
+        </td>
+      </tr>
+      {isEditingNote && (
+        <tr className="findings-note-row" onClick={(e) => e.stopPropagation()}>
+          <td colSpan={6}>
+            <div className="findings-note-editor">
+              <textarea
+                className="findings-note-input"
+                value={draftNote}
+                onChange={(e) => setDraftNote(e.target.value)}
+                placeholder="Nota sobre este hallazgo..."
+                rows={2}
+              />
+              <button className="findings-note-save" onClick={() => onSaveNote(draftNote)}>Guardar</button>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

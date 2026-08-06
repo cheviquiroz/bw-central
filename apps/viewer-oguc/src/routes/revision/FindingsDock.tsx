@@ -11,17 +11,16 @@ import { DockBottomShell } from "../../ui/Dock/DockBottomShell";
 import { IconLock } from "../../ui/icons/dock";
 import { Tooltip } from "../../ui/Tooltip/Tooltip";
 import { FindingsTable } from "./FindingsTable";
-import type { Finding, FindingState } from "@bw-central/oguc-core";
+import type { Finding } from "@bw-central/oguc-core";
 import "./findings-dock.css";
 
 interface FindingsDockProps {
   findings: Finding[];
   onSelectFinding: (finding: Finding) => void;
-  onChangeState: (findingId: string, state: FindingState) => void;
-  onDeleteFinding: (findingId: string) => void;
+  onUpdateFinding: (findingId: string, patch: Partial<Finding>) => void;
 }
 
-export function FindingsDock({ findings, onSelectFinding, onChangeState, onDeleteFinding }: FindingsDockProps) {
+export function FindingsDock({ findings, onSelectFinding, onUpdateFinding }: FindingsDockProps) {
   const { setZoneVisible } = useLayoutState();
 
   return (
@@ -36,12 +35,7 @@ export function FindingsDock({ findings, onSelectFinding, onChangeState, onDelet
           </Tooltip>
         </div>
         <div className="findings-dock-content">
-          <FindingsTable
-            findings={findings}
-            onSelectFinding={onSelectFinding}
-            onChangeState={onChangeState}
-            onDeleteFinding={onDeleteFinding}
-          />
+          <FindingsTable findings={findings} onSelectFinding={onSelectFinding} onUpdateFinding={onUpdateFinding} />
         </div>
       </div>
     </DockBottomShell>
