@@ -215,6 +215,15 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   // acting on the model. Rendered by Toolbar.tsx as a separate,
   // right-aligned group (after SearchBar, before ProjectPill) - see the
   // ModuleIntent comment above for why this is its own axis.
+  //
+  // requiresModel is a per-module judgment call, not a blanket "workspace
+  // = free" rule: panel-tree stays false because DockLeft's empty state
+  // ("Sin modelos cargados todavía") is itself useful to see before
+  // anything is loaded - it's where the user goes TO load a model via its
+  // own "+" button. panel-data/panel-issues flip to true because an empty
+  // Properties tab or an empty issue table with nothing loaded has no
+  // content to show and no action to take from there - unlike the tree,
+  // neither hosts the upload entry point.
   {
     id: "panel-tree",
     label: "Árbol del modelo",
@@ -231,7 +240,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "workspace",
     kind: "toggle",
     icon: IconPanelData,
-    requiresModel: false,
+    requiresModel: true,
     tier: "free",
     shortcut: "Ctrl+2",
   },
@@ -241,7 +250,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "workspace",
     kind: "toggle",
     icon: IconPanelIssues,
-    requiresModel: false,
+    requiresModel: true,
     tier: "free",
     shortcut: "Ctrl+3",
   },

@@ -135,11 +135,16 @@ function LayoutInner() {
     toggleZone("bottom");
   };
 
+  const hasModels = Object.keys(modelDisplayNames).length > 0;
+
   // Ctrl/Cmd+1/2/3 - sin colisión encontrada: esta app no tenía ningún
   // listener de teclado global antes de este cambio (grep de keydown en
   // src/ solo devuelve este efecto). preventDefault() es necesario en los
   // tres: el navegador interpreta Ctrl+1/2/3 como "ir a la pestaña N" en
-  // varios navegadores/OS.
+  // varios navegadores/OS. panel-data/panel-issues requieren un modelo
+  // cargado (ver registry/modules.ts) - sin este guard, el atajo de
+  // teclado saltaría ese disabled del botón (que solo bloquea el click),
+  // dejando una vía silenciosa para abrir un panel vacío sin sentido.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey)) return;
@@ -148,16 +153,15 @@ function LayoutInner() {
         handleToggleTreePanel();
       } else if (event.key === "2") {
         event.preventDefault();
-        handleTogglePropertiesPanel();
+        if (hasModels) handleTogglePropertiesPanel();
       } else if (event.key === "3") {
         event.preventDefault();
-        handleToggleIssuesPanel();
+        if (hasModels) handleToggleIssuesPanel();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasModels]);
 
   // Click-to-filter: PropertiesPanel (Shift+click en una propiedad) publica
   // acá su query armada ("Material:Vidrio templado") vía
@@ -181,8 +185,6 @@ function LayoutInner() {
   useEffect(() => {
     return bcfManager.subscribe(setBcfState);
   }, [bcfManager]);
-
-  const hasModels = Object.keys(modelDisplayNames).length > 0;
 
   const handleImportBcf = () => {
     const input = document.createElement("input");
