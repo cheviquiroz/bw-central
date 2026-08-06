@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
-import { DockRightWithTabs } from "../../ui/Dock/DockRightWithTabs";
+import { DockRight } from "../../ui/Dock/DockRight";
+import { DockBottom } from "../../ui/Dock/DockBottom";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { ViewerActionsAdapter } from "../../engine/adapters/ViewerActionsAdapter";
 import { SearchManager } from "../../viewer/SearchManager";
@@ -20,11 +21,11 @@ import type { ModuleRuntimeMap } from "../../ui/registry/modules";
 
 // LayoutStateProvider wraps the whole component (Toolbar included), not
 // just <main>: the Fase 2 workspace toggles live in the Toolbar but need
-// to read/write the same zones/rightTab state that DockLeft/
-// DockRightWithTabs/OrientationCube use - a provider that only wrapped
-// <main> would leave Toolbar outside its subtree. LayoutInner is the
-// actual component body; useLayoutState() can only be called by a
-// descendant of the provider, so the split is required, not stylistic.
+// to read/write the same zones state that DockLeft/DockRight/DockBottom/
+// OrientationCube use - a provider that only wrapped <main> would leave
+// Toolbar outside its subtree. LayoutInner is the actual component body;
+// useLayoutState() can only be called by a descendant of the provider,
+// so the split is required, not stylistic.
 export default function Layout() {
   return (
     <LayoutStateProvider>
@@ -55,7 +56,7 @@ function LayoutInner() {
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
   const viewportRef = React.useRef<HTMLDivElement>(null);
-  const { zones, toggleZone, setZoneVisible, rightTab, setRightTab } = useLayoutState();
+  const { zones, toggleZone } = useLayoutState();
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -123,28 +124,15 @@ function LayoutInner() {
     toggleZone("left");
   };
 
-  // "Datos"/"Incidencias" toggle to a SPECIFIC tab, not just visibility:
-  // clicking one shows the right dock on that tab; clicking it again while
-  // already showing that tab hides the dock (a real toggle, not a
-  // one-way switch). Clicking "Incidencias" while "Datos" is showing
-  // switches tabs without hiding anything - matches how VS Code's
-  // sidebar-icon toggles behave when two icons share one panel.
   const handleTogglePropertiesPanel = () => {
-    if (zones.right && rightTab === "properties") {
-      setZoneVisible("right", false);
-    } else {
-      setRightTab("properties");
-      setZoneVisible("right", true);
-    }
+    toggleZone("right");
   };
 
+  // Fase 3: Incidencias se mudó a su propia zona (DockBottom), ya no
+  // comparte "right" con Properties vía tabs - toggleZone("bottom") es
+  // ahora un toggle de visibilidad simple, igual que los otros dos.
   const handleToggleIssuesPanel = () => {
-    if (zones.right && rightTab === "bcf") {
-      setZoneVisible("right", false);
-    } else {
-      setRightTab("bcf");
-      setZoneVisible("right", true);
-    }
+    toggleZone("bottom");
   };
 
   // Ctrl/Cmd+1/2/3 - sin colisión encontrada: esta app no tenía ningún
@@ -169,7 +157,7 @@ function LayoutInner() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zones.right, rightTab]);
+  }, []);
 
   // Click-to-filter: PropertiesPanel (Shift+click en una propiedad) publica
   // acá su query armada ("Material:Vidrio templado") vía
@@ -268,11 +256,11 @@ function LayoutInner() {
       "bcf-import": { onClick: handleImportBcf },
       "bcf-export": { onClick: handleExportBcf },
       "panel-tree": { onClick: handleToggleTreePanel, isActive: zones.left },
-      "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right && rightTab === "properties" },
-      "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.right && rightTab === "bcf" },
+      "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
+      "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.bottom },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter, zones.left, zones.right, rightTab]
+    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter, zones.left, zones.right, zones.bottom]
   );
 
   const handleFilesSelected = async (files: File[]) => {
@@ -313,9 +301,10 @@ function LayoutInner() {
         hasModel={hasModels}
       />
 
-      {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO CON TABS */}
-      {/* Grid real de 3 columnas (izquierda | centro dominante | derecha) -
-          ver .viewport en Layout.css. Sin estilos inline pisando la clase:
+      {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO + DOCK INFERIOR */}
+      {/* Grid real de 2 filas x 3 columnas (izquierda | centro dominante |
+          derecha, con una fila inferior full-width para Incidencias) - ver
+          .viewport en Layout.css. Sin estilos inline pisando la clase:
           antes había un style={{display:"block", ...}} inline acá que
           hubiera ganado por encima de cualquier display:grid puesto en la
           clase (los estilos inline siempre ganan sobre CSS de archivo) -
@@ -330,7 +319,8 @@ function LayoutInner() {
           bcfActiveTopic={bcfState.activeTopic}
           bcfSyncRequest={bcfSyncRequest}
         />
-        <DockRightWithTabs
+        <DockRight />
+        <DockBottom
           bcfState={bcfState}
           onBcfFilterChange={handleBcfFilterChange}
           onBcfTopicSelect={handleBcfTopicSelect}

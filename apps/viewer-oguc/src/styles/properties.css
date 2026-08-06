@@ -1,11 +1,11 @@
 /* src/styles/properties.css */
 @import "./tokens.css";
 
-/* Ya no flotante ni position:absolute - vive dentro de DockRightWithTabs
-   (ver ui/Dock/DockRightWithTabs.tsx y dock-right-tabs.css), que a su vez
-   es la celda derecha del grid de .viewport (Layout.css). Ancho fijo, sin
-   estado intermedio: este panel o está montado a su ancho completo, o no
-   está montado (ver PropertiesPanel.tsx) - ya no hay nada que interpolar. */
+/* Ya no flotante ni position:absolute - vive dentro de DockRight (ver
+   ui/Dock/DockRight.tsx y dock-right.css), que a su vez es la celda
+   derecha del grid de .viewport (Layout.css). Ancho fijo, sin estado
+   intermedio: este panel o está montado a su ancho completo, o no está
+   montado (ver PropertiesPanel.tsx) - ya no hay nada que interpolar. */
 .properties-panel {
   width: 100%;
   height: 100%;

@@ -1,12 +1,13 @@
 /* src/ui/BcfPanel/bcf-panel.css */
 @import "../../styles/tokens.css";
 
-/* Ya no flotante ni position:absolute - vive dentro de DockRightWithTabs,
-   en el tab "Incidencias" (ver ui/Dock/DockRightWithTabs.tsx). Ya no
-   necesita su propio "right" (dependía del ancho de PropertiesPanel para
-   no superponerse - ya no aplica: nunca se muestran los dos a la vez,
-   están en tabs separados, ver DockRightWithTabs.tsx). Mismo "look" que
-   .dock-panel/.properties-panel (blur, radius, bg translúcido). */
+/* Fase 3: vive dentro de DockBottom (ver ui/Dock/DockBottom.tsx y
+   dock-bottom.css), full-width bajo el viewport - ya no es la celda
+   derecha del grid, así que ya no necesita ancho fijo propio (lo hereda
+   del flex:1 que le da .dock-bottom > .bcf-panel). Mismo "look" que
+   .dock-panel/.properties-panel salvo cuando vive dentro de DockBottom,
+   que ya pone su propio border/radius/blur y se los pisa a este (ver
+   dock-bottom.css) para no duplicar el marco dos veces. */
 .bcf-panel {
   width: 100%;
   height: 100%;
@@ -16,7 +17,6 @@
   backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
   font-family: var(--sans);
 }
@@ -25,18 +25,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--line-soft);
   flex-shrink: 0;
 }
 
-.bcf-actions {
+.bcf-header-actions {
   display: flex;
-  gap: 6px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
 }
 
 .bcf-title {
@@ -81,15 +79,11 @@
   height: 13px;
 }
 
-.filter-bar {
-  padding: 8px;
-  border-bottom: 1px solid var(--line-soft);
-  flex-shrink: 0;
-}
-
+/* Fase 3: el filtro ya no ocupa una fila propia con border-bottom - vive
+   inline dentro de .bcf-header-actions, junto a Importar/Exportar y el
+   botón de ocultar. */
 .filter-dropdown {
-  width: 100%;
-  padding: 6px 8px;
+  padding: 5px 8px;
   background: var(--bg-1);
   border: 1px solid var(--line);
   color: var(--text-mid);
@@ -104,29 +98,7 @@
   border-color: var(--blue);
 }
 
-.issue-list {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 8px;
-  scrollbar-color: var(--blue) var(--bg-1);
-  scrollbar-width: thin;
-}
-
-.issue-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.issue-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.issue-list::-webkit-scrollbar-thumb {
-  background: var(--blue);
-  border-radius: 3px;
-}
-
-.issue-empty {
+.issue-table-empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,72 +108,113 @@
   text-align: center;
 }
 
-.issue-card {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 8px;
+/* Tabla real, no tarjetas - Incidencias vive en DockBottom (full-width,
+   ver DockBottom.tsx) desde la Fase 3 justamente para tener espacio
+   horizontal para columnas reales. */
+.issue-table-wrap {
+  flex: 1;
+  overflow: auto;
+  scrollbar-color: var(--blue) var(--bg-1);
+  scrollbar-width: thin;
+}
+
+.issue-table-wrap::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.issue-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.issue-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--blue);
+  border-radius: 3px;
+}
+
+.issue-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.issue-table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(23, 28, 34, 0.97);
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-low);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.issue-row {
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: background 0.15s;
 }
 
-.issue-card:hover {
-  background: #252d38;
-  border-color: var(--blue);
-  box-shadow: 0 0 12px rgba(74, 144, 217, 0.2);
+.issue-row:hover {
+  background: #212831;
 }
 
-.issue-card.active {
-  background: #252d38;
-  border-color: var(--blue);
-  box-shadow: 0 0 12px rgba(74, 144, 217, 0.3);
+.issue-row.active {
+  background: #212831;
+  box-shadow: inset 2px 0 0 var(--blue);
 }
 
-.issue-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
+.issue-row td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--text-mid);
+  white-space: nowrap;
 }
 
-.issue-number {
-  font-size: 11px;
+.issue-col-title {
+  color: var(--text-hi);
+  font-weight: 500;
+  white-space: normal;
+  min-width: 200px;
+}
+
+.issue-col-id {
   color: var(--blue);
   font-weight: 600;
   font-family: var(--mono);
 }
 
+.issue-col-priority {
+  font-weight: 600;
+}
+
+.issue-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
 .issue-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.issue-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-hi);
-  margin-bottom: 6px;
-  line-height: 1.3;
-  word-break: break-word;
-}
-
-.issue-meta {
-  display: flex;
-  gap: 6px;
-  font-size: 10px;
-}
-
-.issue-priority {
-  font-weight: 600;
-}
-
-.issue-status {
-  padding: 2px 6px;
-  background: rgba(74, 144, 217, 0.2);
+.issue-thumb {
+  width: 36px;
+  height: 24px;
   border-radius: 3px;
-  color: var(--blue);
+  object-fit: cover;
+  display: block;
+}
+
+.issue-thumb-empty {
+  background: var(--bg-1);
+  border: 1px solid var(--line-soft);
 }
 

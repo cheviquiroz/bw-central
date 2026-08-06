@@ -25,29 +25,26 @@ export interface LayoutZones {
 
 export const DEFAULT_LAYOUT_ZONES: LayoutZones = { left: true, right: true, bottom: false };
 
-/**
- * Which tab is active inside the right dock. Lives here (not local state
- * in DockRightWithTabs) for two reasons: the Phase 2 workspace toggles
- * ("Datos" / "Incidencias") need to switch tabs from the Toolbar, outside
- * DockRightWithTabs's own subtree, and Phase 5b persists this exact value
- * to localStorage alongside zone visibility. Provisional until Phase 3
- * gives Incidencias its own DockBottom zone instead of sharing "right".
- */
-export type RightTab = "properties" | "bcf";
+export const DEFAULT_BOTTOM_DOCK_HEIGHT = 240;
+export const MIN_BOTTOM_DOCK_HEIGHT = 120;
+// El clamp superior es un porcentaje de la ventana (60vh), no un px fijo -
+// se recalcula en el propio handler de resize (ver DockBottom.tsx), este
+// valor solo documenta la regla.
+export const MAX_BOTTOM_DOCK_HEIGHT_VH = 0.6;
 
 interface LayoutStateContextType {
   zones: LayoutZones;
   setZoneVisible: (zone: keyof LayoutZones, visible: boolean) => void;
   toggleZone: (zone: keyof LayoutZones) => void;
-  rightTab: RightTab;
-  setRightTab: (tab: RightTab) => void;
+  bottomDockHeight: number;
+  setBottomDockHeight: (height: number) => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
 
 export function LayoutStateProvider({ children }: { children: ReactNode }) {
   const [zones, setZones] = useState<LayoutZones>(DEFAULT_LAYOUT_ZONES);
-  const [rightTab, setRightTab] = useState<RightTab>("properties");
+  const [bottomDockHeight, setBottomDockHeight] = useState<number>(DEFAULT_BOTTOM_DOCK_HEIGHT);
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -58,7 +55,9 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LayoutStateContext.Provider value={{ zones, setZoneVisible, toggleZone, rightTab, setRightTab }}>
+    <LayoutStateContext.Provider
+      value={{ zones, setZoneVisible, toggleZone, bottomDockHeight, setBottomDockHeight }}
+    >
       {children}
     </LayoutStateContext.Provider>
   );

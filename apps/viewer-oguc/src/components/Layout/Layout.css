@@ -57,18 +57,32 @@ body {
    introduce visibilidad binaria): un gap fijo entre 3 tracks deja un
    hueco vacío flotando cuando uno de los laterales no tiene contenido.
    En su lugar, cada panel lateral pone su propio margin hacia el canvas
-   (margin-right en .dock-panel, margin-left en .dock-right-tabs) - ese
-   margin solo existe cuando el panel existe, así que un panel oculto no
-   deja ningún resto de espacio reservado. */
+   (margin-right en .dock-panel, margin-left en .dock-right) - ese margin
+   solo existe cuando el panel existe, así que un panel oculto no deja
+   ningún resto de espacio reservado.
+
+   Dos filas desde Fase 3: la fila superior (auto 1fr auto) sigue siendo
+   izquierda | canvas | derecha; la fila inferior es DockBottom
+   (Incidencias), full-width - spanea las 3 columnas via grid-column:1/-1
+   en vez de vivir en una columna propia (ver el comentario en
+   DockBottom.tsx sobre por qué full-width). La fila inferior es "auto":
+   sin DockBottom montado (zones.bottom === false) no hay contenido y la
+   fila colapsa a 0px sola, mismo truco que ya usan las columnas
+   laterales. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
   display: grid;
   grid-template-columns: auto 1fr auto;
+  grid-template-rows: 1fr auto;
   padding: 16px;
   width: 100%;
   height: 100%;
   overflow: hidden;
+}
+
+.viewport > .dock-bottom {
+  grid-column: 1 / -1;
 }
 
 /* El contenedor del visor 3D (Viewport.tsx, className="viewport-container")

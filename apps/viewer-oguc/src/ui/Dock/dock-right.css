@@ -1,0 +1,21 @@
+/* src/ui/Dock/dock-right.css */
+@import "../../styles/tokens.css";
+
+/* Celda derecha del grid de .viewport (Layout.css). Ancho fijo, sin
+   estado intermedio: este dock o está montado a su ancho completo, o no
+   está montado en absoluto (ver DockRight.tsx). margin-left es el gutter
+   negro hacia el canvas - solo existe mientras este elemento existe (ver
+   el comentario largo en Layout.css sobre por qué esto reemplazó el
+   gap:16px del grid padre). Ya no hay tab bar acá (ver DockRight.tsx) -
+   .properties-panel ya trae su propio look (blur/radius/bg), así que este
+   contenedor solo necesita posicionar y darle el ancho fijo. */
+.dock-right {
+  width: 272px;
+  height: 100%;
+  margin-left: 16px;
+  display: flex;
+}
+
+.dock-right > * {
+  flex: 1;
+}

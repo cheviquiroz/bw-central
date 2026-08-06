@@ -1,0 +1,47 @@
+/* src/ui/Dock/dock-bottom.css */
+@import "../../styles/tokens.css";
+
+/* Fila inferior del grid de dos filas de .viewport (Layout.css), abarca
+   las 3 columnas (izquierda/canvas/derecha) - ver el comentario en
+   DockBottom.tsx sobre por qué full-width y no "entre los paneles
+   laterales". margin-top es el gutter negro hacia el canvas - mismo
+   patrón que margin-right/margin-left en dock.css/dock-right.css: solo
+   existe mientras este elemento existe, así que ocultar el dock no deja
+   un hueco vacío flotando. La altura llega por style inline (ver
+   DockBottom.tsx) porque es un valor continuo controlado por el usuario
+   (drag del handle), no un breakpoint fijo como el ancho de los paneles
+   laterales. */
+.dock-bottom {
+  position: relative;
+  margin-top: 16px;
+  background: rgba(23, 28, 34, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Franja invisible sobre el borde superior del dock - se agranda un poco
+   más allá del propio borde (top:-4px) para dar un área de agarre cómoda
+   sin depender de acertarle al pixel exacto del borde de 1px. */
+.dock-bottom-resize-handle {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  z-index: 10;
+  touch-action: none;
+}
+
+.dock-bottom > .bcf-panel {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  backdrop-filter: none;
+  background: none;
+}
