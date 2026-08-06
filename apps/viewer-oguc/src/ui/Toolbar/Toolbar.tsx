@@ -1,5 +1,5 @@
 // src/ui/Toolbar/Toolbar.tsx
-import type { ReactNode, RefObject } from "react";
+import type { ReactNode } from "react";
 import "../../styles/toolbar.css";
 import { Logo } from "./Logo";
 import { ToolbarButton } from "./ToolbarButton";
@@ -28,12 +28,12 @@ interface ToolbarProps {
   onAxesClick: () => void;
   onMeasureClick: () => void;
   isMeasuring: boolean;
+  isIsolateActive: boolean;
+  isSectionBoxActive: boolean;
+  isHidePlaneActive: boolean;
+  isAxesActive: boolean;
   onImportBcf: () => void;
   onExportBcf: () => void;
-  btnIsolateRef: RefObject<HTMLDivElement | null>;
-  btnSectionBoxRef: RefObject<HTMLDivElement | null>;
-  btnHidePlaneRef: RefObject<HTMLDivElement | null>;
-  btnAxesRef: RefObject<HTMLDivElement | null>;
 }
 
 export function Toolbar({
@@ -45,12 +45,12 @@ export function Toolbar({
   onAxesClick,
   onMeasureClick,
   isMeasuring,
+  isIsolateActive,
+  isSectionBoxActive,
+  isHidePlaneActive,
+  isAxesActive,
   onImportBcf,
   onExportBcf,
-  btnIsolateRef,
-  btnSectionBoxRef,
-  btnHidePlaneRef,
-  btnAxesRef,
 }: ToolbarProps) {
   return (
     <header className="toolbar">
@@ -71,33 +71,33 @@ export function Toolbar({
         <ToolbarButton icon={<IconSelect />} label="Seleccionar (clic izquierdo)" isActive />
         <ToolbarButton icon={<IconMeasure />} label="Medir" onClick={onMeasureClick} isActive={isMeasuring} />
         <ToolbarButton
-          ref={btnIsolateRef}
           id="btn-isolate"
           icon={<IconIsolate />}
           label="Aislar Selección"
           onClick={onIsolateClick}
+          isActive={isIsolateActive}
         />
         <ToolbarButton
-          ref={btnSectionBoxRef}
           id="btn-section-box"
           icon={<IconSectionBox />}
           label="Section Box"
           onClick={onSectionBoxClick}
+          isActive={isSectionBoxActive}
         />
         <ToolbarButton
-          ref={btnHidePlaneRef}
           id="btn-hide-plane"
           icon={<IconHidePlane />}
           label="Ocultar plano (el corte sigue activo)"
           onClick={onHidePlaneClick}
+          isActive={isHidePlaneActive}
         />
         <ToolbarButton icon={<IconFitAll />} label="Encuadrar todo (Z)" onClick={onFitAllClick} />
         <ToolbarButton
-          ref={btnAxesRef}
           id="btn-axes"
           icon={<IconXYZ />}
           label="Mostrar origen XYZ (0,0,0)"
           onClick={onAxesClick}
+          isActive={isAxesActive}
         />
       </div>
 

@@ -41,62 +41,72 @@ export class ViewerActionsAdapter {
     return merged;
   }
 
-  public toggleIsolate(viewportElement: HTMLElement, isolateButton: HTMLElement): void {
+  // Devuelve el nuevo estado (true = quedó aislado) en vez de mutar el DOM
+  // del botón directamente (isolateButton.classList.add/remove, como
+  // estaba antes) - ese patrón dejaba el "active" del botón fuera del
+  // modelo de React: cualquier re-render de Toolbar por una razón
+  // completamente ajena (tipear en el buscador, que cambie la selección,
+  // un mensaje de progreso de carga) recomputa className desde cero sin
+  // saber que esa clase existía, y la pisa. El caller (Layout.tsx) ahora
+  // guarda este valor en useState y lo pasa como prop isActive - una sola
+  // fuente de verdad real (este campo privado), React solo la refleja.
+  public toggleIsolate(viewportElement: HTMLElement): boolean {
     const merged = this.getCurrentSelection();
     const hasSelection = Object.keys(merged).length > 0;
 
     if (!hasSelection && !this.isElementIsolated) {
       console.warn("Selecciona un elemento en el modelo antes de intentar aislarlo.");
-      return;
+      return this.isElementIsolated;
     }
 
     if (!this.isElementIsolated) {
       this.isElementIsolated = true;
       viewportElement.classList.add("isolating");
-      isolateButton.classList.add("active");
       this.hider.isolate(merged);
     } else {
       this.isElementIsolated = false;
       viewportElement.classList.remove("isolating");
-      isolateButton.classList.remove("active");
       this.hider.set(true);
     }
+    return this.isElementIsolated;
   }
 
-  public toggleClipPlane(clipButton: HTMLElement): void {
+  public toggleClipPlane(): boolean {
     const clipper = this.components.get(OBC.Clipper);
 
     this.isClipActive = !this.isClipActive;
     clipper.enabled = this.isClipActive;
 
-    if (this.isClipActive) {
-      clipButton.classList.add("active");
-    } else {
+    if (!this.isClipActive) {
       // Al desactivar, también se borran los planos existentes: el botón
       // "apagado" no debería dejar un corte fantasma en la escena.
       clipper.deleteAll();
-      clipButton.classList.remove("active");
       // Los planos nuevos siempre nacen visibles - si quedaba "escondido"
       // de una sesión anterior, no debería arrancar así la próxima vez.
       this.isClipVisible = true;
       clipper.visible = true;
     }
+    return this.isClipActive;
   }
 
-  public toggleClipperVisibility(hideButton: HTMLElement): void {
+  // El botón "activo" acá representa "el plano está OCULTO" (lo inverso
+  // de isClipVisible) - mismo significado que el classList.toggle original,
+  // solo que ahora el caller recibe el booleano ya resuelto en vez de
+  // tener que conocer esta inversión de signo por su cuenta.
+  public toggleClipperVisibility(): boolean {
     const clipper = this.components.get(OBC.Clipper);
 
     this.isClipVisible = !this.isClipVisible;
     clipper.visible = this.isClipVisible;
-    hideButton.classList.toggle("active", !this.isClipVisible);
+    return !this.isClipVisible;
   }
 
-  public toggleAxes(axesButton: HTMLElement): void {
+  public toggleAxes(): boolean {
     if (!this.axesHelper) {
       this.axesHelper = new AxesHelper(this.scene);
     }
 
     this.axesHelper.toggle();
-    axesButton.classList.toggle("active", this.axesHelper.isShown());
+    return this.axesHelper.isShown();
   }
 }

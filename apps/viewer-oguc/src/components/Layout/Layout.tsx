@@ -22,6 +22,9 @@ export default function Layout() {
   const [actionsAdapter, setActionsAdapter] = useState<ViewerActionsAdapter | null>(null);
   const [searchManager, setSearchManager] = useState<SearchManager | null>(null);
   const [isSectionBoxActive, setIsSectionBoxActive] = useState(false);
+  const [isIsolateActive, setIsIsolateActive] = useState(false);
+  const [isHidePlaneActive, setIsHidePlaneActive] = useState(false);
+  const [isAxesActive, setIsAxesActive] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [externalQuery, setExternalQuery] = useState<{ value: string; nonce: number } | null>(null);
   const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; nonce: number } | null>(null);
@@ -31,10 +34,6 @@ export default function Layout() {
   const [bcfManager] = useState(() => new BcfManager());
   const [bcfState, setBcfState] = useState<BcfManagerState>(bcfManager.getState());
   const viewportRef = React.useRef<HTMLDivElement>(null);
-  const btnIsolateRef = React.useRef<HTMLDivElement>(null);
-  const btnClipRef = React.useRef<HTMLDivElement>(null);
-  const btnHidePlaneRef = React.useRef<HTMLDivElement>(null);
-  const btnAxesRef = React.useRef<HTMLDivElement>(null);
 
   const handleViewerReady = (viewerHandles: any) => {
     const adapter = new ViewerActionsAdapter(viewerHandles);
@@ -42,24 +41,30 @@ export default function Layout() {
     setSearchManager(new SearchManager(viewerHandles, app));
   };
 
+  // Los 4 handlers de abajo ya no pasan un ref de botón al adapter para
+  // que este le mute el classList directamente (isolateButton.classList.
+  // add/remove, etc. - ver el comentario en ViewerActionsAdapter.ts sobre
+  // por qué eso era un bug real, no solo un estilo distinto): el adapter
+  // ahora devuelve el nuevo estado, y ese valor se guarda acá en useState
+  // para que Toolbar reciba isActive como prop de verdad, sobreviviendo
+  // cualquier re-render ajeno.
   const handleIsolateClick = () => {
-    if (actionsAdapter && viewportRef.current && btnIsolateRef.current) {
-      actionsAdapter.toggleIsolate(viewportRef.current, btnIsolateRef.current);
+    if (actionsAdapter && viewportRef.current) {
+      setIsIsolateActive(actionsAdapter.toggleIsolate(viewportRef.current));
     } else {
       console.warn("Por favor, selecciona un elemento en el modelo 3D primero.");
     }
   };
 
   const handleClipClick = () => {
-    if (actionsAdapter && btnClipRef.current) {
-      actionsAdapter.toggleClipPlane(btnClipRef.current);
-      setIsSectionBoxActive((prev) => !prev);
+    if (actionsAdapter) {
+      setIsSectionBoxActive(actionsAdapter.toggleClipPlane());
     }
   };
 
   const handleHidePlaneClick = () => {
-    if (actionsAdapter && btnHidePlaneRef.current) {
-      actionsAdapter.toggleClipperVisibility(btnHidePlaneRef.current);
+    if (actionsAdapter) {
+      setIsHidePlaneActive(actionsAdapter.toggleClipperVisibility());
     }
   };
 
@@ -68,8 +73,8 @@ export default function Layout() {
   };
 
   const handleAxesClick = () => {
-    if (actionsAdapter && btnAxesRef.current) {
-      actionsAdapter.toggleAxes(btnAxesRef.current);
+    if (actionsAdapter) {
+      setIsAxesActive(actionsAdapter.toggleAxes());
     }
   };
 
@@ -198,12 +203,12 @@ export default function Layout() {
         onAxesClick={handleAxesClick}
         onMeasureClick={handleMeasureClick}
         isMeasuring={isMeasuring}
+        isIsolateActive={isIsolateActive}
+        isSectionBoxActive={isSectionBoxActive}
+        isHidePlaneActive={isHidePlaneActive}
+        isAxesActive={isAxesActive}
         onImportBcf={handleImportBcf}
         onExportBcf={handleExportBcf}
-        btnIsolateRef={btnIsolateRef}
-        btnSectionBoxRef={btnClipRef}
-        btnHidePlaneRef={btnHidePlaneRef}
-        btnAxesRef={btnAxesRef}
       />
 
       {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO CON TABS */}
