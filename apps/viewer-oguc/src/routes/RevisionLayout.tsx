@@ -5,28 +5,29 @@
 // DockRight, the module registry) so navigating here feels like a mode
 // switch within one application, not a jump to a different tool. Modeled
 // on Layout.tsx; the parts that differ: no FileUploadModal (models come
-// from "/", not uploaded here), DockBottom's content is a findings
-// placeholder instead of BCF, and the Toolbar carries a "← Volver" button
-// back to "/".
+// from "/", not uploaded here), DockBottom hosts FindingsDock instead of
+// BCF, and the Toolbar carries a "← Volver" button back to "/".
 //
-// Pre-Check gate (this task): the first thing /revision shows once a
-// model is confirmed loaded. Runs BEFORE the review space (Toolbar's
-// tool buttons/DockLeft/Viewport/DockRight/RevisionFindingsDock) becomes
-// interactive - see PreCheckGate.tsx and the preCheckPassed state below.
-// Rendered as an overlay INSIDE the same <main> grid, not a conditional
-// swap of the whole layout: the 3D viewer must not be disposed/reloaded
-// while Pre-Check runs (it's already loaded, from AppContext/
-// ModelBytesRegistry), so <Viewport> stays mounted underneath at all
-// times - only visually covered while the gate is up.
+// Two-state review flow:
+//  1. Pre-Check gate (preCheckPassed === false): PreCheckGate.tsx,
+//     rendered as an overlay INSIDE the same <main> grid, not a
+//     conditional swap of the whole layout - the 3D viewer must not be
+//     disposed/reloaded while Pre-Check runs (already loaded, from
+//     AppContext/ModelBytesRegistry), so <Viewport> stays mounted
+//     underneath at all times, only visually covered while the gate is up.
+//  2. Review Space (preCheckPassed === true): the same DockLeft/Viewport/
+//     DockRight, now with FindingsDock showing real findings - generated
+//     exactly once Pre-Check passes (see the findings effect below),
+//     from the SAME parsed IfcHeadlessDocument the Pre-Check gate already
+//     produced (docsByModel) - no second re-parse.
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { readIfcFile } from "@bw-central/ifc-headless";
-import { runPreCheck, type PreCheckResult } from "@bw-central/oguc-core";
+import { readIfcFile, type IfcHeadlessDocument } from "@bw-central/ifc-headless";
+import { runPreCheck, type Finding, type FindingState, type PreCheckResult } from "@bw-central/oguc-core";
 import "../components/Layout/Layout.css";
 import Viewport from "../ui/Viewport/Viewport";
 import { DockLeft } from "../ui/Dock/DockLeft";
 import { DockRight } from "../ui/Dock/DockRight";
-import { RevisionFindingsDock } from "../ui/Dock/RevisionFindingsDock";
 import { StatusBar } from "../ui/StatusBar/StatusBar";
 import { SearchBar } from "../ui/Search/SearchBar";
 import { Toolbar } from "../ui/Toolbar/Toolbar";
@@ -36,6 +37,8 @@ import { useModelToolActions } from "../components/Layout/useModelToolActions";
 import { WEB_IFC_WASM_PATH } from "../core/IfcBootstrap";
 import { getModelBytes } from "../core/ModelBytesRegistry";
 import { PreCheckGate } from "./revision/PreCheckGate";
+import { FindingsDock } from "./revision/FindingsDock";
+import { generateFindings } from "./revision/generateFindings";
 import type { ModelDisplayNames } from "../engine/createApplication";
 import type { ModuleRuntimeMap } from "../ui/registry/modules";
 
@@ -65,7 +68,7 @@ function RevisionLayoutInner() {
   // aceptable en esta fase ("sin lógica de negocio aún"), ver el reporte
   // de la tarea.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { zones, toggleZone } = useLayoutState();
+  const { zones, toggleZone, setZoneVisible } = useLayoutState();
 
   const hasModels = Object.keys(modelDisplayNames).length > 0;
 
@@ -80,6 +83,10 @@ function RevisionLayoutInner() {
   const [preCheckPassed, setPreCheckPassed] = useState(false);
   const [preCheckResults, setPreCheckResults] = useState<Record<string, PreCheckResult | Error> | null>(null);
   const [isPreCheckLoading, setIsPreCheckLoading] = useState(false);
+  // Parsed docs are kept (not discarded after Pre-Check) so the findings
+  // effect below can reuse them - re-parsing the same bytes a second
+  // time for the same visit would be pure waste.
+  const [docsByModel, setDocsByModel] = useState<Record<string, IfcHeadlessDocument>>({});
 
   // Re-parses each loaded model's RETAINED bytes (ModelBytesRegistry -
   // the live @thatopen/components viewer never exposed a form oguc-core
@@ -97,22 +104,23 @@ function RevisionLayoutInner() {
 
     const modelIds = Object.keys(modelDisplayNames);
     Promise.all(
-      modelIds.map(async (modelId): Promise<[string, PreCheckResult | Error]> => {
+      modelIds.map(async (modelId): Promise<[string, PreCheckResult | Error, IfcHeadlessDocument | null]> => {
         const bytes = getModelBytes(modelId);
         if (!bytes) {
-          return [modelId, new Error("bytes originales no disponibles (modelo cargado antes de esta función, o descartado)")];
+          return [modelId, new Error("bytes originales no disponibles (modelo cargado antes de esta función, o descartado)"), null];
         }
         try {
           const doc = await readIfcFile(bytes, { wasmPath: WEB_IFC_WASM_PATH, wasmAbsolute: true });
-          return [modelId, runPreCheck(doc)];
+          return [modelId, runPreCheck(doc), doc];
         } catch (err) {
           console.error("Pre-Check: error al re-analizar el modelo", modelId, err);
-          return [modelId, err instanceof Error ? err : new Error(String(err))];
+          return [modelId, err instanceof Error ? err : new Error(String(err)), null];
         }
       })
     ).then((entries) => {
       if (cancelled) return;
-      setPreCheckResults(Object.fromEntries(entries));
+      setPreCheckResults(Object.fromEntries(entries.map(([id, result]) => [id, result])));
+      setDocsByModel(Object.fromEntries(entries.filter(([, , doc]) => doc !== null).map(([id, , doc]) => [id, doc as IfcHeadlessDocument])));
       setIsPreCheckLoading(false);
     });
 
@@ -120,6 +128,38 @@ function RevisionLayoutInner() {
       cancelled = true;
     };
   }, [hasModels, modelDisplayNames]);
+
+  // Review Space, Part 1: run exactly the two compliance rules once
+  // Pre-Check passes - never before (a blocked model has no business
+  // generating findings), and freshly every time (no caching across
+  // /revision visits, per this task's own constraint).
+  const [findings, setFindings] = useState<Finding[]>([]);
+  useEffect(() => {
+    if (!preCheckPassed) return;
+    const generated = Object.entries(docsByModel).flatMap(([modelId, doc]) => generateFindings(doc, modelId));
+    setFindings(generated);
+    // Findings are the actual point of the Review Space (per this task's
+    // own framing) - opening the bottom dock automatically on entry means
+    // the user sees them immediately, instead of an empty canvas plus a
+    // toolbar button they'd have to discover on their own.
+    setZoneVisible("bottom", true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preCheckPassed]);
+
+  const handleSelectFinding = (finding: Finding) => {
+    if (finding.elementId === 0 || !searchManager) return;
+    searchManager.selectAndFocus(finding.modelId, finding.elementId).catch((error) => {
+      console.error("❌ Error al enfocar el hallazgo en el 3D:", error);
+    });
+  };
+
+  const handleChangeFindingState = (findingId: string, state: FindingState) => {
+    setFindings((prev) => prev.map((f) => (f.id === findingId ? { ...f, state } : f)));
+  };
+
+  const handleDeleteFinding = (findingId: string) => {
+    setFindings((prev) => prev.filter((f) => f.id !== findingId));
+  };
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -200,7 +240,12 @@ function RevisionLayoutInner() {
         <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} hasModel={hasModels} />
         <Viewport onViewerReady={handleViewerReady} isSectionBoxActive={isSectionBoxActive} isMeasuring={isMeasuring} hasModels={hasModels} />
         <DockRight />
-        <RevisionFindingsDock />
+        <FindingsDock
+          findings={findings}
+          onSelectFinding={handleSelectFinding}
+          onChangeState={handleChangeFindingState}
+          onDeleteFinding={handleDeleteFinding}
+        />
 
         {!preCheckPassed && (
           <div className="precheck-overlay">

@@ -49,7 +49,7 @@ export interface PreCheckResult {
  * ifc-headless does not expose the building's full IfcBuildingStorey
  * list, only these back-references.
  */
-function approximateStoreyCount(doc: IfcHeadlessDocument): number {
+export function approximateStoreyCount(doc: IfcHeadlessDocument): number {
   const ids = new Set<number>();
   for (const space of doc.spaces) {
     if (space.storeyExpressId !== null) ids.add(space.storeyExpressId);
