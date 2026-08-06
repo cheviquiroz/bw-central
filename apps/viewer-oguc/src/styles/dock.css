@@ -210,6 +210,24 @@
 .dock-tree-node .lbl {
   overflow: hidden;
   text-overflow: ellipsis;
+  /* white-space:nowrap es lo que hace que text-overflow:ellipsis dispare
+     en vez de envolver el texto a una segunda línea; min-width:0 es el
+     gotcha clásico de flexbox - sin esto, un hijo de flex nunca se
+     encoge más allá del ancho de su contenido, así que el overflow nunca
+     llegaba a ocurrir de verdad con nombres largos. */
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Categoría IFC como texto secundario/muted junto al nombre real - ya no
+   es el label principal (ver SpatialTreeManager.ts/ModelTree.tsx). Solo
+   aparece cuando el nodo tiene AMBOS name y category reales. */
+.dock-tree-node .lbl-category {
+  color: var(--dock-text-secondary);
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: 6px;
+  flex-shrink: 0;
 }
 
 .dock-tree-node .count {
@@ -242,4 +260,32 @@
 .dock-tree-eye.hidden-element {
   opacity: 1;
   color: var(--dock-selected-border);
+}
+
+/* Ojo de visibilidad a nivel de MODELO (ModelHeader, distinto del ojo por
+   elemento de arriba - ese vive dentro de .dock-tree-node y su
+   opacity:0-hasta-hover ya funciona bien vía la regla de arriba). Este
+   antes tenía opacity:0 aplicado INLINE cuando el modelo estaba visible
+   (para "solo mostrar cuando ya está oculto") - un inline style le gana
+   a cualquier :hover de CSS, así que el botón quedaba invisible incluso
+   pasando el mouse por encima, no descubrible en absoluto. Acá: siempre
+   visible a baja opacidad, opacidad completa en hover o cuando el modelo
+   está oculto - nunca invisible del todo. */
+.model-header-eye {
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.model-header-eye:hover {
+  opacity: 1;
+}
+
+.model-header-eye.model-hidden {
+  opacity: 1;
+  color: var(--dock-selected-border);
+}
+
+.model-header-eye.toggling {
+  opacity: 0.3;
+  pointer-events: none;
 }

@@ -4,6 +4,41 @@ import type { IfcViewerHandles } from "../core/IfcBootstrap";
 import type { ApplicationInstance, ModelTreeNode } from "../engine/createApplication";
 
 /**
+ * @thatopen/fragments' getSpatialStructure() represents every real
+ * spatial entity (IfcProject/IfcSite/IfcBuilding/IfcBuildingStorey) as
+ * TWO tree nodes, not one: a "category wrapper" (category set, localId:
+ * null - this is what the UI showed before this fix: "IFCPROJECT",
+ * "IFCSITE", ...) whose single child is the actual "entity data" node
+ * (category: null, real localId, real name). Confirmed by inspecting the
+ * real tree via app.getModelTrees() against EOFF-SPC-IFC-I01.ifc, not
+ * assumed - a naive reading of this data (as the previous UI did) shows
+ * "IFCPROJECT" then "UPeU" as two separate rows for what is conceptually
+ * one entity (the project). This merges that pair into a single node:
+ * the real name/localId/children come from the entity-data child, the
+ * category comes from the wrapper, so the tree can show the real name as
+ * the headline with the IFC class as secondary text (see ModelTree.tsx),
+ * matching what the data actually means instead of what the library
+ * happens to split it into.
+ *
+ * Deliberately narrow: only merges when the wrapper has EXACTLY ONE
+ * child and that child is itself an entity-data node (category: null).
+ * A category wrapper with multiple children (e.g. "IFCSPACE" grouping
+ * several real rooms under a storey) is a real, useful grouping heading
+ * and must NOT collapse into just one of its children.
+ */
+function collapseCategoryWrappers(node: ModelTreeNode): ModelTreeNode {
+  const children = node.children?.map(collapseCategoryWrappers);
+  const isCategoryWrapper = node.category !== null && node.localId === null;
+  const onlyChild = children?.length === 1 ? children[0] : null;
+  const onlyChildIsEntityData = onlyChild !== null && onlyChild.category === null;
+
+  if (isCategoryWrapper && onlyChildIsEntityData) {
+    return { ...onlyChild, treeNodeId: node.treeNodeId, category: node.category };
+  }
+  return { ...node, children };
+}
+
+/**
  * Construye el árbol de jerarquía espacial IFC (Proyecto > Sitio > Edificio >
  * Piso > Elemento) cada vez que un modelo termina de cargar de verdad.
  *
@@ -53,7 +88,7 @@ export class SpatialTreeManager {
           };
         };
 
-        const enrichedTree = enrich(rawTree);
+        const enrichedTree = collapseCategoryWrappers(enrich(rawTree));
         app.setModelTree(model.modelId, enrichedTree);
       } catch (error) {
         console.error("❌ Error construyendo el árbol espacial del modelo:", error);

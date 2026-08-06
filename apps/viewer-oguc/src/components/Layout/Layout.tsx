@@ -34,7 +34,27 @@ export default function Layout() {
   const [uploadError, setUploadError] = useState<string | undefined>(undefined);
   const [bcfManager] = useState(() => new BcfManager());
   const [bcfState, setBcfState] = useState<BcfManagerState>(bcfManager.getState());
+  // Vive acá, no dentro de ModelTree.tsx (donde estaba antes) - ModelTree
+  // solo está montado mientras DockLeft está expandido, así que un
+  // useState local ahí se perdía cada vez que el usuario colapsaba el
+  // dock. Layout.tsx nunca se desmonta.
+  const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
   const viewportRef = React.useRef<HTMLDivElement>(null);
+
+  const handleToggleElementVisibility = (modelId: string, localId: number) => {
+    setHiddenByModel((prev) => {
+      const current = new Set(prev[modelId] ?? []);
+      const nextVisible = current.has(localId); // si ya estaba oculto, esto lo va a mostrar
+      if (current.has(localId)) current.delete(localId);
+      else current.add(localId);
+
+      app.setElementVisibility(modelId, localId, nextVisible).catch((error) => {
+        console.error("❌ Error cambiando visibilidad del elemento:", error);
+      });
+
+      return { ...prev, [modelId]: current };
+    });
+  };
 
   const handleViewerReady = (viewerHandles: any) => {
     const adapter = new ViewerActionsAdapter(viewerHandles);
@@ -235,7 +255,7 @@ export default function Layout() {
           src/ui/PanelWidthContext.tsx. StatusBar no lo necesita. */}
       <PanelWidthProvider>
         <main ref={viewportRef} className="viewport">
-          <DockLeft />
+          <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
           <Viewport
             onViewerReady={handleViewerReady}
             isSectionBoxActive={isSectionBoxActive}

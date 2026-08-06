@@ -1,4 +1,12 @@
 // src/ui/Dock/DockLeft.tsx
+//
+// hiddenByModel/onToggleElementVisibility arrive as props from Layout.tsx
+// instead of living as a useState inside ModelTree.tsx (where they used
+// to be): ModelTree only mounts while this dock is expanded (collapsing
+// swaps it out for DockCollapsed, see showCollapsed below) - state local
+// to ModelTree was silently lost every time the user collapsed and
+// re-expanded the dock, un-hiding every element that had been hidden.
+// Layout.tsx never unmounts, so this survives.
 import { useEffect, useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
@@ -13,7 +21,12 @@ import "../../styles/dock.css";
 const COLLAPSED_WIDTH = 56;
 const EXPANDED_WIDTH = 272;
 
-export function DockLeft() {
+interface DockLeftProps {
+  hiddenByModel: Record<string, Set<number>>;
+  onToggleElementVisibility: (modelId: string, localId: number) => void;
+}
+
+export function DockLeft({ hiddenByModel, onToggleElementVisibility }: DockLeftProps) {
   const app = useApp();
   const { isLeftDockOpen, setIsLeftDockOpen } = usePanelWidth();
   const [displayNames, setDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
@@ -106,7 +119,7 @@ export function DockLeft() {
               {progressMessage || "Cargando..."}
             </p>
           )}
-          <ModelTree />
+          <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={onToggleElementVisibility} />
         </div>
       )}
     </DockPanel>

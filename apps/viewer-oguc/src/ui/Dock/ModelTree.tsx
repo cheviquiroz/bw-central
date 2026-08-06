@@ -4,6 +4,7 @@ import { useApp } from "../AppContext";
 import type { ModelTrees, ModelTreeNode, ApplicationInstance, SelectionState, ModelDisplayNames } from "../../engine/createApplication";
 import type { ProximityWarning } from "@bw-central/ifc-core";
 import { IconChevron, IconFolder, IconEye, IconTrash } from "../icons/dock";
+import { Tooltip } from "../Tooltip/Tooltip";
 
 function findPathToLocalId(node: ModelTreeNode, targetLocalId: number): number[] | null {
   if (node.localId === targetLocalId) {
@@ -57,9 +58,17 @@ function TreeNode({
   const autoExpanded = expandedIds.has(node.treeNodeId);
   const expanded = manuallyExpanded || autoExpanded;
 
-  const safeName = typeof node.name === "string" ? node.name : null;
+  // El nombre real (Name del archivo, vía readIfcName/SpatialTreeManager)
+  // es el label principal - la clase IFC (category) queda como texto
+  // secundario/muted, no como fallback silencioso. Solo se cae a
+  // category, y luego a "Elemento #N", cuando de verdad no hay Name
+  // declarado (ver SpatialTreeManager.ts: la mayoría de los nodos de
+  // agrupación IFC ahora SÍ traen ambos, name y category, tras fusionar
+  // el wrapper de categoría con su entidad real).
+  const safeName = typeof node.name === "string" && node.name.length > 0 ? node.name : null;
   const safeCategory = typeof node.category === "string" ? node.category : null;
   const label = safeName || safeCategory || `Elemento #${node.localId ?? "?"}`;
+  const showCategoryBadge = safeName !== null && safeCategory !== null;
 
   // El badge de cantidad solo se calcula para nodos de agrupación - contar
   // hojas recursivas en cada render es aceptable acá (árboles de cientos,
@@ -94,7 +103,14 @@ function TreeNode({
             style={{ width: "6px", height: "6px", borderRadius: "50%", background: "currentColor", flexShrink: 0 }}
           />
         )}
-        <span className="lbl">{label}</span>
+        {/* Tooltip siempre envuelve el label - si el nombre no está
+            truncado por el ellipsis de CSS, no cuesta nada mostrarlo de
+            nuevo en el tooltip; si SÍ está truncado, es la única forma de
+            leerlo completo sin agregar scroll horizontal al árbol. */}
+        <Tooltip label={label}>
+          <span className="lbl">{label}</span>
+        </Tooltip>
+        {showCategoryBadge && <span className="lbl-category">{safeCategory}</span>}
         {hasChildren && leafCount > 0 && <span className="count">{leafCount}</span>}
         {isSelectable && (
           <svg
@@ -196,8 +212,7 @@ function ModelHeader({ modelId, app, displayNames, proximityWarning }: { modelId
       </span>
       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
         <span
-          className="dock-tree-eye"
-          style={{ opacity: isTogglingVisibility ? 0.5 : isVisible ? 0 : 1, color: isVisible ? undefined : "var(--dock-selected-border)" }}
+          className={`dock-tree-eye model-header-eye${isVisible ? "" : " model-hidden"}${isTogglingVisibility ? " toggling" : ""}`}
           onClick={handleToggleVisibility}
           title={isVisible ? "Ocultar modelo" : "Mostrar modelo"}
         >
@@ -216,13 +231,17 @@ function ModelHeader({ modelId, app, displayNames, proximityWarning }: { modelId
   );
 }
 
-export function ModelTree() {
+interface ModelTreeProps {
+  hiddenByModel: Record<string, Set<number>>;
+  onToggleElementVisibility: (modelId: string, localId: number) => void;
+}
+
+export function ModelTree({ hiddenByModel, onToggleElementVisibility }: ModelTreeProps) {
   const app = useApp();
   const [trees, setTrees] = useState<ModelTrees>(app.getModelTrees());
   const [selection, setSelectionState] = useState<SelectionState>(app.getSelection());
   const [displayNames, setDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
   const [proximityWarnings, setProximityWarnings] = useState<ProximityWarning[]>(app.getProximityWarnings());
-  const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
 
   useEffect(() => {
     const unsubscribeTrees = app.subscribeToModelTrees((newTrees) => setTrees(newTrees));
@@ -264,21 +283,6 @@ export function ModelTree() {
     return { expandedIdsByModel, selectedLocalIdByModel };
   }, [selection, trees, modelIds, app]);
 
-  const handleToggleVisibility = (modelId: string, localId: number) => {
-    setHiddenByModel((prev) => {
-      const current = new Set(prev[modelId] ?? []);
-      const nextVisible = current.has(localId); // si ya estaba oculto, esto lo va a mostrar
-      if (current.has(localId)) current.delete(localId);
-      else current.add(localId);
-
-      app.setElementVisibility(modelId, localId, nextVisible).catch((error) => {
-        console.error("❌ Error cambiando visibilidad del elemento:", error);
-      });
-
-      return { ...prev, [modelId]: current };
-    });
-  };
-
   if (modelIds.length === 0) {
     return (
       <p style={{ fontSize: "12px", color: "var(--dock-text-secondary)", padding: "16px 20px" }}>
@@ -305,7 +309,7 @@ export function ModelTree() {
             expandedIds={expandedIdsByModel[modelId] || new Set()}
             selectedLocalId={selectedLocalIdByModel[modelId] ?? null}
             hiddenLocalIds={hiddenByModel[modelId] ?? new Set()}
-            onToggleVisibility={(localId) => handleToggleVisibility(modelId, localId)}
+            onToggleVisibility={(localId) => onToggleElementVisibility(modelId, localId)}
           />
         </div>
       ))}
