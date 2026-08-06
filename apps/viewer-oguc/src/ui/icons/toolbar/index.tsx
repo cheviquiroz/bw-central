@@ -137,6 +137,19 @@ export function IconPanelIssues() {
   );
 }
 
+// review - "Revisar OGUC" (/revision entry point). Círculo con check, el
+// símbolo estándar de "cumplimiento verificado" - distinto del resto de
+// íconos de acción (measure/isolate/etc.) porque esto no actúa sobre el
+// modelo en el viewport, lanza un modo/contexto distinto.
+export function IconCheckCircle() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12.5l2.5 2.5L16 9.5" />
+    </svg>
+  );
+}
+
 // A diferencia de los demás íconos de este archivo, este NO usa
 // currentColor - el punto es mostrar los 3 ejes con sus colores reales
 // (rojo/verde/azul), igual que AxesHelper.ts los dibuja en la escena.

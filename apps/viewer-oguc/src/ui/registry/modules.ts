@@ -26,6 +26,7 @@ import {
   IconPanelTree,
   IconPanelData,
   IconPanelIssues,
+  IconCheckCircle,
 } from "../icons/toolbar";
 
 /**
@@ -209,7 +210,20 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     tier: "free",
   },
 
-  // review - compliance checks. Nothing today; /revision lands here.
+  // review - compliance checks. start-review is the /revision entry
+  // point - structure only, same as every other module here (the
+  // registry never holds onClick/isActive - see the file header comment).
+  // Layout.tsx's moduleRuntime wires the actual navigate('/revision')
+  // call, same pattern as every other module's handler.
+  {
+    id: "start-review",
+    label: "Revisar OGUC",
+    intent: "review",
+    kind: "action",
+    icon: IconCheckCircle,
+    requiresModel: true,
+    tier: "free",
+  },
 
   // workspace - toggles the user's OWN panels (visibility), not a tool
   // acting on the model. Rendered by Toolbar.tsx as a separate,

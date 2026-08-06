@@ -1,19 +1,18 @@
 // src/components/Layout/Layout.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
 import { DockRight } from "../../ui/Dock/DockRight";
 import { DockBottom } from "../../ui/Dock/DockBottom";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
-import { ViewerActionsAdapter } from "../../engine/adapters/ViewerActionsAdapter";
-import { SearchManager } from "../../viewer/SearchManager";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
 import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../../ui/LayoutStateContext";
-import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
+import { useModelToolActions } from "./useModelToolActions";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
@@ -36,14 +35,16 @@ export default function Layout() {
 
 function LayoutInner() {
   const app = useApp();
-  const [actionsAdapter, setActionsAdapter] = useState<ViewerActionsAdapter | null>(null);
-  const [searchManager, setSearchManager] = useState<SearchManager | null>(null);
-  const [isSectionBoxActive, setIsSectionBoxActive] = useState(false);
-  const [isIsolateActive, setIsIsolateActive] = useState(false);
-  const [isHidePlaneActive, setIsHidePlaneActive] = useState(false);
-  const [isAxesActive, setIsAxesActive] = useState(false);
-  const [isMeasuring, setIsMeasuring] = useState(false);
-  const [externalQuery, setExternalQuery] = useState<{ value: string; nonce: number } | null>(null);
+  const navigate = useNavigate();
+  const {
+    viewportRef,
+    searchManager,
+    externalQuery,
+    isSectionBoxActive,
+    isMeasuring,
+    handleViewerReady,
+    toolModuleRuntime,
+  } = useModelToolActions(app);
   const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; nonce: number } | null>(null);
   const [modelDisplayNames, setModelDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
   const [isUploading, setIsUploading] = useState(false);
@@ -55,7 +56,6 @@ function LayoutInner() {
   // useState local ahí se perdía cada vez que el usuario colapsaba el
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const viewportRef = React.useRef<HTMLDivElement>(null);
   const { zones, toggleZone } = useLayoutState();
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
@@ -73,53 +73,6 @@ function LayoutInner() {
     });
   };
 
-  const handleViewerReady = (viewerHandles: any) => {
-    const adapter = new ViewerActionsAdapter(viewerHandles);
-    setActionsAdapter(adapter);
-    setSearchManager(new SearchManager(viewerHandles, app));
-  };
-
-  // Los 4 handlers de abajo ya no pasan un ref de botón al adapter para
-  // que este le mute el classList directamente (isolateButton.classList.
-  // add/remove, etc. - ver el comentario en ViewerActionsAdapter.ts sobre
-  // por qué eso era un bug real, no solo un estilo distinto): el adapter
-  // ahora devuelve el nuevo estado, y ese valor se guarda acá en useState
-  // para que Toolbar reciba isActive como prop de verdad, sobreviviendo
-  // cualquier re-render ajeno.
-  const handleIsolateClick = () => {
-    if (actionsAdapter && viewportRef.current) {
-      setIsIsolateActive(actionsAdapter.toggleIsolate(viewportRef.current));
-    } else {
-      console.warn("Por favor, selecciona un elemento en el modelo 3D primero.");
-    }
-  };
-
-  const handleClipClick = () => {
-    if (actionsAdapter) {
-      setIsSectionBoxActive(actionsAdapter.toggleClipPlane());
-    }
-  };
-
-  const handleHidePlaneClick = () => {
-    if (actionsAdapter) {
-      setIsHidePlaneActive(actionsAdapter.toggleClipperVisibility());
-    }
-  };
-
-  const handleFitAllClick = () => {
-    fitCameraToAllLoadedModels();
-  };
-
-  const handleAxesClick = () => {
-    if (actionsAdapter) {
-      setIsAxesActive(actionsAdapter.toggleAxes());
-    }
-  };
-
-  const handleMeasureClick = () => {
-    setIsMeasuring((prev) => !prev);
-  };
-
   const handleToggleTreePanel = () => {
     toggleZone("left");
   };
@@ -133,6 +86,10 @@ function LayoutInner() {
   // ahora un toggle de visibilidad simple, igual que los otros dos.
   const handleToggleIssuesPanel = () => {
     toggleZone("bottom");
+  };
+
+  const handleStartReview = () => {
+    navigate("/revision");
   };
 
   const hasModels = Object.keys(modelDisplayNames).length > 0;
@@ -162,16 +119,6 @@ function LayoutInner() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [hasModels]);
-
-  // Click-to-filter: PropertiesPanel (Shift+click en una propiedad) publica
-  // acá su query armada ("Material:Vidrio templado") vía
-  // app.requestSearchQuery - Layout no conoce el detalle de quién la pidió,
-  // solo la reenvía a SearchBar como comando de un solo uso.
-  useEffect(() => {
-    return app.subscribeToSearchQueryRequests((query) => {
-      setExternalQuery({ value: query, nonce: Date.now() });
-    });
-  }, [app]);
 
   // El modal de carga inicial se oculta solo (nada de un setState manual
   // en el handler) - se deriva de si ya hay algún modelo federado, la misma
@@ -249,20 +196,16 @@ function LayoutInner() {
   // real, ni siquiera eso).
   const moduleRuntime: ModuleRuntimeMap = useMemo(
     () => ({
-      "fit-all": { onClick: handleFitAllClick },
-      axes: { onClick: handleAxesClick, isActive: isAxesActive },
-      "section-box": { onClick: handleClipClick, isActive: isSectionBoxActive },
-      "hide-plane": { onClick: handleHidePlaneClick, isActive: isHidePlaneActive },
-      measure: { onClick: handleMeasureClick, isActive: isMeasuring },
-      isolate: { onClick: handleIsolateClick, isActive: isIsolateActive },
+      ...toolModuleRuntime,
       "bcf-import": { onClick: handleImportBcf },
       "bcf-export": { onClick: handleExportBcf },
+      "start-review": { onClick: handleStartReview },
       "panel-tree": { onClick: handleToggleTreePanel, isActive: zones.left },
       "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
       "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.bottom },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter, zones.left, zones.right, zones.bottom]
+    [toolModuleRuntime, zones.left, zones.right, zones.bottom]
   );
 
   const handleFilesSelected = async (files: File[]) => {

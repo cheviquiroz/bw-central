@@ -163,6 +163,34 @@ body {
   flex: 1;
 }
 
+/* Solo aparece cuando Toolbar recibe backTo (hoy, solo en /revision) -
+   texto + flecha, no un ícono solo, porque "volver a dónde" necesita
+   quedar explícito (a diferencia del resto de .toolbar-btn, que son
+   herramientas conocidas identificables por ícono solo). */
+.toolbar-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  background: none;
+  border: 1px solid var(--toolbar-line);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.toolbar-back-btn:hover {
+  background: var(--toolbar-hover);
+  color: var(--text-primary);
+}
+
 .toolbar-project-pill {
   display: flex;
   align-items: center;

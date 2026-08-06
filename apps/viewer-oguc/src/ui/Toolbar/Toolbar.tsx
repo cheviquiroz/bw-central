@@ -1,6 +1,7 @@
 // src/ui/Toolbar/Toolbar.tsx
 import { Fragment } from "react";
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import "../../styles/toolbar.css";
 import { Logo } from "./Logo";
 import { ToolbarButton } from "./ToolbarButton";
@@ -15,6 +16,15 @@ interface ToolbarProps {
   moduleRuntime: ModuleRuntimeMap;
   /** Disables every requiresModel:true module when no model is loaded. */
   hasModel: boolean;
+  /**
+   * Route to return to, e.g. "/" from /revision. Not a registry module -
+   * this is route-chrome specific to whichever layout renders Toolbar,
+   * not a structural part of the shared module vocabulary (registry
+   * entries are meant to make sense on every surface that queries them;
+   * "go back to the route I came from" only makes sense on one route).
+   * Omitted entirely on "/" - no button renders.
+   */
+  backTo?: { label: string; path: string };
 }
 
 // Only Section Box has a nested child today (Hide Plane) - a single
@@ -65,7 +75,8 @@ function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasMo
   );
 }
 
-export function Toolbar({ searchBar, moduleRuntime, hasModel }: ToolbarProps) {
+export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo }: ToolbarProps) {
+  const navigate = useNavigate();
   const toolbarModules = getModulesForSurface("toolbar");
   // 'workspace' is excluded from MODULE_INTENT_ORDER's loop below and
   // rendered separately, right-aligned - see the ModuleIntent comment in
@@ -76,6 +87,15 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel }: ToolbarProps) {
   return (
     <header className="toolbar">
       <Logo />
+
+      {backTo && (
+        <>
+          <button className="toolbar-back-btn" onClick={() => navigate(backTo.path)}>
+            {backTo.label}
+          </button>
+          <ToolbarSeparator />
+        </>
+      )}
 
       {MODULE_INTENT_ORDER.map((intent) => {
         const modules = toolbarModules.filter((m) => m.intent === intent);
