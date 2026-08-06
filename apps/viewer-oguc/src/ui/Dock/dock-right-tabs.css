@@ -6,12 +6,17 @@
    con el resto, no una paleta nueva inventada. */
 @import "../../styles/tokens.css";
 
-/* Celda derecha del grid de 3 columnas de .viewport (Layout.css). Ya no
-   flotante: el ancho lo pone --dock-right-width (el ancho del tab activo,
-   ver DockRightWithTabs.tsx), height:100% llena la celda entera. */
+/* Celda derecha del grid de 3 columnas de .viewport (Layout.css). Ancho
+   fijo, sin estado intermedio: este dock o está montado a su ancho
+   completo, o no está montado en absoluto (ver DockRightWithTabs.tsx) -
+   ya no hay nada que interpolar, así que la vieja transition:width se
+   retira con él. margin-left es el gutter negro hacia el canvas - solo
+   existe mientras este elemento existe (ver el comentario largo en
+   Layout.css sobre por qué esto reemplazó el gap:16px del grid padre). */
 .dock-right-tabs {
-  width: var(--dock-right-width, 56px);
+  width: 272px;
   height: 100%;
+  margin-left: 16px;
   display: flex;
   flex-direction: column;
   background: rgba(23, 28, 34, 0.88);
@@ -19,7 +24,6 @@
   border-radius: 12px;
   backdrop-filter: blur(20px);
   overflow: hidden;
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dock-right-tab-bar {

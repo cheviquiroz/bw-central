@@ -3,12 +3,11 @@
 
 /* Ya no flotante ni position:absolute - vive dentro de DockRightWithTabs
    (ver ui/Dock/DockRightWithTabs.tsx y dock-right-tabs.css), que a su vez
-   es la celda derecha del grid de .viewport (Layout.css). Sigue
-   controlando su propio ancho vía --properties-width (proximity-hover sin
-   cambios), pero ahora ese ancho vive dentro del flujo normal en vez de
-   flotar sobre el canvas. */
+   es la celda derecha del grid de .viewport (Layout.css). Ancho fijo, sin
+   estado intermedio: este panel o está montado a su ancho completo, o no
+   está montado (ver PropertiesPanel.tsx) - ya no hay nada que interpolar. */
 .properties-panel {
-  width: var(--properties-width, 272px);
+  width: 100%;
   height: 100%;
   /* rgba en vez de un token: mismo valor que --dock-bg en dock.css (no hay
      token de bg translúcido en tokens.css, ver mismo comentario en dock.css). */
@@ -113,39 +112,6 @@
   border-bottom: 1px solid var(--line-soft);
   padding: 0 14px;
   flex-shrink: 0;
-}
-
-/* Colapsado (56px, mismo COLLAPSED_WIDTH que DockLeft): en vez de abreviar
-   texto o dejarlo envolver letra por letra (lo que se probó antes y quedaba
-   ilegible), tabs y contenido se difuminan - "está ahí pero fantasmagórico",
-   no roto. pointer-events:none para que no queden clickeables por accidente
-   mientras están casi invisibles (el proximity-hover ya se encarga de
-   expandir el panel antes de que el usuario pueda intentar clickear algo
-   real). El header (categoría + pin) se excluye a propósito - ver
-   .properties-header más abajo, tiene que seguir nítido y clickeable. */
-.properties-panel.collapsed .properties-tabs,
-.properties-panel.collapsed .properties-body {
-  backdrop-filter: blur(8px);
-  opacity: 0.3;
-  pointer-events: none;
-  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.properties-panel:not(.collapsed) .properties-tabs,
-.properties-panel:not(.collapsed) .properties-body {
-  backdrop-filter: none;
-  opacity: 1;
-  pointer-events: auto;
-  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.properties-panel.collapsed .properties-header-text {
-  overflow: hidden;
-}
-
-.properties-panel.collapsed .prop-name,
-.properties-panel.collapsed .prop-model {
-  display: none;
 }
 
 .prop-tab {
@@ -260,14 +226,6 @@
   padding: 40px 20px;
   color: var(--text-low);
   font-size: 13px;
-}
-
-/* Complementa el blur de .properties-body (arriba): un texto más chico
-   difumina en una mancha más compacta y prolija que el mismo texto grande
-   envuelto en 3 líneas y luego blurreado. */
-.properties-panel.collapsed .prop-empty {
-  padding: 12px 6px;
-  font-size: 10px;
 }
 
 .prop-multi {

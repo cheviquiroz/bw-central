@@ -1,25 +1,25 @@
 // src/ui/Dock/DockLeft.tsx
 //
-// hiddenByModel/onToggleElementVisibility arrive as props from Layout.tsx
-// instead of living as a useState inside ModelTree.tsx (where they used
-// to be): ModelTree only mounts while this dock is expanded (collapsing
-// swaps it out for DockCollapsed, see showCollapsed below) - state local
-// to ModelTree was silently lost every time the user collapsed and
-// re-expanded the dock, un-hiding every element that had been hidden.
-// Layout.tsx never unmounts, so this survives.
-import { useEffect, useRef, useState } from "react";
+// No collapsed-rail state anymore: this panel is either mounted at its
+// full 272px width (visible) or not mounted at all (hidden, zones.left
+// === false - see LayoutStateContext.tsx). DockCollapsed and the whole
+// 56px rail it lived in are deleted, not just unused - a docked panel
+// that starts hidden with no affordance explaining what it is or how to
+// reopen it read as "broken", not "closed". The Toolbar's workspace
+// toggle (Phase 2) is the one, discoverable way back in.
+//
+// hiddenByModel/onToggleElementVisibility still arrive as props from
+// Layout.tsx rather than living inside ModelTree.tsx - unchanged from
+// the previous fix (ModelTree still only mounts while this dock is
+// visible, and Layout.tsx never unmounts).
+import { useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
-import { usePanelWidth } from "../PanelWidthContext";
+import { useLayoutState } from "../LayoutStateContext";
 import { DockPanel } from "./DockPanel";
 import { DockHeader } from "./DockHeader";
-import { DockCollapsed } from "./DockCollapsed";
 import { ModelTree } from "./ModelTree";
-import type { ModelDisplayNames, SelectionState } from "../../engine/createApplication";
 import "../../styles/dock.css";
-
-const COLLAPSED_WIDTH = 56;
-const EXPANDED_WIDTH = 272;
 
 interface DockLeftProps {
   hiddenByModel: Record<string, Set<number>>;
@@ -28,23 +28,10 @@ interface DockLeftProps {
 
 export function DockLeft({ hiddenByModel, onToggleElementVisibility }: DockLeftProps) {
   const app = useApp();
-  const { isLeftDockOpen, setIsLeftDockOpen } = usePanelWidth();
-  const [displayNames, setDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
-  const [selection, setSelection] = useState<SelectionState>(app.getSelection());
+  const { zones, setZoneVisible } = useLayoutState();
   const [loading, setLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const width = isLeftDockOpen ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
-
-  useEffect(() => {
-    const unsubNames = app.subscribeToModelDisplayNames(setDisplayNames);
-    const unsubSelection = app.subscribeToSelection(setSelection);
-    return () => {
-      unsubNames();
-      unsubSelection();
-    };
-  }, [app]);
 
   const handleAddClick = () => fileInputRef.current?.click();
 
@@ -91,37 +78,22 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility }: DockLeftP
     }
   };
 
-  const showCollapsed = !isLeftDockOpen;
+  if (!zones.left) return null;
 
   return (
-    <DockPanel width={width}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".ifc"
-        multiple
-        onChange={handleFileChange}
-        style={{ display: "none" }}
-      />
+    <DockPanel>
+      <input ref={fileInputRef} type="file" accept=".ifc" multiple onChange={handleFileChange} style={{ display: "none" }} />
 
-      <DockHeader
-        visible={isLeftDockOpen}
-        onAddClick={handleAddClick}
-        onCollapse={() => setIsLeftDockOpen(false)}
-      />
+      <DockHeader onAddClick={handleAddClick} onClose={() => setZoneVisible("left", false)} />
 
-      {showCollapsed ? (
-        <DockCollapsed displayNames={displayNames} selection={selection} onExpand={() => setIsLeftDockOpen(true)} />
-      ) : (
-        <div className="dock-tree-content">
-          {(loading || progressMessage) && (
-            <p style={{ fontSize: "11px", color: "var(--dock-text-secondary)", padding: "0 20px 8px", whiteSpace: "normal" }}>
-              {progressMessage || "Cargando..."}
-            </p>
-          )}
-          <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={onToggleElementVisibility} />
-        </div>
-      )}
+      <div className="dock-tree-content">
+        {(loading || progressMessage) && (
+          <p style={{ fontSize: "11px", color: "var(--dock-text-secondary)", padding: "0 20px 8px", whiteSpace: "normal" }}>
+            {progressMessage || "Cargando..."}
+          </p>
+        )}
+        <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={onToggleElementVisibility} />
+      </div>
     </DockPanel>
   );
 }

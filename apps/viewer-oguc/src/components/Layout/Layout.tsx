@@ -11,7 +11,7 @@ import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
 import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
-import { PanelWidthProvider } from "../../ui/PanelWidthContext";
+import { LayoutStateProvider } from "../../ui/LayoutStateContext";
 import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
@@ -249,11 +249,11 @@ export default function Layout() {
           hubiera ganado por encima de cualquier display:grid puesto en la
           clase (los estilos inline siempre ganan sobre CSS de archivo) -
           removido a propósito, el display real ahora vive solo en la clase. */}
-      {/* PanelWidthProvider envuelve solo el main: OrientationCube (dentro de
-          Viewport) y DockRightWithTabs necesitan sincronizar el ancho del
-          panel activo para que el cubo no quede tapado cuando expande - ver
-          src/ui/PanelWidthContext.tsx. StatusBar no lo necesita. */}
-      <PanelWidthProvider>
+      {/* LayoutStateProvider envuelve solo el main: DockLeft/DockRightWithTabs
+          y OrientationCube (dentro de Viewport) necesitan la misma fuente
+          única de verdad sobre qué zonas están visibles - ver
+          src/ui/LayoutStateContext.tsx. StatusBar no lo necesita. */}
+      <LayoutStateProvider>
         <main ref={viewportRef} className="viewport">
           <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
           <Viewport
@@ -273,7 +273,7 @@ export default function Layout() {
             hasModel={hasModels}
           />
         </main>
-      </PanelWidthProvider>
+      </LayoutStateProvider>
 
       {/* 5. STATUSBAR */}
       <StatusBar />

@@ -2,10 +2,17 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { IfcViewerHandles } from "../../core/IfcBootstrap";
-import { usePanelWidth } from "../PanelWidthContext";
+import { useLayoutState } from "../LayoutStateContext";
 import "./orientation-cube.css";
 
-const CUBE_PANEL_GAP = 40; // separación fija entre el cubo y el borde del PropertiesPanel
+const CUBE_PANEL_GAP = 40; // separación fija entre el cubo y el borde del panel derecho
+// El dock derecho es un ancho fijo único (272px - ver dock-right-tabs.css)
+// sin importar qué tab está activa. Este componente ya no necesita
+// conocer un ancho publicado por el panel: Phase 4 de este mismo esfuerzo
+// va a reposicionar el cubo relativo al propio viewport en vez de
+// calcularlo a partir de anchos de hermanos - esta constante es un paso
+// intermedio, no la solución final.
+const RIGHT_DOCK_WIDTH = 272;
 
 // Se deriva del tipo real en vez de importar "camera-controls" directo -
 // ese paquete es una dependencia transitiva (vía @thatopen/components),
@@ -74,17 +81,14 @@ interface OrientationCubeProps {
 export function OrientationCube({ controls }: OrientationCubeProps) {
   const [angles, setAngles] = useState({ theta: 0, phi: PI / 2 });
   const animationFrameRef = useRef<number | null>(null);
-  // PropertiesPanel y BcfPanel ahora viven en DockRightWithTabs, un único
-  // slot con tabs (ya no dos paneles apilados uno al lado del otro - ver
-  // el commit que resuelve el conflicto de espacio entre ambos) - así que
-  // solo UNO de panelWidth/bcfPanelWidth refleja el ancho realmente visible
-  // en cada momento; el otro queda "congelado" en lo que fuera su último
-  // valor mientras su tab no está montado (deja de publicar cuando se
-  // desmonta). Math.max, no suma: sumarlos (como antes de este cambio)
-  // duplicaría el hueco reservado, corriendo el cubo más a la izquierda de
-  // lo necesario.
-  const { panelWidth, bcfPanelWidth } = usePanelWidth();
-  const cubeRightOffset = CUBE_PANEL_GAP + Math.max(panelWidth, bcfPanelWidth) + 16;
+  // Ya no lee anchos publicados por los paneles (panelWidth/bcfPanelWidth
+  // no existen más - ver LayoutStateContext.tsx): con visibilidad binaria,
+  // solo hace falta saber SI el dock derecho está visible, no cuánto mide
+  // exactamente. Ver la nota de RIGHT_DOCK_MAX_WIDTH arriba sobre por qué
+  // esto sigue siendo un cálculo a partir de estado de hermanos, no la
+  // solución final que llega en la Fase 4 de este esfuerzo.
+  const { zones } = useLayoutState();
+  const cubeRightOffset = zones.right ? CUBE_PANEL_GAP + RIGHT_DOCK_WIDTH + 16 : CUBE_PANEL_GAP;
 
   // Sincronización real con la cámara: se lee azimuthAngle/polarAngle
   // directo de camera-controls (ya expone esos getters) en su propio

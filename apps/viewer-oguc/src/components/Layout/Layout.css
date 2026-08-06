@@ -43,23 +43,28 @@ body {
 /* Grid real de 3 columnas (izquierda | centro dominante | derecha), no
    paneles flotantes superpuestos sobre el canvas 3D - ver el commit que
    resuelve el conflicto DockLeft/PropertiesPanel/BcfPanel por espacio.
-   Las columnas laterales son "auto": no fijamos su ancho acá, cada una se
-   ajusta al ancho que YA aplica su propio contenido (DockPanel/
-   DockRightWithTabs siguen poniendo su ancho dinámico vía style inline,
-   igual que antes de este cambio) - así el grid nunca necesita conocer
-   ese ancho por adelantado. La columna central "1fr" es la única que
-   puede crecer/achicarse: eso es lo que garantiza que el viewport 3D
-   nunca quede tapado, sin importar cuánto midan los paneles laterales.
-   gap:16px reemplaza los antiguos "top/left/right/bottom:16px" de cada
-   panel individual (ver dock.css/properties.css/bcf-panel.css) - ahora es
-   una sola separación consistente entre las 3 columnas, no tres cálculos
-   de inset repetidos. */
+   Las columnas laterales son "auto": cuando un panel lateral no está
+   montado (zona oculta - ver LayoutStateContext.tsx), esa columna no
+   tiene contenido y "auto" la colapsa a 0px sola, sin necesitar que este
+   grid sepa nada de qué está visible. La columna central "1fr" es la
+   única que puede crecer/achicarse: eso es lo que garantiza que el
+   viewport 3D nunca quede tapado.
+
+   padding:16px da el gutter negro contra los bordes de la ventana
+   (toolbar/statusbar/laterales) - se mantiene fijo, no depende de qué
+   paneles estén visibles. La separación ENTRE paneles y canvas ya NO es
+   un gap:16px acá (ver el comentario largo de por qué en el commit que
+   introduce visibilidad binaria): un gap fijo entre 3 tracks deja un
+   hueco vacío flotando cuando uno de los laterales no tiene contenido.
+   En su lugar, cada panel lateral pone su propio margin hacia el canvas
+   (margin-right en .dock-panel, margin-left en .dock-right-tabs) - ese
+   margin solo existe cuando el panel existe, así que un panel oculto no
+   deja ningún resto de espacio reservado. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 16px;
   padding: 16px;
   width: 100%;
   height: 100%;

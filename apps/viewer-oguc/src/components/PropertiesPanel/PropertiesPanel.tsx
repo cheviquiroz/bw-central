@@ -1,15 +1,12 @@
 // src/components/PropertiesPanel/PropertiesPanel.tsx
 import { useEffect, useState, useMemo, useCallback } from "react";
-import type { ReactNode, CSSProperties } from "react";
+import type { ReactNode } from "react";
 import { readIfcName, readIfcPropertyValue, groupPropertySets } from "@bw-central/ifc-core";
 import { useApp } from "../../ui/AppContext";
 import type { SelectionState } from "../../engine/createApplication";
 import { IconLock } from "../../ui/icons/dock";
-import { usePanelWidth } from "../../ui/PanelWidthContext";
+import { useLayoutState } from "../../ui/LayoutStateContext";
 import "../../styles/properties.css";
-
-const COLLAPSED_WIDTH = 56;
-const EXPANDED_WIDTH = 272;
 
 type TabType = "PROPERTIES" | "QUANTITIES" | "BSDD";
 
@@ -92,13 +89,11 @@ export default function PropertiesPanel() {
   const [selection, setSelection] = useState<SelectionState>(app.getSelection());
   const [activeTab, setActiveTab] = useState<TabType>("PROPERTIES");
   const [expandedPsets, setExpandedPsets] = useState<Record<string, boolean>>({});
-  // isRightDockOpen es compartido con BcfPanel (misma tab-slot desde la
-  // Fase 3) - ver PanelWidthContext.tsx para por qué no puede ser un
-  // useState local a este componente. Reemplaza tanto el viejo isPinned
-  // como la interpolación de ancho por proximity-hover: abrir/cerrar es
-  // ahora binario y solo pasa por click, nunca por acercar el mouse.
-  const { isRightDockOpen, setIsRightDockOpen, setPanelWidth } = usePanelWidth();
-  const width = isRightDockOpen ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
+  // zones.right compartido con BcfPanel (mismo dock desde la Fase 3) - ver
+  // LayoutStateContext.tsx. Este panel ya no tiene un ancho propio que
+  // calcular: mientras está montado, ocupa su ancho fijo completo (ver
+  // properties.css) - la única pregunta binaria es si está montado o no.
+  const { setZoneVisible } = useLayoutState();
 
   useEffect(() => {
     const unsubscribe = app.subscribeToSelection((newSelection) => {
@@ -106,14 +101,6 @@ export default function PropertiesPanel() {
     });
     return () => unsubscribe();
   }, [app]);
-
-  // Publica el ancho real (56 o 272px, ya no interpolado - ver arriba)
-  // para que OrientationCube (en Viewport.tsx, un componente hermano sin
-  // relación directa con este) pueda correrse a la izquierda y no quedar
-  // tapado cuando el panel expande - ver PanelWidthContext.tsx.
-  useEffect(() => {
-    setPanelWidth(width);
-  }, [width, setPanelWidth]);
 
   const activeModelId = Object.keys(selection).find((modelId) => selection[modelId].length > 0);
   const currentGuids = activeModelId ? selection[activeModelId] : [];
@@ -229,13 +216,8 @@ export default function PropertiesPanel() {
 
   const psetEntries = Object.entries(psets).filter(([name]) => name !== baseQuantitiesName);
 
-  const isCollapsed = !isRightDockOpen;
-
   return (
-    <div
-      className={`properties-panel${isCollapsed ? " collapsed" : ""}`}
-      style={{ "--properties-width": `${width}px` } as CSSProperties}
-    >
+    <div className="properties-panel">
       {/* Header contextual: siempre presente, con placeholders si no hay selección */}
       <div className="properties-header">
         <div className="properties-header-text">
@@ -243,10 +225,7 @@ export default function PropertiesPanel() {
           <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
           <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
         </div>
-        {/* Antes alternaba isPinned - ya no hay proximity-hover del que
-            "pinnear" (ver PanelWidthContext.tsx), así que esto es
-            simplemente cerrar el panel, no un toggle con estado propio. */}
-        <button className="properties-pin" onClick={() => setIsRightDockOpen(false)} title="Cerrar panel">
+        <button className="properties-pin" onClick={() => setZoneVisible("right", false)} title="Ocultar panel">
           <IconLock />
         </button>
       </div>

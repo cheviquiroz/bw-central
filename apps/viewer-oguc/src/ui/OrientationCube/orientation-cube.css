@@ -5,9 +5,9 @@
   position: absolute;
   top: 40px;
   /* right YA NO es fijo acá: se calcula en OrientationCube.tsx a partir de
-     PanelWidthContext (40px de separación + ancho actual de PropertiesPanel)
-     y se aplica vía inline style, para que el cubo se corra a la izquierda
-     cuando el panel expande en vez de quedar tapado detrás. */
+     LayoutStateContext (si el dock derecho está visible o no) y se aplica
+     vía inline style, para que el cubo se corra a la izquierda cuando el
+     panel está visible en vez de quedar tapado detrás. */
   width: 60px;
   height: 60px;
   perspective: 600px;

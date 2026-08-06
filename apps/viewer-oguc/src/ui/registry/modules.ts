@@ -9,7 +9,7 @@
 // This file describes STRUCTURE only. It does not hold onClick handlers
 // or isActive booleans - those still live in Layout.tsx (the single
 // place that owns application state, per this project's existing
-// AppContext/PanelWidthContext convention) and get matched to a module
+// AppContext/LayoutStateContext convention) and get matched to a module
 // by `id` at render time via a ModuleRuntimeMap (see the bottom of this
 // file). The registry never becomes a second source of truth for state.
 

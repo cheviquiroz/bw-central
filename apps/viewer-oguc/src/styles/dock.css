@@ -18,33 +18,31 @@
 
 /* Ya no es position:absolute - es una celda real del grid de 3 columnas
    de .viewport (Layout.css), no un panel flotante superpuesto al canvas.
-   height:100% reemplaza el antiguo "top:16px;bottom:16px" (el padding/gap
-   del grid padre ya da el inset de 16px, ver Layout.css). El "look"
-   flotante (blur, sombra, borde redondeado) se mantiene sin cambios - solo
-   cambió CÓMO se posiciona, no cómo se ve. */
+   width fijo (no más interpolación 56-272px): este panel o está montado
+   a su ancho completo, o no está montado en absoluto (ver DockLeft.tsx) -
+   no existe más un estado intermedio para animar entre 56 y 272, así que
+   la vieja transition:width se retira con él. margin-right es el gutter
+   negro hacia el canvas - solo existe mientras este elemento existe, así
+   que un dock oculto no deja ningún resto de espacio reservado (ver el
+   comentario largo en Layout.css sobre por qué esto reemplazó el
+   gap:16px del grid padre). */
 .dock-panel {
-  /* position:relative (no absolute) a propósito: ya no se posiciona a sí
-     mismo (eso lo hace el grid de .viewport ahora), pero SIGUE siendo el
-     contenedor de posicionamiento para .dock-collapsed, que es
-     position:absolute con top/left relativos a este panel (ver más abajo)
-     - sin esto, .dock-collapsed se posicionaría relativo al primer
-     ancestro posicionado que encuentre por fuera de acá, en un lugar
-     completamente distinto al esperado. */
-  position: relative;
-  /* Sigue haciendo falta, aunque ya no sea floating: el overlay del File
-     Upload Modal es position:fixed con z-index:50 (ver
-     file-upload-modal.css) y cubre TODA la ventana - sin esto, el botón
-     "+" del dock (una de las dos formas reales de cargar un modelo, junto
-     con soltar el archivo en el modal) quedaría debajo del overlay y
-     dejaría de recibir clicks mientras el modal está activo. */
-  z-index: 100;
+  width: 272px;
   height: 100%;
+  margin-right: 16px;
+  /* Sigue haciendo falta: el overlay del File Upload Modal es
+     position:fixed con z-index:50 (ver file-upload-modal.css) y cubre
+     TODA la ventana - sin esto, el botón "+" del dock (una de las dos
+     formas reales de cargar un modelo, junto con soltar el archivo en el
+     modal) quedaría debajo del overlay y dejaría de recibir clicks
+     mientras el modal está activo. */
+  position: relative;
+  z-index: 100;
   background: var(--dock-bg);
   border: 1px solid var(--dock-line);
   border-radius: 12px;
   backdrop-filter: blur(20px);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
-  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -131,33 +129,6 @@
 
 .dock-tree-content::-webkit-scrollbar-thumb:hover {
   background: var(--dock-text-hover);
-}
-
-.dock-collapsed {
-  position: absolute;
-  top: 45px;
-  left: 0;
-  width: 56px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  z-index: 5;
-  cursor: pointer;
-}
-
-.dock-collapsed .f-ico {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--dock-text-secondary);
-  height: 28px;
-  display: flex;
-  align-items: center;
-}
-
-.dock-collapsed .f-ico.active {
-  color: var(--dock-selected-border);
 }
 
 /* --- Árbol --- */
