@@ -249,6 +249,8 @@ export default function Layout() {
             onBcfFilterChange={handleBcfFilterChange}
             onBcfTopicSelect={handleBcfTopicSelect}
             onBcfTopicActivate={handleBcfTopicActivate}
+            moduleRuntime={moduleRuntime}
+            hasModel={hasModels}
           />
         </main>
       </PanelWidthProvider>

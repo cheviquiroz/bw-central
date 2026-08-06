@@ -31,6 +31,14 @@
   flex-shrink: 0;
 }
 
+.bcf-actions {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+
 .bcf-title {
   margin: 0;
   font-size: 12px;

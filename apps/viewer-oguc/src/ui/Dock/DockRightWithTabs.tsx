@@ -17,6 +17,7 @@ import { usePanelWidth } from "../PanelWidthContext";
 import PropertiesPanel from "../../components/PropertiesPanel/PropertiesPanel";
 import { BcfPanel } from "../BcfPanel/BcfPanel";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+import type { ModuleRuntimeMap } from "../registry/modules";
 import "./dock-right-tabs.css";
 
 type RightTab = "properties" | "bcf";
@@ -26,9 +27,18 @@ interface DockRightWithTabsProps {
   onBcfFilterChange: (status: BcfFilterStatus) => void;
   onBcfTopicSelect: (topic: BcfTopic | null) => void;
   onBcfTopicActivate: (topic: BcfTopic) => void;
+  moduleRuntime: ModuleRuntimeMap;
+  hasModel: boolean;
 }
 
-export function DockRightWithTabs({ bcfState, onBcfFilterChange, onBcfTopicSelect, onBcfTopicActivate }: DockRightWithTabsProps) {
+export function DockRightWithTabs({
+  bcfState,
+  onBcfFilterChange,
+  onBcfTopicSelect,
+  onBcfTopicActivate,
+  moduleRuntime,
+  hasModel,
+}: DockRightWithTabsProps) {
   const [activeTab, setActiveTab] = useState<RightTab>("properties");
   // Cada tab publica su PROPIO ancho (panelWidth/bcfPanelWidth siguen
   // siendo dos valores de Context separados, sin cambios ahí - ver
@@ -56,7 +66,14 @@ export function DockRightWithTabs({ bcfState, onBcfFilterChange, onBcfTopicSelec
       <div className="dock-right-tab-content">
         {activeTab === "properties" && <PropertiesPanel />}
         {activeTab === "bcf" && (
-          <BcfPanel state={bcfState} onFilterChange={onBcfFilterChange} onTopicSelect={onBcfTopicSelect} onTopicActivate={onBcfTopicActivate} />
+          <BcfPanel
+            state={bcfState}
+            onFilterChange={onBcfFilterChange}
+            onTopicSelect={onBcfTopicSelect}
+            onTopicActivate={onBcfTopicActivate}
+            moduleRuntime={moduleRuntime}
+            hasModel={hasModel}
+          />
         )}
       </div>
     </div>
