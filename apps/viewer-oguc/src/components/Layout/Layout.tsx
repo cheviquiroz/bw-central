@@ -1,5 +1,5 @@
 // src/components/Layout/Layout.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
@@ -16,6 +16,7 @@ import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+import type { ModuleRuntimeMap } from "../../ui/registry/modules";
 
 export default function Layout() {
   const app = useApp();
@@ -162,6 +163,27 @@ export default function Layout() {
   // importNewModel no rechaza la Promise ante un IFC inválido - devuelve
   // { success: false, error } (mismo Result que usa DockLeft.handleFileChange)
   // - un try/catch solo no alcanza para mostrar el mensaje de error real.
+  // Puente entre el registry (estructura estática, ver src/ui/registry/
+  // modules.ts) y el estado real de la aplicación, que sigue viviendo acá
+  // igual que siempre - el registry nunca se vuelve una segunda fuente de
+  // verdad. Agregar un módulo nuevo a la Toolbar ya no toca Toolbar.tsx:
+  // solo hace falta una entrada acá (o, si no tiene isActive ni onClick
+  // real, ni siquiera eso).
+  const moduleRuntime: ModuleRuntimeMap = useMemo(
+    () => ({
+      "fit-all": { onClick: handleFitAllClick },
+      axes: { onClick: handleAxesClick, isActive: isAxesActive },
+      "section-box": { onClick: handleClipClick, isActive: isSectionBoxActive },
+      "hide-plane": { onClick: handleHidePlaneClick, isActive: isHidePlaneActive },
+      measure: { onClick: handleMeasureClick, isActive: isMeasuring },
+      isolate: { onClick: handleIsolateClick, isActive: isIsolateActive },
+      "bcf-import": { onClick: handleImportBcf },
+      "bcf-export": { onClick: handleExportBcf },
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter]
+  );
+
   const handleFilesSelected = async (files: File[]) => {
     setIsUploading(true);
     setUploadError(undefined);
@@ -196,19 +218,8 @@ export default function Layout() {
       {/* 1. TOOLBAR */}
       <Toolbar
         searchBar={<SearchBar searchManager={searchManager} externalQuery={externalQuery} />}
-        onIsolateClick={handleIsolateClick}
-        onSectionBoxClick={handleClipClick}
-        onHidePlaneClick={handleHidePlaneClick}
-        onFitAllClick={handleFitAllClick}
-        onAxesClick={handleAxesClick}
-        onMeasureClick={handleMeasureClick}
-        isMeasuring={isMeasuring}
-        isIsolateActive={isIsolateActive}
-        isSectionBoxActive={isSectionBoxActive}
-        isHidePlaneActive={isHidePlaneActive}
-        isAxesActive={isAxesActive}
-        onImportBcf={handleImportBcf}
-        onExportBcf={handleExportBcf}
+        moduleRuntime={moduleRuntime}
+        hasModel={hasModels}
       />
 
       {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO CON TABS */}

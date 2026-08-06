@@ -1,120 +1,89 @@
 // src/ui/Toolbar/Toolbar.tsx
+import { Fragment } from "react";
 import type { ReactNode } from "react";
 import "../../styles/toolbar.css";
 import { Logo } from "./Logo";
 import { ToolbarButton } from "./ToolbarButton";
 import { ToolbarSeparator } from "./ToolbarSeparator";
 import { ProjectPill } from "./ProjectPill";
-import {
-  IconSelect,
-  IconMeasure,
-  IconIsolate,
-  IconSectionBox,
-  IconHidePlane,
-  IconFitAll,
-  IconXYZ,
-  IconBcfImport,
-  IconBcfExport,
-} from "../icons/toolbar";
-
-// IconOpenIfc/IconSaveView eran botones sin onClick (ver el resumen de la
-// Auditoría UI/UX, Paso 1) - se sacaron del render en vez de mostrarse
-// deshabilitados: un botón sin función no le dice al usuario si es "por
-// cablear" o "roto", y una lista limpia de botones reales es más clara
-// que una con relleno. Se reincorporan (con su categoría VIEW/INTERACT/
-// BCF real) el día que tengan un onClick de verdad detrás.
+import { MODULE_INTENT_ORDER, getModulesForSurface } from "../registry/modules";
+import type { ModuleDefinition, ModuleRuntimeMap } from "../registry/modules";
 
 interface ToolbarProps {
   searchBar: ReactNode;
-  onIsolateClick: () => void;
-  onSectionBoxClick: () => void;
-  onHidePlaneClick: () => void;
-  onFitAllClick: () => void;
-  onAxesClick: () => void;
-  onMeasureClick: () => void;
-  isMeasuring: boolean;
-  isIsolateActive: boolean;
-  isSectionBoxActive: boolean;
-  isHidePlaneActive: boolean;
-  isAxesActive: boolean;
-  onImportBcf: () => void;
-  onExportBcf: () => void;
+  /** Real onClick/isActive per module id - built in Layout.tsx, the single owner of application state. The registry only describes structure. */
+  moduleRuntime: ModuleRuntimeMap;
+  /** Disables every requiresModel:true module when no model is loaded. */
+  hasModel: boolean;
 }
 
-export function Toolbar({
-  searchBar,
-  onIsolateClick,
-  onSectionBoxClick,
-  onHidePlaneClick,
-  onFitAllClick,
-  onAxesClick,
-  onMeasureClick,
-  isMeasuring,
-  isIsolateActive,
-  isSectionBoxActive,
-  isHidePlaneActive,
-  isAxesActive,
-  onImportBcf,
-  onExportBcf,
-}: ToolbarProps) {
+// Only Section Box has a nested child today (Hide Plane) - a single
+// direct child is rendered as an inline compact button next to its
+// parent, visible only while the parent is active (a sub-state of the
+// plane Section Box creates has no reason to exist before the plane
+// does). If a module ever needs more than one child, this function is
+// the one place that would need to grow past "children[0]".
+function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasModel: boolean) {
+  const state = runtime[module.id] ?? {};
+  const disabled = module.requiresModel && !hasModel;
+  const Icon = module.icon;
+  const child = module.children?.[0];
+  const childVisible = Boolean(child && state.isActive);
+
+  const parentButton = (
+    <ToolbarButton
+      id={`btn-${module.id}`}
+      icon={<Icon />}
+      label={module.label}
+      onClick={state.onClick}
+      isActive={state.isActive}
+      disabled={disabled}
+    />
+  );
+
+  if (!child) return <Fragment key={module.id}>{parentButton}</Fragment>;
+
+  const childState = runtime[child.id] ?? {};
+  const ChildIcon = child.icon;
+
+  return (
+    <div key={module.id} className={`toolbar-btn-cluster${childVisible ? " has-child" : ""}`}>
+      {parentButton}
+      {childVisible && (
+        <ToolbarButton
+          id={`btn-${child.id}`}
+          icon={<ChildIcon />}
+          label={child.label}
+          onClick={childState.onClick}
+          isActive={childState.isActive}
+          disabled={disabled}
+          compact
+        />
+      )}
+    </div>
+  );
+}
+
+export function Toolbar({ searchBar, moduleRuntime, hasModel }: ToolbarProps) {
+  const toolbarModules = getModulesForSurface("toolbar");
+
   return (
     <header className="toolbar">
       <Logo />
 
-      {/* VIEW: cámara/orientación - encuadrar y mostrar el origen. */}
-      <div className="toolbar-group">
-        <ToolbarButton icon={<IconFitAll />} label="Encuadrar todo (Z)" onClick={onFitAllClick} />
-        <ToolbarButton
-          id="btn-axes"
-          icon={<IconXYZ />}
-          label="Mostrar origen XYZ (0,0,0)"
-          onClick={onAxesClick}
-          isActive={isAxesActive}
-        />
-      </div>
-
-      <ToolbarSeparator />
-
-      {/* INTERACT: selección, medición y geometría de corte/aislamiento. */}
-      <div className="toolbar-group">
-        {/* isActive fijo en true, calcando el mockup - no hay un "modo
-            selección" real que activar/desactivar en esta app (la
-            selección por click ya funciona siempre, no es una
-            herramienta que se prenda/apague). Puramente decorativo. */}
-        <ToolbarButton icon={<IconSelect />} label="Seleccionar (clic izquierdo)" isActive />
-        <ToolbarButton icon={<IconMeasure />} label="Medir" onClick={onMeasureClick} isActive={isMeasuring} />
-        <ToolbarButton
-          id="btn-isolate"
-          icon={<IconIsolate />}
-          label="Aislar Selección"
-          onClick={onIsolateClick}
-          isActive={isIsolateActive}
-        />
-        <ToolbarButton
-          id="btn-section-box"
-          icon={<IconSectionBox />}
-          label="Section Box"
-          onClick={onSectionBoxClick}
-          isActive={isSectionBoxActive}
-        />
-        <ToolbarButton
-          id="btn-hide-plane"
-          icon={<IconHidePlane />}
-          label="Ocultar plano (el corte sigue activo)"
-          onClick={onHidePlaneClick}
-          isActive={isHidePlaneActive}
-        />
-      </div>
-
-      <ToolbarSeparator />
-
-      {/* BCF: coordinación de incidencias. */}
-      <div className="toolbar-group">
-        <ToolbarButton icon={<IconBcfImport />} label="Importar BCF" onClick={onImportBcf} />
-        <ToolbarButton icon={<IconBcfExport />} label="Exportar BCF" onClick={onExportBcf} />
-      </div>
-
-      <ToolbarSeparator />
+      {MODULE_INTENT_ORDER.map((intent) => {
+        const modules = toolbarModules.filter((m) => m.intent === intent);
+        // Un intent sin módulos visibles no renderiza nada - ni grupo
+        // vacío, ni separador huérfano. 'review' es exactamente este caso
+        // hoy (nada todavía; /revision llega ahí más adelante).
+        if (modules.length === 0) return null;
+        return (
+          <Fragment key={intent}>
+            <div className="toolbar-group">{modules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+            <ToolbarSeparator />
+          </Fragment>
+        );
+      })}
 
       {searchBar}
 

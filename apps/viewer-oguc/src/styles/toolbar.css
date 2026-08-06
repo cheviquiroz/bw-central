@@ -108,6 +108,45 @@ body {
   border-color: rgba(74, 144, 217, 0.3);
 }
 
+.toolbar-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.toolbar-btn.disabled:hover {
+  background: none;
+  color: var(--text-secondary);
+}
+
+/* Sub-control nested under a parent toggle (Hide Plane under Section Box) -
+   smaller so it visibly reads as subordinate, not a sibling tool. */
+.toolbar-btn.compact {
+  width: 22px;
+  height: 22px;
+}
+
+.toolbar-btn.compact svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Wraps a parent toggle + its nested child (see Toolbar.tsx's renderModule) -
+   the shared background/border only appears once the child is visible,
+   so the pair visually reads as "the plane control and its sub-option",
+   not two independent buttons that happen to be adjacent. */
+.toolbar-btn-cluster {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.toolbar-btn-cluster.has-child {
+  padding: 2px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--toolbar-line);
+}
+
 .toolbar-btn svg {
   width: 16px;
   height: 16px;

@@ -1,28 +1,34 @@
 // src/ui/Toolbar/ToolbarButton.tsx
 import { forwardRef } from "react";
 import type { ReactNode } from "react";
+import { Tooltip } from "../Tooltip/Tooltip";
 
 interface ToolbarButtonProps {
   icon: ReactNode;
   label: string;
   onClick?: () => void;
   isActive?: boolean;
+  disabled?: boolean;
+  /** Smaller size, for a nested sub-control (e.g. Hide Plane under Section Box) that must read as subordinate, not a sibling tool. */
+  compact?: boolean;
   id?: string;
 }
 
 export const ToolbarButton = forwardRef<HTMLDivElement, ToolbarButtonProps>(
-  ({ icon, label, onClick, isActive = false, id }, ref) => (
-    <div
-      ref={ref}
-      id={id}
-      className={`toolbar-btn${isActive ? " active" : ""}`}
-      title={label}
-      aria-label={label}
-      role="button"
-      onClick={onClick}
-    >
-      {icon}
-    </div>
+  ({ icon, label, onClick, isActive = false, disabled = false, compact = false, id }, ref) => (
+    <Tooltip label={label}>
+      <div
+        ref={ref}
+        id={id}
+        className={`toolbar-btn${isActive ? " active" : ""}${disabled ? " disabled" : ""}${compact ? " compact" : ""}`}
+        aria-label={label}
+        aria-disabled={disabled}
+        role="button"
+        onClick={disabled ? undefined : onClick}
+      >
+        {icon}
+      </div>
+    </Tooltip>
   ),
 );
 

@@ -160,15 +160,19 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     tier: "free",
   },
 
-  // communicate - produce output for others. Renders inside BcfPanel
-  // (DockRightWithTabs' "Incidencias" tab), not the toolbar - see Phase 3.
+  // communicate - produce output for others. `surface: "toolbar"` is
+  // temporary: these move to "bcf-panel" (rendered inside BcfPanel's
+  // "Incidencias" tab instead of the Toolbar) once that panel actually
+  // renders them - flipping the value before the render target exists
+  // would make these two buttons unreachable in the UI for a whole
+  // commit's window.
   {
     id: "bcf-import",
     label: "Importar BCF",
     intent: "communicate",
     kind: "action",
     icon: IconBcfImport,
-    surface: "bcf-panel",
+    surface: "toolbar",
     requiresModel: true,
     tier: "free",
   },
@@ -178,7 +182,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "communicate",
     kind: "action",
     icon: IconBcfExport,
-    surface: "bcf-panel",
+    surface: "toolbar",
     requiresModel: true,
     tier: "free",
   },
