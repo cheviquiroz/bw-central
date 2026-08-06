@@ -1,13 +1,20 @@
 /* src/ui/OrientationCube/orientation-cube.css */
 @import "../../styles/tokens.css";
 
+/* Fase 4: sin cálculo, sin lectura de contexto, sin dependencia del
+   estado de ningún panel. El cubo vive dentro de .viewport-container
+   (position:relative - ver Viewport.tsx), que ES el canvas: su ancho ya
+   se ajusta solo cuando un dock lateral aparece/desaparece (columna
+   "1fr" del grid de .viewport, ver Layout.css). Un inset fijo relativo a
+   ESE contenedor queda anclado a la esquina del canvas automáticamente,
+   para siempre, sin importar cuántos paneles estén abiertos - la vieja
+   versión (right = 40 + panelWidth + bcfPanelWidth + 16, luego una
+   variante booleana con LayoutStateContext) recalculaba esto a mano cada
+   vez que un hermano cambiaba de tamaño, y por eso se desincronizaba. */
 .orientation-cube {
   position: absolute;
-  top: 40px;
-  /* right YA NO es fijo acá: se calcula en OrientationCube.tsx a partir de
-     LayoutStateContext (si el dock derecho está visible o no) y se aplica
-     vía inline style, para que el cubo se corra a la izquierda cuando el
-     panel está visible en vez de quedar tapado detrás. */
+  top: 24px;
+  right: 24px;
   width: 60px;
   height: 60px;
   perspective: 600px;
