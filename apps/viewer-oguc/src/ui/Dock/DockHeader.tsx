@@ -3,14 +3,12 @@ import { IconAdd, IconLock } from "../icons/dock";
 
 export function DockHeader({
   visible,
-  isPinned,
   onAddClick,
-  onTogglePin,
+  onCollapse,
 }: {
   visible: boolean;
-  isPinned: boolean;
   onAddClick: () => void;
-  onTogglePin: () => void;
+  onCollapse: () => void;
 }) {
   return (
     <div className={`dock-header${visible ? " visible" : ""}`} style={{ opacity: visible ? 1 : 0 }}>
@@ -19,7 +17,12 @@ export function DockHeader({
         <span className="dock-action" onClick={onAddClick} title="Agregar IFC">
           <IconAdd />
         </span>
-        <span className={`dock-action${isPinned ? " active" : ""}`} onClick={onTogglePin} title={isPinned ? "Desfijar panel" : "Fijar panel"}>
+        {/* Antes alternaba isPinned (mantenía el panel expandido incluso
+            sin el mouse encima). Ya no hay proximity-hover del que
+            "pinnear" - abrir siempre significa quedarse abierto hasta que
+            el usuario cierre a propósito, así que esto es simplemente
+            "cerrar el panel", no un toggle con estado activo/inactivo. */}
+        <span className="dock-action" onClick={onCollapse} title="Colapsar panel">
           <IconLock />
         </span>
       </div>

@@ -1,5 +1,5 @@
 // src/components/PropertiesPanel/PropertiesPanel.tsx
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import type { ReactNode, CSSProperties } from "react";
 import { readIfcName, readIfcPropertyValue, groupPropertySets } from "@bw-central/ifc-core";
 import { useApp } from "../../ui/AppContext";
@@ -10,10 +10,6 @@ import "../../styles/properties.css";
 
 const COLLAPSED_WIDTH = 56;
 const EXPANDED_WIDTH = 272;
-const COLLAPSE_THRESHOLD = 150;
-const PROXIMITY_THRESHOLD = 30;
-const PANEL_RIGHT = 16; // debe coincidir con `right: 16px` de .properties-panel
-const PANEL_EDGE_FROM_RIGHT = PANEL_RIGHT + COLLAPSED_WIDTH; // 72 - espejo de PANEL_EDGE en DockLeft
 
 type TabType = "PROPERTIES" | "QUANTITIES" | "BSDD";
 
@@ -96,17 +92,13 @@ export default function PropertiesPanel() {
   const [selection, setSelection] = useState<SelectionState>(app.getSelection());
   const [activeTab, setActiveTab] = useState<TabType>("PROPERTIES");
   const [expandedPsets, setExpandedPsets] = useState<Record<string, boolean>>({});
-  const [isPinned, setIsPinned] = useState(false);
-  const [width, setWidth] = useState(COLLAPSED_WIDTH);
-  const { setPanelWidth } = usePanelWidth();
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  const widthRef = useRef(width);
-  widthRef.current = width;
-  const isPinnedRef = useRef(isPinned);
-  isPinnedRef.current = isPinned;
-  const rafRef = useRef<number | null>(null);
-  const pendingMouseXRef = useRef<number | null>(null);
+  // isRightDockOpen es compartido con BcfPanel (misma tab-slot desde la
+  // Fase 3) - ver PanelWidthContext.tsx para por qué no puede ser un
+  // useState local a este componente. Reemplaza tanto el viejo isPinned
+  // como la interpolación de ancho por proximity-hover: abrir/cerrar es
+  // ahora binario y solo pasa por click, nunca por acercar el mouse.
+  const { isRightDockOpen, setIsRightDockOpen, setPanelWidth } = usePanelWidth();
+  const width = isRightDockOpen ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
 
   useEffect(() => {
     const unsubscribe = app.subscribeToSelection((newSelection) => {
@@ -115,65 +107,13 @@ export default function PropertiesPanel() {
     return () => unsubscribe();
   }, [app]);
 
-  // Publica el ancho real (56-272px, ya interpolado por el proximity-hover
-  // de más abajo) para que OrientationCube (en Viewport.tsx, un componente
-  // hermano sin relación directa con este) pueda correrse a la izquierda y
-  // no quedar tapado cuando el panel expande - ver PanelWidthContext.tsx.
+  // Publica el ancho real (56 o 272px, ya no interpolado - ver arriba)
+  // para que OrientationCube (en Viewport.tsx, un componente hermano sin
+  // relación directa con este) pueda correrse a la izquierda y no quedar
+  // tapado cuando el panel expande - ver PanelWidthContext.tsx.
   useEffect(() => {
     setPanelWidth(width);
   }, [width, setPanelWidth]);
-
-  // Proximity-hover espejado del de DockLeft.tsx (mismo rAF-batching +
-  // umbral de 1px, mismos motivos - ver los comentarios extensos ahí). La
-  // diferencia real es que este panel cuelga del borde DERECHO: en vez de
-  // comparar mouseX contra PANEL_LEFT/PANEL_EDGE, se compara la distancia
-  // del mouse al borde derecho de la ventana (window.innerWidth - clientX)
-  // contra PANEL_RIGHT/PANEL_EDGE_FROM_RIGHT, que son sus equivalentes
-  // espejados.
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isPinnedRef.current) return;
-      pendingMouseXRef.current = e.clientX;
-
-      if (rafRef.current !== null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const mouseX = pendingMouseXRef.current;
-        if (mouseX === null) return;
-
-        const distanceFromRight = window.innerWidth - mouseX;
-        const currentLeftEdgeFromRight = PANEL_RIGHT + widthRef.current;
-        const isOverPanel = distanceFromRight >= PANEL_RIGHT && distanceFromRight <= currentLeftEdgeFromRight;
-
-        let nextWidth: number;
-        if (isOverPanel) {
-          nextWidth = EXPANDED_WIDTH;
-        } else {
-          const distanceToEdge = Math.max(0, distanceFromRight - PANEL_EDGE_FROM_RIGHT);
-          if (distanceToEdge < PROXIMITY_THRESHOLD) {
-            const proximityZone = PROXIMITY_THRESHOLD - distanceToEdge;
-            nextWidth = Math.round(COLLAPSED_WIDTH + (proximityZone / PROXIMITY_THRESHOLD) * (EXPANDED_WIDTH - COLLAPSED_WIDTH));
-          } else {
-            nextWidth = COLLAPSED_WIDTH;
-          }
-        }
-
-        if (Math.abs(nextWidth - widthRef.current) >= 1) {
-          setWidth(nextWidth);
-        }
-      });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isPinned) setWidth(EXPANDED_WIDTH);
-  }, [isPinned]);
 
   const activeModelId = Object.keys(selection).find((modelId) => selection[modelId].length > 0);
   const currentGuids = activeModelId ? selection[activeModelId] : [];
@@ -289,11 +229,10 @@ export default function PropertiesPanel() {
 
   const psetEntries = Object.entries(psets).filter(([name]) => name !== baseQuantitiesName);
 
-  const isCollapsed = width < COLLAPSE_THRESHOLD;
+  const isCollapsed = !isRightDockOpen;
 
   return (
     <div
-      ref={panelRef}
       className={`properties-panel${isCollapsed ? " collapsed" : ""}`}
       style={{ "--properties-width": `${width}px` } as CSSProperties}
     >
@@ -304,11 +243,10 @@ export default function PropertiesPanel() {
           <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
           <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
         </div>
-        <button
-          className={`properties-pin${isPinned ? " active" : ""}`}
-          onClick={() => setIsPinned((v) => !v)}
-          title={isPinned ? "Desfijar panel" : "Fijar panel"}
-        >
+        {/* Antes alternaba isPinned - ya no hay proximity-hover del que
+            "pinnear" (ver PanelWidthContext.tsx), así que esto es
+            simplemente cerrar el panel, no un toggle con estado propio. */}
+        <button className="properties-pin" onClick={() => setIsRightDockOpen(false)} title="Cerrar panel">
           <IconLock />
         </button>
       </div>

@@ -1,5 +1,5 @@
 // src/ui/BcfPanel/BcfPanel.tsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import type { CSSProperties } from "react";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
 import { usePanelWidth } from "../PanelWidthContext";
@@ -22,14 +22,6 @@ const BCF_PANEL_MODULES = getModulesForSurface("bcf-panel");
 
 const COLLAPSED_WIDTH = 56;
 const EXPANDED_WIDTH = 320;
-const COLLAPSE_THRESHOLD = 150;
-const PROXIMITY_THRESHOLD = 30;
-// Ya no depende del ancho de PropertiesPanel (PANEL_RIGHT_BASE+PANEL_GAP+
-// panelWidth, como antes de moverse a DockRightWithTabs): los dos paneles
-// nunca se muestran a la vez ahora (tabs separados), así que BcfPanel
-// siempre ocupa el mismo hueco que PropertiesPanel ocupaba a solas - mismo
-// valor que su propio PANEL_RIGHT (properties.css/PropertiesPanel.tsx).
-const PANEL_RIGHT = 16;
 
 interface BcfPanelProps {
   state: BcfManagerState;
@@ -41,17 +33,12 @@ interface BcfPanelProps {
 }
 
 export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate, moduleRuntime, hasModel }: BcfPanelProps) {
-  const [isPinned, setIsPinned] = useState(false);
-  const [width, setWidth] = useState(COLLAPSED_WIDTH);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const { setBcfPanelWidth } = usePanelWidth();
-
-  const widthRef = useRef(width);
-  widthRef.current = width;
-  const isPinnedRef = useRef(isPinned);
-  isPinnedRef.current = isPinned;
-  const rafRef = useRef<number | null>(null);
-  const pendingMouseXRef = useRef<number | null>(null);
+  // isRightDockOpen es compartido con PropertiesPanel (misma tab-slot
+  // desde la Fase 3) - ver PanelWidthContext.tsx. Reemplaza tanto el
+  // viejo isPinned como la interpolación de ancho por proximity-hover:
+  // abrir/cerrar es ahora binario y solo pasa por click.
+  const { isRightDockOpen, setIsRightDockOpen, setBcfPanelWidth } = usePanelWidth();
+  const width = isRightDockOpen ? EXPANDED_WIDTH : COLLAPSED_WIDTH;
 
   // Publica el propio ancho para que OrientationCube pueda correrse más a
   // la izquierda todavía (más allá de PropertiesPanel) - ver
@@ -60,73 +47,18 @@ export function BcfPanel({ state, onFilterChange, onTopicSelect, onTopicActivate
     setBcfPanelWidth(width);
   }, [width, setBcfPanelWidth]);
 
-  // Mismo proximity-hover que PropertiesPanel.tsx (rAF-batched, umbral de
-  // 1px, lee e.clientX de verdad), ahora con el mismo borde de reposo fijo
-  // (PANEL_RIGHT) que PropertiesPanel, no uno dinámico - ver la nota de
-  // PANEL_RIGHT más arriba.
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isPinnedRef.current) return;
-      pendingMouseXRef.current = e.clientX;
-
-      if (rafRef.current !== null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const mouseX = pendingMouseXRef.current;
-        if (mouseX === null) return;
-
-        const distanceFromRight = window.innerWidth - mouseX;
-        const currentLeftEdgeFromRight = PANEL_RIGHT + widthRef.current;
-        const isOverPanel = distanceFromRight >= PANEL_RIGHT && distanceFromRight <= currentLeftEdgeFromRight;
-
-        let nextWidth: number;
-        if (isOverPanel) {
-          nextWidth = EXPANDED_WIDTH;
-        } else {
-          const edgeFromRight = PANEL_RIGHT + COLLAPSED_WIDTH;
-          const distanceToEdge = Math.max(0, distanceFromRight - edgeFromRight);
-          if (distanceToEdge < PROXIMITY_THRESHOLD) {
-            const proximityZone = PROXIMITY_THRESHOLD - distanceToEdge;
-            nextWidth = Math.round(COLLAPSED_WIDTH + (proximityZone / PROXIMITY_THRESHOLD) * (EXPANDED_WIDTH - COLLAPSED_WIDTH));
-          } else {
-            nextWidth = COLLAPSED_WIDTH;
-          }
-        }
-
-        if (Math.abs(nextWidth - widthRef.current) >= 1) {
-          setWidth(nextWidth);
-        }
-      });
-    };
-
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isPinned) setWidth(EXPANDED_WIDTH);
-  }, [isPinned]);
-
-  const isCollapsed = width < COLLAPSE_THRESHOLD;
+  const isCollapsed = !isRightDockOpen;
   const filteredTopics =
     state.filters.status === "All" ? state.topics : state.topics.filter((t) => t.status === state.filters.status);
 
   return (
-    <div
-      ref={panelRef}
-      className={`bcf-panel${isCollapsed ? " collapsed" : ""}`}
-      style={{ "--bcf-panel-width": `${width}px` } as CSSProperties}
-    >
+    <div className={`bcf-panel${isCollapsed ? " collapsed" : ""}`} style={{ "--bcf-panel-width": `${width}px` } as CSSProperties}>
       <div className="bcf-header">
         <h3 className="bcf-title">{isCollapsed ? "BCF" : "BCF Issues"}</h3>
-        <button
-          className={`bcf-pin-btn${isPinned ? " active" : ""}`}
-          onClick={() => setIsPinned((v) => !v)}
-          title={isPinned ? "Desfijar panel" : "Fijar panel"}
-        >
+        {/* Antes alternaba isPinned - ya no hay proximity-hover del que
+            "pinnear" (ver PanelWidthContext.tsx), así que esto es
+            simplemente cerrar el panel, no un toggle con estado propio. */}
+        <button className="bcf-pin-btn" onClick={() => setIsRightDockOpen(false)} title="Cerrar panel">
           <IconLock />
         </button>
       </div>
