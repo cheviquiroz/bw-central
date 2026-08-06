@@ -11,14 +11,29 @@ import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
 import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
-import { LayoutStateProvider } from "../../ui/LayoutStateContext";
+import { LayoutStateProvider, useLayoutState } from "../../ui/LayoutStateContext";
 import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
 import type { ModuleRuntimeMap } from "../../ui/registry/modules";
 
+// LayoutStateProvider wraps the whole component (Toolbar included), not
+// just <main>: the Fase 2 workspace toggles live in the Toolbar but need
+// to read/write the same zones/rightTab state that DockLeft/
+// DockRightWithTabs/OrientationCube use - a provider that only wrapped
+// <main> would leave Toolbar outside its subtree. LayoutInner is the
+// actual component body; useLayoutState() can only be called by a
+// descendant of the provider, so the split is required, not stylistic.
 export default function Layout() {
+  return (
+    <LayoutStateProvider>
+      <LayoutInner />
+    </LayoutStateProvider>
+  );
+}
+
+function LayoutInner() {
   const app = useApp();
   const [actionsAdapter, setActionsAdapter] = useState<ViewerActionsAdapter | null>(null);
   const [searchManager, setSearchManager] = useState<SearchManager | null>(null);
@@ -40,6 +55,7 @@ export default function Layout() {
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
   const viewportRef = React.useRef<HTMLDivElement>(null);
+  const { zones, toggleZone, setZoneVisible, rightTab, setRightTab } = useLayoutState();
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -102,6 +118,58 @@ export default function Layout() {
   const handleMeasureClick = () => {
     setIsMeasuring((prev) => !prev);
   };
+
+  const handleToggleTreePanel = () => {
+    toggleZone("left");
+  };
+
+  // "Datos"/"Incidencias" toggle to a SPECIFIC tab, not just visibility:
+  // clicking one shows the right dock on that tab; clicking it again while
+  // already showing that tab hides the dock (a real toggle, not a
+  // one-way switch). Clicking "Incidencias" while "Datos" is showing
+  // switches tabs without hiding anything - matches how VS Code's
+  // sidebar-icon toggles behave when two icons share one panel.
+  const handleTogglePropertiesPanel = () => {
+    if (zones.right && rightTab === "properties") {
+      setZoneVisible("right", false);
+    } else {
+      setRightTab("properties");
+      setZoneVisible("right", true);
+    }
+  };
+
+  const handleToggleIssuesPanel = () => {
+    if (zones.right && rightTab === "bcf") {
+      setZoneVisible("right", false);
+    } else {
+      setRightTab("bcf");
+      setZoneVisible("right", true);
+    }
+  };
+
+  // Ctrl/Cmd+1/2/3 - sin colisión encontrada: esta app no tenía ningún
+  // listener de teclado global antes de este cambio (grep de keydown en
+  // src/ solo devuelve este efecto). preventDefault() es necesario en los
+  // tres: el navegador interpreta Ctrl+1/2/3 como "ir a la pestaña N" en
+  // varios navegadores/OS.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (event.key === "1") {
+        event.preventDefault();
+        handleToggleTreePanel();
+      } else if (event.key === "2") {
+        event.preventDefault();
+        handleTogglePropertiesPanel();
+      } else if (event.key === "3") {
+        event.preventDefault();
+        handleToggleIssuesPanel();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zones.right, rightTab]);
 
   // Click-to-filter: PropertiesPanel (Shift+click en una propiedad) publica
   // acá su query armada ("Material:Vidrio templado") vía
@@ -199,9 +267,12 @@ export default function Layout() {
       isolate: { onClick: handleIsolateClick, isActive: isIsolateActive },
       "bcf-import": { onClick: handleImportBcf },
       "bcf-export": { onClick: handleExportBcf },
+      "panel-tree": { onClick: handleToggleTreePanel, isActive: zones.left },
+      "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right && rightTab === "properties" },
+      "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.right && rightTab === "bcf" },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter]
+    [isAxesActive, isSectionBoxActive, isHidePlaneActive, isMeasuring, isIsolateActive, actionsAdapter, zones.left, zones.right, rightTab]
   );
 
   const handleFilesSelected = async (files: File[]) => {
@@ -249,31 +320,25 @@ export default function Layout() {
           hubiera ganado por encima de cualquier display:grid puesto en la
           clase (los estilos inline siempre ganan sobre CSS de archivo) -
           removido a propósito, el display real ahora vive solo en la clase. */}
-      {/* LayoutStateProvider envuelve solo el main: DockLeft/DockRightWithTabs
-          y OrientationCube (dentro de Viewport) necesitan la misma fuente
-          única de verdad sobre qué zonas están visibles - ver
-          src/ui/LayoutStateContext.tsx. StatusBar no lo necesita. */}
-      <LayoutStateProvider>
-        <main ref={viewportRef} className="viewport">
-          <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
-          <Viewport
-            onViewerReady={handleViewerReady}
-            isSectionBoxActive={isSectionBoxActive}
-            isMeasuring={isMeasuring}
-            bcfTopics={bcfState.topics}
-            bcfActiveTopic={bcfState.activeTopic}
-            bcfSyncRequest={bcfSyncRequest}
-          />
-          <DockRightWithTabs
-            bcfState={bcfState}
-            onBcfFilterChange={handleBcfFilterChange}
-            onBcfTopicSelect={handleBcfTopicSelect}
-            onBcfTopicActivate={handleBcfTopicActivate}
-            moduleRuntime={moduleRuntime}
-            hasModel={hasModels}
-          />
-        </main>
-      </LayoutStateProvider>
+      <main ref={viewportRef} className="viewport">
+        <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
+        <Viewport
+          onViewerReady={handleViewerReady}
+          isSectionBoxActive={isSectionBoxActive}
+          isMeasuring={isMeasuring}
+          bcfTopics={bcfState.topics}
+          bcfActiveTopic={bcfState.activeTopic}
+          bcfSyncRequest={bcfSyncRequest}
+        />
+        <DockRightWithTabs
+          bcfState={bcfState}
+          onBcfFilterChange={handleBcfFilterChange}
+          onBcfTopicSelect={handleBcfTopicSelect}
+          onBcfTopicActivate={handleBcfTopicActivate}
+          moduleRuntime={moduleRuntime}
+          hasModel={hasModels}
+        />
+      </main>
 
       {/* 5. STATUSBAR */}
       <StatusBar />

@@ -38,6 +38,7 @@ function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasMo
       onClick={state.onClick}
       isActive={state.isActive}
       disabled={disabled}
+      shortcut={module.shortcut}
     />
   );
 
@@ -66,6 +67,11 @@ function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasMo
 
 export function Toolbar({ searchBar, moduleRuntime, hasModel }: ToolbarProps) {
   const toolbarModules = getModulesForSurface("toolbar");
+  // 'workspace' is excluded from MODULE_INTENT_ORDER's loop below and
+  // rendered separately, right-aligned - see the ModuleIntent comment in
+  // registry/modules.ts for why it's a different axis (acts on the user's
+  // own panels, not on the model).
+  const workspaceModules = toolbarModules.filter((m) => m.intent === "workspace");
 
   return (
     <header className="toolbar">
@@ -88,6 +94,13 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel }: ToolbarProps) {
       {searchBar}
 
       <div className="toolbar-spacer" />
+
+      {workspaceModules.length > 0 && (
+        <>
+          <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+          <ToolbarSeparator />
+        </>
+      )}
 
       {/* Sin dato real de federación/proyecto detrás - a diferencia del
           mockup, que hardcodea "Hospital La Serena", esto no debería

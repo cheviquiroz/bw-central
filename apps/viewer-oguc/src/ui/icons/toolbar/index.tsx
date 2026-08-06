@@ -106,6 +106,37 @@ export function IconBcfExport() {
   );
 }
 
+// Workspace toggles (Fase 2 de "WORKSPACE LAYOUT") - togglean paneles
+// propios del usuario, no herramientas sobre el modelo, así que se
+// dibujan como "paneles" abstractos (un rectángulo con una franja),
+// no como iconografía de acción como el resto de este archivo.
+export function IconPanelTree() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3" y="4" width="18" height="16" rx="1.5" />
+      <path d="M9 4v16" />
+    </svg>
+  );
+}
+
+export function IconPanelData() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3" y="4" width="18" height="16" rx="1.5" />
+      <path d="M15 4v16" />
+    </svg>
+  );
+}
+
+export function IconPanelIssues() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <rect x="3" y="4" width="18" height="16" rx="1.5" />
+      <path d="M3 15h18" />
+    </svg>
+  );
+}
+
 // A diferencia de los demás íconos de este archivo, este NO usa
 // currentColor - el punto es mostrar los 3 ejes con sus colores reales
 // (rojo/verde/azul), igual que AxesHelper.ts los dibuja en la escena.

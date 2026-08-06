@@ -23,9 +23,20 @@ import {
   IconXYZ,
   IconBcfImport,
   IconBcfExport,
+  IconPanelTree,
+  IconPanelData,
+  IconPanelIssues,
 } from "../icons/toolbar";
 
-export type ModuleIntent = "explore" | "interrogate" | "communicate" | "review";
+/**
+ * 'workspace' is deliberately not in MODULE_INTENT_ORDER: that order
+ * governs the left-aligned tool groups (actions ON the model). Workspace
+ * toggles act on the user's OWN workspace (which panels are visible) -
+ * same distinction VS Code/Figma make between a command-palette action
+ * and a panel-visibility toggle. Toolbar.tsx renders this intent as its
+ * own right-aligned group, not folded into MODULE_INTENT_ORDER's loop.
+ */
+export type ModuleIntent = "explore" | "interrogate" | "communicate" | "review" | "workspace";
 export type ModuleKind = "action" | "toggle" | "panel";
 export type ModuleTier = "free" | "pro";
 export type ModuleZone = "left" | "right" | "bottom";
@@ -68,6 +79,8 @@ export interface ModuleDefinition {
   surface?: ModuleSurface;
   /** Disabled when no model is loaded. */
   requiresModel: boolean;
+  /** Shown alongside the label in the custom Tooltip, e.g. "Ctrl+1". Optional - most modules have no bound shortcut. */
+  shortcut?: string;
   /**
    * Inert today - every module is 'free' and nothing filters on it. This
    * exists so that filtering by plan later is a one-line predicate change
@@ -197,6 +210,41 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
   },
 
   // review - compliance checks. Nothing today; /revision lands here.
+
+  // workspace - toggles the user's OWN panels (visibility), not a tool
+  // acting on the model. Rendered by Toolbar.tsx as a separate,
+  // right-aligned group (after SearchBar, before ProjectPill) - see the
+  // ModuleIntent comment above for why this is its own axis.
+  {
+    id: "panel-tree",
+    label: "Árbol del modelo",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconPanelTree,
+    requiresModel: false,
+    tier: "free",
+    shortcut: "Ctrl+1",
+  },
+  {
+    id: "panel-data",
+    label: "Datos",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconPanelData,
+    requiresModel: false,
+    tier: "free",
+    shortcut: "Ctrl+2",
+  },
+  {
+    id: "panel-issues",
+    label: "Incidencias",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconPanelIssues,
+    requiresModel: false,
+    tier: "free",
+    shortcut: "Ctrl+3",
+  },
 ];
 
 export function getModulesForSurface(surface: ModuleSurface): ModuleDefinition[] {

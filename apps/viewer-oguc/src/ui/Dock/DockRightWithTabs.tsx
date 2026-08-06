@@ -5,15 +5,12 @@
 // now zones.right (LayoutStateContext) - shared between the two tabs for
 // the same reason as before: they're the same panel, so hiding/showing
 // must not depend on which tab happens to be active.
-import { useState } from "react";
 import { useLayoutState } from "../LayoutStateContext";
 import PropertiesPanel from "../../components/PropertiesPanel/PropertiesPanel";
 import { BcfPanel } from "../BcfPanel/BcfPanel";
 import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
 import type { ModuleRuntimeMap } from "../registry/modules";
 import "./dock-right-tabs.css";
-
-type RightTab = "properties" | "bcf";
 
 interface DockRightWithTabsProps {
   bcfState: BcfManagerState;
@@ -32,13 +29,15 @@ export function DockRightWithTabs({
   moduleRuntime,
   hasModel,
 }: DockRightWithTabsProps) {
-  const [activeTab, setActiveTab] = useState<RightTab>("properties");
-  const { zones, setZoneVisible } = useLayoutState();
+  const { zones, setZoneVisible, rightTab: activeTab, setRightTab } = useLayoutState();
 
   // El tab-bar es el punto de entrada de este dock: clickear una tab
-  // siempre cambia a esa tab Y muestra el panel si estaba oculto.
-  const handleTabClick = (tab: RightTab) => {
-    setActiveTab(tab);
+  // siempre cambia a esa tab Y muestra el panel si estaba oculto. rightTab
+  // vive en LayoutStateContext, no en un useState local acá - los toggles
+  // "Datos"/"Incidencias" del Toolbar (Fase 2) necesitan cambiar de tab
+  // desde fuera de este componente.
+  const handleTabClick = (tab: typeof activeTab) => {
+    setRightTab(tab);
     setZoneVisible("right", true);
   };
 

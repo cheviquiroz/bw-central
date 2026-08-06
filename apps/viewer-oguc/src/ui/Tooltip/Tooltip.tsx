@@ -17,10 +17,12 @@ const SHOW_DELAY_MS = 400;
 
 interface TooltipProps {
   label: string;
+  /** e.g. "Ctrl+1" - shown next to the label, not below it, so the bubble stays a single line. */
+  shortcut?: string;
   children: ReactNode;
 }
 
-export function Tooltip({ label, children }: TooltipProps) {
+export function Tooltip({ label, shortcut, children }: TooltipProps) {
   const [visible, setVisible] = useState(false);
   const showTimerRef = useRef<number | null>(null);
 
@@ -59,6 +61,7 @@ export function Tooltip({ label, children }: TooltipProps) {
       {visible && (
         <div className="tooltip-bubble" role="tooltip">
           {label}
+          {shortcut && <span className="tooltip-shortcut">{shortcut}</span>}
         </div>
       )}
     </div>

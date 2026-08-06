@@ -23,4 +23,13 @@
   white-space: nowrap;
   pointer-events: none;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltip-shortcut {
+  color: var(--text-low);
+  font-family: var(--mono);
+  font-size: 10px;
 }

@@ -25,16 +25,29 @@ export interface LayoutZones {
 
 export const DEFAULT_LAYOUT_ZONES: LayoutZones = { left: true, right: true, bottom: false };
 
+/**
+ * Which tab is active inside the right dock. Lives here (not local state
+ * in DockRightWithTabs) for two reasons: the Phase 2 workspace toggles
+ * ("Datos" / "Incidencias") need to switch tabs from the Toolbar, outside
+ * DockRightWithTabs's own subtree, and Phase 5b persists this exact value
+ * to localStorage alongside zone visibility. Provisional until Phase 3
+ * gives Incidencias its own DockBottom zone instead of sharing "right".
+ */
+export type RightTab = "properties" | "bcf";
+
 interface LayoutStateContextType {
   zones: LayoutZones;
   setZoneVisible: (zone: keyof LayoutZones, visible: boolean) => void;
   toggleZone: (zone: keyof LayoutZones) => void;
+  rightTab: RightTab;
+  setRightTab: (tab: RightTab) => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
 
 export function LayoutStateProvider({ children }: { children: ReactNode }) {
   const [zones, setZones] = useState<LayoutZones>(DEFAULT_LAYOUT_ZONES);
+  const [rightTab, setRightTab] = useState<RightTab>("properties");
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -45,7 +58,9 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <LayoutStateContext.Provider value={{ zones, setZoneVisible, toggleZone }}>{children}</LayoutStateContext.Provider>
+    <LayoutStateContext.Provider value={{ zones, setZoneVisible, toggleZone, rightTab, setRightTab }}>
+      {children}
+    </LayoutStateContext.Provider>
   );
 }
 

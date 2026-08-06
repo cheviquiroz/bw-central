@@ -12,11 +12,13 @@ interface ToolbarButtonProps {
   /** Smaller size, for a nested sub-control (e.g. Hide Plane under Section Box) that must read as subordinate, not a sibling tool. */
   compact?: boolean;
   id?: string;
+  /** e.g. "Ctrl+1" - shown in the tooltip alongside the label. */
+  shortcut?: string;
 }
 
 export const ToolbarButton = forwardRef<HTMLDivElement, ToolbarButtonProps>(
-  ({ icon, label, onClick, isActive = false, disabled = false, compact = false, id }, ref) => (
-    <Tooltip label={label}>
+  ({ icon, label, onClick, isActive = false, disabled = false, compact = false, id, shortcut }, ref) => (
+    <Tooltip label={label} shortcut={shortcut}>
       <div
         ref={ref}
         id={id}
