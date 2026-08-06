@@ -113,21 +113,22 @@ function TreeNode({
         {showCategoryBadge && <span className="lbl-category">{safeCategory}</span>}
         {hasChildren && leafCount > 0 && <span className="count">{leafCount}</span>}
         {isSelectable && (
-          <svg
-            className={`dock-tree-eye${isHidden ? " hidden-element" : ""}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleVisibility(node.localId as number);
-            }}
-          >
-            <title>{isHidden ? "Mostrar elemento" : "Ocultar elemento"}</title>
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
+          <Tooltip label={isHidden ? "Mostrar elemento" : "Ocultar elemento"}>
+            <svg
+              className={`dock-tree-eye${isHidden ? " hidden-element" : ""}`}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleVisibility(node.localId as number);
+              }}
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </Tooltip>
         )}
       </div>
 
@@ -204,28 +205,30 @@ function ModelHeader({ modelId, app, displayNames, proximityWarning }: { modelId
       >
         <span style={{ flexShrink: 0, display: "flex" }}><IconFolder /></span>
         {proximityWarning && (
-          <span style={{ flexShrink: 0 }} title={`Este modelo está a ${Math.round(proximityWarning.distanceFromGroupMeters)}m del resto de los modelos cargados`}>
-            ⚠️
-          </span>
+          <Tooltip label={`Este modelo está a ${Math.round(proximityWarning.distanceFromGroupMeters)}m del resto de los modelos cargados`}>
+            <span style={{ flexShrink: 0 }}>⚠️</span>
+          </Tooltip>
         )}
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</span>
       </span>
       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
-        <span
-          className={`dock-tree-eye model-header-eye${isVisible ? "" : " model-hidden"}${isTogglingVisibility ? " toggling" : ""}`}
-          onClick={handleToggleVisibility}
-          title={isVisible ? "Ocultar modelo" : "Mostrar modelo"}
-        >
-          <IconEye />
-        </span>
-        <span
-          className="dock-action"
-          style={{ width: "16px", height: "16px", color: "#e07a7a" }}
-          onClick={handleUnload}
-          title="Eliminar modelo del visor"
-        >
-          <IconTrash />
-        </span>
+        <Tooltip label={isVisible ? "Ocultar modelo" : "Mostrar modelo"}>
+          <span
+            className={`dock-tree-eye model-header-eye${isVisible ? "" : " model-hidden"}${isTogglingVisibility ? " toggling" : ""}`}
+            onClick={handleToggleVisibility}
+          >
+            <IconEye />
+          </span>
+        </Tooltip>
+        <Tooltip label="Eliminar modelo del visor">
+          <span
+            className="dock-action"
+            style={{ width: "16px", height: "16px", color: "#e07a7a" }}
+            onClick={handleUnload}
+          >
+            <IconTrash />
+          </span>
+        </Tooltip>
       </div>
     </div>
   );
