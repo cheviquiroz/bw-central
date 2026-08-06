@@ -485,11 +485,21 @@ function getLoadedModelsBoundingBox(): THREE.Box3 | null {
   return hasAny && !union.isEmpty() ? union : null;
 }
 
+// Margen extra alrededor del bbox real antes de encuadrar, como fracción
+// de cada eje (0.2 = 20%) - constante nombrada, no un factor mágico
+// inline, para poder afinar el "breathing room" desde un solo lugar. Se
+// aplica expandiendo el TAMAÑO del box (no acortando la distancia de
+// cámara con un multiplicador post-hoc, como hacía la versión anterior
+// de esta función) - así el margen escala junto con el modelo en vez de
+// ser un porcentaje fijo de una distancia ya calculada.
+const FIT_ALL_PADDING_FACTOR = 0.2;
+
 /**
  * Posiciona la cámara en una vista diagonal 3/4 (ver INITIAL_VIEW_DIRECTION
- * para la elevación) enfocando el bbox dado. Lógica compartida entre
- * fitCameraToAllLoadedModels ("Encuadrar todo") y setInitialDiagonalView
- * (primera carga) - misma vista, mismo cálculo, para no duplicarlo.
+ * para la elevación) enfocando el bbox dado, expandido por
+ * FIT_ALL_PADDING_FACTOR. Lógica compartida entre fitCameraToAllLoadedModels
+ * ("Encuadrar todo") y setInitialDiagonalView (primera carga) - misma
+ * vista, mismo cálculo, mismo margen, para que ambas se vean idénticas.
  *
  * No usa fitToBox de camera-controls: esa función redondea el ángulo de
  * cámara ACTUAL al eje ortogonal más cercano (ver su propia implementación
@@ -503,7 +513,8 @@ function applyDiagonalView(box: THREE.Box3): void {
   if (!registry.world) return;
 
   const center = box.getCenter(new THREE.Vector3());
-  const diagonal = box.getSize(new THREE.Vector3()).length();
+  const paddedSize = box.getSize(new THREE.Vector3()).multiplyScalar(1 + FIT_ALL_PADDING_FACTOR);
+  const diagonal = paddedSize.length();
 
   // Y controla la elevación sobre el horizonte (Y es el eje vertical en
   // este world, ver el resto de IfcBootstrap.ts); X y Z fijos en 1 dan la
@@ -513,7 +524,7 @@ function applyDiagonalView(box: THREE.Box3): void {
   //                                    horizonte", menos "desde arriba".
   const INITIAL_VIEW_DIRECTION = new THREE.Vector3(1, 0.55, 1);
   const direction = INITIAL_VIEW_DIRECTION.clone().normalize();
-  const distance = Math.max(diagonal * 0.9, 1);
+  const distance = Math.max(diagonal, 1);
   const cameraPosition = center.clone().addScaledVector(direction, distance);
 
   (registry.world.camera as any).controls.setLookAt(
