@@ -25,6 +25,14 @@ interface ToolbarProps {
    * Omitted entirely on "/" - no button renders.
    */
   backTo?: { label: string; path: string };
+  /**
+   * Route-specific action buttons rendered right before ProjectPill, e.g.
+   * /revision's Guardar/Cargar/Exportar (ReviewActions.tsx) - same
+   * reasoning as backTo: their state (findings, preCheckResults) is
+   * owned by whichever route renders Toolbar, not something the shared
+   * module registry should know about.
+   */
+  extraActions?: ReactNode;
 }
 
 // Only Section Box has a nested child today (Hide Plane) - a single
@@ -75,7 +83,7 @@ function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasMo
   );
 }
 
-export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo }: ToolbarProps) {
+export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo, extraActions }: ToolbarProps) {
   const navigate = useNavigate();
   const toolbarModules = getModulesForSurface("toolbar");
   // 'workspace' is excluded from MODULE_INTENT_ORDER's loop below and
@@ -118,6 +126,13 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo }: ToolbarP
       {workspaceModules.length > 0 && (
         <>
           <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+          <ToolbarSeparator />
+        </>
+      )}
+
+      {extraActions && (
+        <>
+          {extraActions}
           <ToolbarSeparator />
         </>
       )}

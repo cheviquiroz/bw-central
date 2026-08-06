@@ -1,0 +1,112 @@
+/* src/routes/revision/review-actions.css */
+@import "../../styles/tokens.css";
+
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-action-btn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--text-mid);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: none;
+  padding: 0;
+  transition: all 0.15s;
+}
+
+.review-action-btn:hover:not(:disabled) {
+  background: var(--toolbar-hover, #262d37);
+  color: var(--text-hi);
+}
+
+.review-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.review-action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.review-mismatch-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(10, 13, 17, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-mismatch-dialog {
+  width: 100%;
+  max-width: 420px;
+  background: rgba(23, 28, 34, 0.98);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  font-family: var(--sans);
+}
+
+.review-mismatch-dialog h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+
+.review-mismatch-dialog p {
+  margin: 0 0 18px;
+  font-size: 12.5px;
+  color: var(--text-mid);
+  line-height: 1.5;
+}
+
+.review-mismatch-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.review-mismatch-cancel {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-mismatch-cancel:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-hi);
+}
+
+.review-mismatch-confirm {
+  padding: 8px 14px;
+  background: var(--amber);
+  border: none;
+  border-radius: 6px;
+  color: #1a1400;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.review-mismatch-confirm:hover {
+  filter: brightness(1.1);
+}

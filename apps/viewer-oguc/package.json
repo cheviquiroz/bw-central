@@ -16,6 +16,7 @@
     "@bw-central/ifc-core": "workspace:*",
     "@bw-central/ifc-headless": "workspace:*",
     "@bw-central/oguc-core": "workspace:*",
+    "@bw-central/report-core": "workspace:*",
     "@thatopen/components": "^3.4.6",
     "@thatopen/components-front": "^3.4.3",
     "@thatopen/fragments": "^3.4.6",

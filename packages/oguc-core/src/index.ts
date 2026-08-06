@@ -16,3 +16,5 @@ export { evaluateStairCompliance } from "./engine/evaluateStairCompliance.js";
 export { runPreCheck, approximateStoreyCount } from "./precheck.js";
 export type { PreCheckSeverity, PreCheckIssue, PreCheckResult } from "./precheck.js";
 export type { Finding, FindingRuleId, FindingSeverity, FindingState, FindingBoundingBox } from "./types/finding.js";
+export { BWREV_VERSION, isValidBwrevFile } from "./types/bwrev.js";
+export type { BwrevFile, BwrevModelRef, BwrevPreCheckResults } from "./types/bwrev.js";

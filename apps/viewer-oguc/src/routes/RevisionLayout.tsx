@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { readIfcFile, type IfcHeadlessDocument } from "@bw-central/ifc-headless";
-import { runPreCheck, type Finding, type PreCheckResult } from "@bw-central/oguc-core";
+import { runPreCheck, type BwrevFile, type Finding, type PreCheckResult } from "@bw-central/oguc-core";
 import "../components/Layout/Layout.css";
 import Viewport from "../ui/Viewport/Viewport";
 import { DockLeft } from "../ui/Dock/DockLeft";
@@ -39,6 +39,7 @@ import { getModelBytes } from "../core/ModelBytesRegistry";
 import { PreCheckGate } from "./revision/PreCheckGate";
 import { FindingsDock } from "./revision/FindingsDock";
 import { generateFindings } from "./revision/generateFindings";
+import { ReviewActions } from "./revision/ReviewActions";
 import type { ModelDisplayNames } from "../engine/createApplication";
 import type { ModuleRuntimeMap } from "../ui/registry/modules";
 
@@ -176,6 +177,27 @@ function RevisionLayoutInner() {
     setFindings((prev) => prev.map((f) => (f.id === findingId ? { ...f, ...patch } : f)));
   };
 
+  // Paso 4: .bwrev save/load. null until the first save (this session)
+  // or a load - buildBwrevFile keeps createdAt immutable across
+  // subsequent saves once set, per bwrev.ts's own rule.
+  const [bwrevCreatedAt, setBwrevCreatedAt] = useState<number | null>(null);
+
+  const handleBwrevSaved = (createdAt: number) => {
+    setBwrevCreatedAt(createdAt);
+  };
+
+  // Replaces findings wholesale and adopts the loaded file's own
+  // createdAt (so a later re-save keeps the ORIGINAL creation time, not
+  // a new one) - preCheckResults intentionally stays untouched: it's
+  // still the live re-parse of the model currently loaded (authoritative
+  // for THIS session), while the loaded file's own preCheckResults is
+  // already flattened/informational (see bwrev.ts) and would need a
+  // shape it can't reconstruct back into the live per-model Record.
+  const handleBwrevLoaded = (file: BwrevFile) => {
+    setFindings(file.findings);
+    setBwrevCreatedAt(file.createdAt);
+  };
+
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
       const current = new Set(prev[modelId] ?? []);
@@ -249,6 +271,16 @@ function RevisionLayoutInner() {
         moduleRuntime={moduleRuntime}
         hasModel={hasModels}
         backTo={{ label: "← Volver", path: "/" }}
+        extraActions={
+          <ReviewActions
+            modelDisplayNames={modelDisplayNames}
+            preCheckResults={preCheckResults ?? {}}
+            findings={findings}
+            bwrevCreatedAt={bwrevCreatedAt}
+            onSaved={handleBwrevSaved}
+            onLoaded={handleBwrevLoaded}
+          />
+        }
       />
 
       <main ref={viewportRef} className="viewport">
