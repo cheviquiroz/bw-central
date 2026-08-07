@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm run -F viewer-oguc build",
+  "buildCommand": "pnpm run build:viewer-oguc",
   "outputDirectory": "apps/viewer-oguc/dist",
   "installCommand": "pnpm install"
 }
