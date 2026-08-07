@@ -57,7 +57,7 @@ function LayoutInner() {
   // useState local ahí se perdía cada vez que el usuario colapsaba el
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { zones, toggleZone } = useLayoutState();
+  const { zones, toggleZone, toggleShowShortcuts } = useLayoutState();
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -105,21 +105,36 @@ function LayoutInner() {
   // dejando una vía silenciosa para abrir un panel vacío sin sentido.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      if (event.key === "1") {
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === "1") {
+          event.preventDefault();
+          handleToggleTreePanel();
+        } else if (event.key === "2") {
+          event.preventDefault();
+          if (hasModels) handleTogglePropertiesPanel();
+        } else if (event.key === "3") {
+          event.preventDefault();
+          if (hasModels) handleToggleIssuesPanel();
+        }
+        return;
+      }
+
+      // "?" via e.key (not e.code) - e.code identifies a physical key
+      // position (e.g. "Slash"), which on a Spanish/Chilean keyboard
+      // doesn't produce "?" at all (that layout needs Shift+/ on a
+      // different physical key than a US layout). e.key already reports
+      // the character the OS/layout actually produced, so no keyboard-
+      // layout special-casing is needed here.
+      if (event.key === "?") {
+        const target = event.target as HTMLElement;
+        if (["INPUT", "TEXTAREA"].includes(target.tagName)) return;
         event.preventDefault();
-        handleToggleTreePanel();
-      } else if (event.key === "2") {
-        event.preventDefault();
-        if (hasModels) handleTogglePropertiesPanel();
-      } else if (event.key === "3") {
-        event.preventDefault();
-        if (hasModels) handleToggleIssuesPanel();
+        toggleShowShortcuts();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hasModels]);
+  }, [hasModels, toggleShowShortcuts]);
 
   // El modal de carga inicial se oculta solo (nada de un setState manual
   // en el handler) - se deriva de si ya hay algún modelo federado, la misma

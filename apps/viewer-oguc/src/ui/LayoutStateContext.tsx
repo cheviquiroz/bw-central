@@ -95,6 +95,9 @@ interface LayoutStateContextType {
   setLeftWidth: (width: number) => void;
   rightWidth: number;
   setRightWidth: (width: number) => void;
+  /** KeyboardShortcutsModal visibility - transient UI state, not persisted (see the save effect below, which deliberately doesn't include it). */
+  showShortcuts: boolean;
+  toggleShowShortcuts: () => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
@@ -112,6 +115,8 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   const [propertiesTab, setPropertiesTab] = useState<PropertiesTab>(initialLayout.propertiesTab);
   const [leftWidth, setLeftWidth] = useState<number>(initialLayout.leftWidth);
   const [rightWidth, setRightWidth] = useState<number>(initialLayout.rightWidth);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const toggleShowShortcuts = () => setShowShortcuts((prev) => !prev);
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -142,6 +147,8 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
         setLeftWidth,
         rightWidth,
         setRightWidth,
+        showShortcuts,
+        toggleShowShortcuts,
       }}
     >
       {children}

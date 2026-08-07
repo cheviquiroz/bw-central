@@ -62,6 +62,39 @@ export function useModelToolActions(app: ApplicationInstance) {
     fitCameraToAllLoadedModels();
   };
 
+  // Doble clic con el botón central del mouse (rueda) -> Fit All. button
+  // === 1 es el botón central en el estándar MouseEvent (0=izquierdo,
+  // 1=central, 2=derecho) - no hay un evento nativo "dblclick" para el
+  // botón central (dblclick del DOM solo dispara para el izquierdo), así
+  // que el doble clic se arma a mano comparando el timestamp contra el
+  // click anterior, igual que cualquier detector de doble clic manual.
+  // Vive en este hook (no en Viewport.tsx) porque fitCameraToAllLoadedModels
+  // ya es el mismo handler que usa el botón "Encuadrar todo" de
+  // Toolbar3DFloating - un solo punto de entrada a esa acción, no dos
+  // implementaciones que podrían desincronizarse.
+  useEffect(() => {
+    const container = viewportRef.current;
+    if (!container) return;
+
+    const DOUBLE_CLICK_THRESHOLD_MS = 300;
+    let lastWheelClickTime = 0;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.button !== 1) return;
+      const now = Date.now();
+      if (now - lastWheelClickTime < DOUBLE_CLICK_THRESHOLD_MS) {
+        event.preventDefault();
+        fitCameraToAllLoadedModels();
+        lastWheelClickTime = 0;
+      } else {
+        lastWheelClickTime = now;
+      }
+    };
+
+    container.addEventListener("mousedown", handleMouseDown);
+    return () => container.removeEventListener("mousedown", handleMouseDown);
+  }, []);
+
   const handleAxesClick = () => {
     if (actionsAdapter) {
       setIsAxesActive(actionsAdapter.toggleAxes());

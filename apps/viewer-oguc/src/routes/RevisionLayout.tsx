@@ -69,7 +69,7 @@ function RevisionLayoutInner() {
   // aceptable en esta fase ("sin lógica de negocio aún"), ver el reporte
   // de la tarea.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { zones, toggleZone, setZoneVisible } = useLayoutState();
+  const { zones, toggleZone, setZoneVisible, toggleShowShortcuts } = useLayoutState();
 
   const hasModels = Object.keys(modelDisplayNames).length > 0;
 
@@ -226,21 +226,33 @@ function RevisionLayoutInner() {
   // lo que costaría la indirección.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return;
-      if (event.key === "1") {
+      if (event.ctrlKey || event.metaKey) {
+        if (event.key === "1") {
+          event.preventDefault();
+          handleToggleTreePanel();
+        } else if (event.key === "2") {
+          event.preventDefault();
+          if (hasModels) handleTogglePropertiesPanel();
+        } else if (event.key === "3") {
+          event.preventDefault();
+          if (hasModels) handleToggleFindingsPanel();
+        }
+        return;
+      }
+
+      // "?" via e.key, same reasoning as Layout.tsx's own copy of this
+      // listener - duplicated on purpose, not extracted, same convention
+      // this file already documents above for the Ctrl+1/2/3 branch.
+      if (event.key === "?") {
+        const target = event.target as HTMLElement;
+        if (["INPUT", "TEXTAREA"].includes(target.tagName)) return;
         event.preventDefault();
-        handleToggleTreePanel();
-      } else if (event.key === "2") {
-        event.preventDefault();
-        if (hasModels) handleTogglePropertiesPanel();
-      } else if (event.key === "3") {
-        event.preventDefault();
-        if (hasModels) handleToggleFindingsPanel();
+        toggleShowShortcuts();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [hasModels]);
+  }, [hasModels, toggleShowShortcuts]);
 
   const moduleRuntime: ModuleRuntimeMap = useMemo(
     () => ({

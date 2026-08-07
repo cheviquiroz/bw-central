@@ -19,7 +19,9 @@ import type { BcfTopic } from "../../viewer/bcf/types/bcf";
 import { OrientationCube } from "../OrientationCube/OrientationCube";
 import { MeasurementToolbar } from "../MeasurementTool/MeasurementToolbar";
 import { Toolbar3DFloating } from "../Toolbar3DFloating/Toolbar3DFloating";
+import { KeyboardShortcutsModal } from "../KeyboardShortcutsModal/KeyboardShortcutsModal";
 import { useApp } from "../AppContext";
+import { useLayoutState } from "../LayoutStateContext";
 import type { ModuleRuntimeMap } from "../registry/modules";
 
 interface ViewportProps {
@@ -59,6 +61,10 @@ export default function Viewport({
 }: ViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const app = useApp();
+  // Viewport ya vive dentro de LayoutStateProvider en ambas rutas (ver
+  // Layout.tsx/RevisionLayout.tsx) - mismo acceso directo que ya usa
+  // DockLeft.tsx para zones/leftWidth, no una prop nueva de más.
+  const { showShortcuts, toggleShowShortcuts } = useLayoutState();
   const [selectionBox, setSelectionBox] = useState<SelectionBoxState | null>(null);
   const [cameraControls, setCameraControls] = useState<CameraControls | null>(null);
   const viewerHandlesRef = useRef<IfcViewerHandles | null>(null);
@@ -353,6 +359,15 @@ export default function Viewport({
       {cameraControls && <OrientationCube controls={cameraControls} hasModels={Boolean(hasModels)} />}
 
       {moduleRuntime && <Toolbar3DFloating hasModels={Boolean(hasModels)} moduleRuntime={moduleRuntime} />}
+
+      {/* position:fixed (ver keyboard-shortcuts-modal.css) - cubre toda la
+          ventana sin importar que esté anidado acá, igual que
+          LoadingOverlay.tsx. Vive en Viewport.tsx (no en Layout.tsx/
+          RevisionLayout.tsx por separado) porque este componente ya es el
+          único punto compartido entre ambas rutas, y showShortcuts/
+          toggleShowShortcuts ya vive en LayoutStateContext, del que este
+          componente ya es descendiente en las dos. */}
+      <KeyboardShortcutsModal isOpen={showShortcuts} onClose={toggleShowShortcuts} />
 
       {isMeasuring && (
         <MeasurementToolbar
