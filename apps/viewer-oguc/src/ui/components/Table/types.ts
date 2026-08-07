@@ -9,6 +9,10 @@
 import type { ReactNode } from "react";
 import type { BcfViewpoint } from "../../../viewer/bcf/types/bcf";
 
+// Extracted for reuse (colorMap.ts needs it too) - additive, no change to
+// TableItem's own shape.
+export type BadgeColor = "red" | "orange" | "green" | "blue" | "gray";
+
 export interface TableItem {
   id: string;
   index: number;
@@ -16,7 +20,7 @@ export interface TableItem {
   level?: "critical" | "high" | "medium" | "low" | "info";
   badge: {
     label: string;
-    color: "red" | "orange" | "green" | "blue" | "gray";
+    color: BadgeColor;
     semantics: "severity" | "status" | "priority";
   };
   metadata: {
@@ -27,6 +31,8 @@ export interface TableItem {
       elementId?: number;
       elementName?: string;
       userNote?: string;
+      /** Which federated model this finding's element belongs to - required to call searchManager.selectAndFocus(modelId, elementId, ...). Added during Phase 2 implementation: the sealed contract omitted it, but camera-jump cannot work without it on any session with more than one loaded model. */
+      modelId?: string;
     };
     bcf?: {
       guid: string;

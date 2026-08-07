@@ -12,15 +12,16 @@ import { IconLock } from "../../ui/icons/dock";
 import { Tooltip } from "../../ui/Tooltip/Tooltip";
 import { FindingsTable } from "./FindingsTable";
 import type { Finding } from "@bw-central/oguc-core";
+import type { SearchManager } from "../../viewer/SearchManager";
 import "./findings-dock.css";
 
 interface FindingsDockProps {
   findings: Finding[];
-  onSelectFinding: (finding: Finding) => void;
-  onUpdateFinding: (findingId: string, patch: Partial<Finding>) => void;
+  /** Phase 2: FindingsTable now owns its own camera-jump logic directly - onSelectFinding/onUpdateFinding are gone (the latter had no UI surface left once the Actions column/inline note editor were deferred to v1.1, see FindingsTable.tsx's header comment). */
+  searchManager: SearchManager | null;
 }
 
-export function FindingsDock({ findings, onSelectFinding, onUpdateFinding }: FindingsDockProps) {
+export function FindingsDock({ findings, searchManager }: FindingsDockProps) {
   const { setZoneVisible } = useLayoutState();
 
   return (
@@ -35,7 +36,7 @@ export function FindingsDock({ findings, onSelectFinding, onUpdateFinding }: Fin
           </Tooltip>
         </div>
         <div className="findings-dock-content">
-          <FindingsTable findings={findings} onSelectFinding={onSelectFinding} onUpdateFinding={onUpdateFinding} />
+          <FindingsTable findings={findings} searchManager={searchManager} />
         </div>
       </div>
     </DockBottomShell>

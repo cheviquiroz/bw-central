@@ -1,45 +1,46 @@
 // src/routes/revision/FindingsTable.tsx
 //
-// Presentational, same discipline as PreCheckGate.tsx: findings/state
-// mutation live in RevisionLayout.tsx (the single owner of application
-// state, per this project's established convention - see Layout.tsx's
-// own moduleRuntime comment). Sort/filter are local UI-only state (never
-// need to leave this component - nothing else cares how the table is
-// currently sorted).
+// Phase 2: refactored to render <Table> (src/ui/components/Table) instead
+// of a hand-rolled <table>. Filter chips stay outside Table (adapter
+// responsibility, not Table's - see FINDINGS_ADAPTER.md Section 6).
+//
+// Actions column (camera/note buttons) and the inline note editor are
+// DEFERRED to v1.1, per the locked decision in PHASE_2_RISKS.md #4 - the
+// sealed Column/Table contract has no mechanism for a row to render a
+// second sibling <tr> (which the note editor needs), so onUpdateFinding
+// (state changes, notes) has no UI surface anymore and is removed from
+// this component's props entirely rather than left as dead plumbing -
+// FindingsDock.tsx/RevisionLayout.tsx no longer pass or define it either.
+//
+// Row selection now owns its own camera-jump logic directly (via a new
+// searchManager prop) instead of delegating to a parent onSelectFinding
+// callback - TableItem's metadata.oguc doesn't carry a full Finding back
+// to the caller, only the fields CONTRACT_FINAL_SEALED.md's Section 1
+// lists, so the fallback chain (element not found -> fit-all, etc.) moves
+// here, where the click actually happens.
 import { useMemo, useState } from "react";
 import type { Finding, FindingSeverity, FindingState } from "@bw-central/oguc-core";
+import { Table } from "../../ui/components/Table";
+import type { Column, TableConfig, TableItem } from "../../ui/components/Table";
+import { severityToColor, badgeColorToCss } from "../../ui/components/Table/colorMap";
 import { EmptyState } from "../../ui/EmptyState";
+import type { SearchManager } from "../../viewer/SearchManager";
+import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
 import "./findings-table.css";
 
-// SVG, no emoji - same discipline as ModelTree.tsx/IssueTable.tsx
-// elsewhere in this app (visual consistency with the rest of the icon
-// set, strokeWidth 1.6/viewBox 24 to match).
-function IconCamera() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <path d="M4 8h3l2-2h6l2 2h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" />
-      <circle cx="12" cy="13" r="3.2" />
-    </svg>
-  );
-}
-
-function IconNote() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-      <path d="M5 4h11l3 3v13a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" />
-      <path d="M8 10h8M8 14h5" />
-    </svg>
-  );
-}
-
-type SortKey = "severity" | "rule" | "state" | "title";
 type FilterKey = "all" | "pending" | "errors" | "warnings";
 
-const SEVERITY_ORDER: Record<FindingSeverity, number> = { error: 0, warning: 1, info: 2 };
-const SEVERITY_COLOR: Record<FindingSeverity, string> = { error: "#ef4444", warning: "var(--amber)", info: "var(--text-low)" };
 const SEVERITY_LABEL: Record<FindingSeverity, string> = { error: "Error", warning: "Advertencia", info: "Info" };
-const RULE_LABEL: Record<Finding["ruleId"], string> = { occupancy: "Art. 4.2.4 Ocupación", stairs: "Art. 4.2.10 Escaleras" };
 const STATE_LABEL: Record<FindingState, string> = { pending: "Pendiente", accepted: "Aceptado", rejected: "Rechazado" };
+
+// error/warning/info -> high/medium/low, per CONTRACT_AMENDMENTS.md's
+// already-sealed Amendment 1 - "critical" is deliberately unused for this
+// domain (Finding only has 3 severities, none map to it).
+const SEVERITY_TO_LEVEL: Record<FindingSeverity, TableItem["level"]> = {
+  error: "high",
+  warning: "medium",
+  info: "low",
+};
 
 const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Todas" },
@@ -48,16 +49,23 @@ const FILTER_CHIPS: { key: FilterKey; label: string }[] = [
   { key: "warnings", label: "Advertencias" },
 ];
 
-interface FindingsTableProps {
-  findings: Finding[];
-  onSelectFinding: (finding: Finding) => void;
-  onUpdateFinding: (findingId: string, patch: Partial<Finding>) => void;
+function SeverityDot({ color }: { color: TableItem["badge"]["color"] }) {
+  return <span className="findings-severity-dot" style={{ background: badgeColorToCss[color] }} />;
 }
 
-export function FindingsTable({ findings, onSelectFinding, onUpdateFinding }: FindingsTableProps) {
-  const [sortKey, setSortKey] = useState<SortKey>("severity");
+function StateLabel({ state }: { state: FindingState | undefined }) {
+  if (!state) return <span className="findings-element-none">—</span>;
+  return <span className={`findings-state-label state-${state}`}>{STATE_LABEL[state]}</span>;
+}
+
+interface FindingsTableProps {
+  findings: Finding[];
+  /** Null while the 3D viewer/search index isn't ready yet - same guard the pre-refactor onSelectFinding chain already had (see handleRowSelect below). */
+  searchManager: SearchManager | null;
+}
+
+export function FindingsTable({ findings, searchManager }: FindingsTableProps) {
   const [filter, setFilter] = useState<FilterKey>("all");
-  const [noteEditingId, setNoteEditingId] = useState<string | null>(null);
 
   const filterCounts: Record<FilterKey, number> = {
     all: findings.length,
@@ -67,32 +75,121 @@ export function FindingsTable({ findings, onSelectFinding, onUpdateFinding }: Fi
   };
 
   const visible = useMemo(() => {
-    let list = findings;
-    if (filter === "pending") list = list.filter((f) => f.state === "pending");
-    else if (filter === "errors") list = list.filter((f) => f.severity === "error");
-    else if (filter === "warnings") list = list.filter((f) => f.severity === "warning");
+    if (filter === "pending") return findings.filter((f) => f.state === "pending");
+    if (filter === "errors") return findings.filter((f) => f.severity === "error");
+    if (filter === "warnings") return findings.filter((f) => f.severity === "warning");
+    return findings;
+  }, [findings, filter]);
 
-    const sorted = [...list];
-    if (sortKey === "rule") sorted.sort((a, b) => a.ruleId.localeCompare(b.ruleId));
-    else if (sortKey === "severity") sorted.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
-    else if (sortKey === "state") sorted.sort((a, b) => a.state.localeCompare(b.state));
-    else if (sortKey === "title") sorted.sort((a, b) => a.title.localeCompare(b.title));
-    return sorted;
-  }, [findings, filter, sortKey]);
+  // Finding.description has no slot in TableItem.metadata.oguc
+  // (CONTRACT_FINAL_SEALED.md's sealed shape doesn't include it - see
+  // FINDINGS_ADAPTER.md Section 2 / PHASE_2_RISKS.md #2's chosen
+  // resolution: a closure over the original Finding[], not a contract
+  // change). Keyed by id, rebuilt whenever the filtered list changes.
+  const descriptionById = useMemo(() => new Map(visible.map((f) => [f.id, f.description])), [visible]);
 
-  // Rendered even with 0 findings (Part 7's own acceptance criterion) -
-  // the toolbar/filter chips still need a place to live conceptually,
-  // but with nothing to filter/sort, showing just the empty message is
-  // clearer than an interactive toolbar with every count at zero.
-  //
-  // Only one empty message, not the three-way split (still-running /
-  // blocked / compliant) - by the time this component can render at all,
-  // RevisionLayout has already routed through PreCheckGate, which itself
-  // blocks onContinue while there are unresolved blocking issues (see
-  // PreCheckGate.tsx's canContinue) and shows its own LoadingOverlay while
-  // isPreCheckLoading. So findings.length === 0 here can only mean "rules
-  // ran, model is compliant" - the other two states aren't reachable at
-  // this component.
+  const items: TableItem[] = useMemo(
+    () =>
+      visible.map((f, i) => ({
+        id: f.id,
+        index: i + 1,
+        title: f.title,
+        level: SEVERITY_TO_LEVEL[f.severity],
+        badge: { label: SEVERITY_LABEL[f.severity], color: severityToColor[f.severity], semantics: "severity" },
+        metadata: {
+          oguc: {
+            ruleId: f.ruleId,
+            severity: f.severity,
+            state: f.state,
+            elementId: f.elementId,
+            elementName: f.elementName,
+            userNote: f.userNote,
+            modelId: f.modelId,
+          },
+        },
+      })),
+    [visible]
+  );
+
+  const columns: Column[] = useMemo(
+    () => [
+      { key: "index", label: "#", width: "40px", sortable: false },
+      { key: "severity", label: "Severity", width: "100px", sortable: true, render: (item) => <SeverityDot color={item.badge.color} /> },
+      {
+        key: "title",
+        label: "Finding",
+        width: "1fr",
+        sortable: true,
+        render: (item) => (
+          <>
+            <div className="findings-title-text">{item.title}</div>
+            <div className="findings-description-text">{descriptionById.get(item.id)}</div>
+          </>
+        ),
+      },
+      { key: "elementName", label: "Element", width: "150px", sortable: false, render: (item) => item.metadata.oguc?.elementId === 0 ? "Edificio completo" : (item.metadata.oguc?.elementName ?? "Sin nombre") },
+      { key: "state", label: "State", width: "100px", sortable: true, render: (item) => <StateLabel state={item.metadata.oguc?.state} /> },
+    ],
+    [descriptionById]
+  );
+
+  const config: TableConfig = useMemo(
+    () => ({
+      columns,
+      sortable: true,
+      sortOptions: {
+        severity: {
+          label: "Severity",
+          compareFn: (a, b) => {
+            const order: Record<FindingSeverity, number> = { error: 0, warning: 1, info: 2 };
+            return order[a.metadata.oguc!.severity] - order[b.metadata.oguc!.severity];
+          },
+        },
+        rule: { label: "Rule", compareFn: (a, b) => a.metadata.oguc!.ruleId.localeCompare(b.metadata.oguc!.ruleId) },
+        state: {
+          label: "State",
+          compareFn: (a, b) => {
+            const order: Record<FindingState, number> = { pending: 0, accepted: 1, rejected: 2 };
+            return order[a.metadata.oguc!.state] - order[b.metadata.oguc!.state];
+          },
+        },
+        title: { label: "Finding", compareFn: (a, b) => a.title.localeCompare(b.title) },
+        element: { label: "Element", compareFn: (a, b) => (a.metadata.oguc?.elementName ?? "").localeCompare(b.metadata.oguc?.elementName ?? "") },
+      },
+      defaultSort: "severity",
+    }),
+    [columns]
+  );
+
+  // Direct port of the pre-refactor handleSelectFinding fallback chain
+  // (was owned by RevisionLayout.tsx) - elementId===0 or no searchManager
+  // -> frame the whole model; element not found live -> warn + fall back;
+  // any error -> log + fall back. Never left in a broken camera state.
+  const handleRowSelect = (item: TableItem) => {
+    const oguc = item.metadata.oguc;
+    if (!oguc || oguc.elementId === 0 || oguc.elementId === undefined || !searchManager || !oguc.modelId) {
+      fitCameraToAllLoadedModels();
+      return;
+    }
+
+    const onNotFound = () => {
+      console.warn(`Element ${oguc.elementId} not found in model ${oguc.modelId} - falling back to fit-all.`);
+      fitCameraToAllLoadedModels();
+    };
+
+    searchManager.selectAndFocus(oguc.modelId, oguc.elementId, onNotFound).catch((error) => {
+      console.error("❌ Error al enfocar el hallazgo en el 3D:", error);
+      fitCameraToAllLoadedModels();
+    });
+  };
+
+  // Rendered even with 0 findings - the filter chips still need a place to
+  // live conceptually, but with nothing to filter, showing just the empty
+  // message is clearer than an interactive toolbar with every count at
+  // zero. Only one empty message: see FINDINGS_ADAPTER.md Section 7 - by
+  // the time this component can render at all, PreCheckGate has already
+  // gated blocking issues one level up, so findings.length === 0 here can
+  // only mean "rules ran, model is compliant."
   if (findings.length === 0) {
     return <EmptyState title="Tu modelo cumple todas las reglas revisadas en esta fase" />;
   }
@@ -111,123 +208,14 @@ export function FindingsTable({ findings, onSelectFinding, onUpdateFinding }: Fi
             </button>
           ))}
         </div>
-        <select className="findings-select" value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
-          <option value="severity">Ordenar por severidad</option>
-          <option value="rule">Ordenar por regla</option>
-          <option value="state">Ordenar por estado</option>
-          <option value="title">Ordenar por título</option>
-        </select>
       </div>
-      <table className="findings-table">
-        <thead>
-          <tr>
-            <th className="findings-col-icon" />
-            <th className="findings-col-rule">Regla</th>
-            <th className="findings-col-title">Hallazgo</th>
-            <th className="findings-col-element">Elemento</th>
-            <th className="findings-col-state">Estado</th>
-            <th className="findings-col-actions" />
-          </tr>
-        </thead>
-        <tbody>
-          {visible.map((finding) => (
-            <FindingRow
-              key={finding.id}
-              finding={finding}
-              isEditingNote={noteEditingId === finding.id}
-              onSelect={() => onSelectFinding(finding)}
-              onChangeState={(state) => onUpdateFinding(finding.id, { state })}
-              onToggleNoteEditor={() => setNoteEditingId((prev) => (prev === finding.id ? null : finding.id))}
-              onSaveNote={(userNote) => {
-                onUpdateFinding(finding.id, { userNote });
-                setNoteEditingId(null);
-              }}
-            />
-          ))}
-        </tbody>
-      </table>
+      <Table
+        items={items}
+        columns={columns}
+        config={config}
+        emptyMessage="Tu modelo cumple todas las reglas revisadas en esta fase"
+        onSelectRow={handleRowSelect}
+      />
     </div>
-  );
-}
-
-function FindingRow({
-  finding,
-  isEditingNote,
-  onSelect,
-  onChangeState,
-  onToggleNoteEditor,
-  onSaveNote,
-}: {
-  finding: Finding;
-  isEditingNote: boolean;
-  onSelect: () => void;
-  onChangeState: (state: FindingState) => void;
-  onToggleNoteEditor: () => void;
-  onSaveNote: (userNote: string) => void;
-}) {
-  const canJumpToElement = finding.elementId !== 0;
-  const [draftNote, setDraftNote] = useState(finding.userNote ?? "");
-
-  return (
-    <>
-      <tr className={`findings-row state-${finding.state}`} onClick={onSelect}>
-        <td className="findings-col-icon">
-          <span className="findings-severity-dot" style={{ background: SEVERITY_COLOR[finding.severity] }} title={SEVERITY_LABEL[finding.severity]} />
-        </td>
-        <td className="findings-col-rule">{RULE_LABEL[finding.ruleId]}</td>
-        <td className="findings-col-title">
-          <div className="findings-title-text">{finding.title}</div>
-          <div className="findings-description-text">{finding.description}</div>
-          {finding.userNote && (
-            <div className="findings-note-text">
-              <IconNote /> {finding.userNote}
-            </div>
-          )}
-        </td>
-        <td className="findings-col-element">
-          {canJumpToElement ? (
-            <>
-              {finding.elementName ?? "Sin nombre"} <span className="findings-element-id">#{finding.elementId}</span>
-              <span className="findings-camera-hint" title="Ver en 3D"><IconCamera /></span>
-            </>
-          ) : (
-            <span className="findings-element-none">Edificio completo</span>
-          )}
-        </td>
-        <td className="findings-col-state" onClick={(e) => e.stopPropagation()}>
-          <select
-            className={`findings-state-select state-${finding.state}`}
-            value={finding.state}
-            onChange={(e) => onChangeState(e.target.value as FindingState)}
-          >
-            <option value="pending">{STATE_LABEL.pending}</option>
-            <option value="accepted">{STATE_LABEL.accepted}</option>
-            <option value="rejected">{STATE_LABEL.rejected}</option>
-          </select>
-        </td>
-        <td className="findings-col-actions" onClick={(e) => e.stopPropagation()}>
-          <button className="findings-action-btn" onClick={onSelect} title="Ver detalles en 3D"><IconCamera /></button>
-          <button className="findings-action-btn" onClick={onToggleNoteEditor} title="Agregar/editar nota">
-            <IconNote />
-          </button>
-        </td>
-      </tr>
-      {isEditingNote && (
-        <tr className="findings-note-row" onClick={(e) => e.stopPropagation()}>
-          <td colSpan={6}>
-            <div className="findings-note-editor">
-              <textarea
-                className="findings-note-input"
-                value={draftNote}
-                onChange={(e) => setDraftNote(e.target.value)}
-                placeholder="Nota sobre este hallazgo..."
-                rows={2}
-              />
-              <button className="findings-note-save" onClick={() => onSaveNote(draftNote)}>Guardar</button>
-            </div>
-          </td>
-        </tr>
-      )}
-    </>
   );
 }

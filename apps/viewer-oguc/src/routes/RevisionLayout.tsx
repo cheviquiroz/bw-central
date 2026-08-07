@@ -34,7 +34,7 @@ import { Toolbar } from "../ui/Toolbar/Toolbar";
 import { useApp } from "../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../ui/LayoutStateContext";
 import { useModelToolActions } from "../components/Layout/useModelToolActions";
-import { WEB_IFC_WASM_PATH, fitCameraToAllLoadedModels } from "../core/IfcBootstrap";
+import { WEB_IFC_WASM_PATH } from "../core/IfcBootstrap";
 import { getModelBytes } from "../core/ModelBytesRegistry";
 import { PreCheckGate } from "./revision/PreCheckGate";
 import { FindingsDock } from "./revision/FindingsDock";
@@ -147,35 +147,20 @@ function RevisionLayoutInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preCheckPassed]);
 
-  // Part 4's explicit fallback chain: prefer the live element's real
-  // bounding box (via searchManager.selectAndFocus -> model.getMergedBox);
-  // if the model or the element can't be found (corrupted data, a
-  // building-level finding with no elementId, or - the actual reason
-  // this currently fires on /revision, see this task's own report - the
-  // known gap where 3D geometry doesn't yet survive "/" -> /revision
-  // navigation), log a warning and fall back to framing the whole model
-  // instead. Never throws, never leaves the camera in a broken state,
-  // the finding stays selectable either way.
-  const handleSelectFinding = (finding: Finding) => {
-    if (finding.elementId === 0 || !searchManager) {
-      fitCameraToAllLoadedModels();
-      return;
-    }
-
-    const onNotFound = () => {
-      console.warn(`Element ${finding.elementId} not found in model ${finding.modelId} - falling back to fit-all.`);
-      fitCameraToAllLoadedModels();
-    };
-
-    searchManager.selectAndFocus(finding.modelId, finding.elementId, onNotFound).catch((error) => {
-      console.error("❌ Error al enfocar el hallazgo en el 3D:", error);
-      fitCameraToAllLoadedModels();
-    });
-  };
-
-  const handleUpdateFinding = (findingId: string, patch: Partial<Finding>) => {
-    setFindings((prev) => prev.map((f) => (f.id === findingId ? { ...f, ...patch } : f)));
-  };
+  // Phase 2 (Table refactor): the fallback chain that used to live here
+  // (frame the whole model on elementId===0/no searchManager/not-found/
+  // error) moved into FindingsTable.tsx's own handleRowSelect - Table's
+  // onSelectRow receives a TableItem, not a Finding, and TableItem's
+  // metadata.oguc doesn't carry enough back up to reconstruct a full
+  // Finding here even if this component still wanted to own that logic.
+  // searchManager itself is still owned here (from useModelToolActions)
+  // and passed straight through to FindingsDock/FindingsTable.
+  //
+  // handleUpdateFinding (state changes, notes) is gone - its only UI
+  // surface, the inline note editor + state <select>, was deferred to
+  // v1.1 when the Actions column was cut (PHASE_2_RISKS.md #4: the sealed
+  // Table contract has no mechanism for a row to render a second sibling
+  // <tr>, which that editor needs).
 
   // Paso 4: .bwrev save/load. null until the first save (this session)
   // or a load - buildBwrevFile keeps createdAt immutable across
@@ -305,11 +290,7 @@ function RevisionLayoutInner() {
           moduleRuntime={moduleRuntime}
         />
         <DockRight />
-        <FindingsDock
-          findings={findings}
-          onSelectFinding={handleSelectFinding}
-          onUpdateFinding={handleUpdateFinding}
-        />
+        <FindingsDock findings={findings} searchManager={searchManager} />
 
         {!preCheckPassed && (
           <div className="precheck-overlay">

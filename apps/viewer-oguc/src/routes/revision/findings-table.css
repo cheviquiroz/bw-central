@@ -56,76 +56,15 @@
   font-size: 10px;
 }
 
-.findings-select {
-  padding: 5px 8px;
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  color: var(--text-mid);
-  font-family: var(--sans);
-  font-size: 11px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.findings-table {
-  flex: 1;
-  overflow: auto;
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  display: block;
-}
-
-.findings-table thead,
-.findings-table tbody {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-.findings-table thead th {
-  position: sticky;
-  top: 0;
-  background: rgba(23, 28, 34, 0.97);
-  text-align: left;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-low);
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line-soft);
-  white-space: nowrap;
-}
-
-.findings-col-icon { width: 30px; }
-.findings-col-rule { width: 150px; }
-.findings-col-element { width: 220px; }
-.findings-col-state { width: 130px; }
-.findings-col-actions { width: 80px; }
-
-.findings-row {
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.findings-row:hover {
-  background: #212831;
-}
-
-.findings-row td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--text-mid);
-  vertical-align: top;
-}
-
+/* Rendered by FindingsTable.tsx's own SeverityDot/StateLabel/column
+   renders, inside Table's <td class="table-cell"> - table.css owns the
+   row/cell/header chrome now, this file only owns what's specific to
+   Findings' cell content. */
 .findings-severity-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-top: 4px;
 }
 
 .findings-title-text {
@@ -140,166 +79,24 @@
   line-height: 1.4;
 }
 
-.findings-col-element {
-  position: relative;
-}
-
-.findings-element-id {
-  color: var(--text-low);
-  font-family: var(--mono);
-  font-size: 10.5px;
-}
-
 .findings-element-none {
   color: var(--text-low);
   font-style: italic;
 }
 
-.findings-camera-hint {
-  display: none;
-  margin-left: 6px;
-  color: var(--blue);
-  vertical-align: middle;
-}
-
-.findings-camera-hint svg {
-  width: 13px;
-  height: 13px;
-}
-
-.findings-row:hover .findings-camera-hint {
-  display: inline-flex;
-}
-
-.findings-state-select {
-  width: 100%;
-  padding: 4px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--line);
-  font-family: var(--sans);
+.findings-state-label {
   font-size: 11px;
-  cursor: pointer;
-  background: var(--bg-1);
-}
-
-.findings-state-select.state-pending {
-  color: var(--blue);
-  border-color: rgba(74, 144, 217, 0.4);
-}
-
-.findings-state-select.state-accepted {
-  color: var(--green);
-  border-color: rgba(95, 196, 141, 0.4);
-}
-
-.findings-state-select.state-rejected {
-  color: var(--text-low);
-  border-color: var(--line);
-}
-
-.findings-col-actions {
-  display: flex;
-  gap: 4px;
-}
-
-.findings-action-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: var(--text-low);
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.findings-action-btn:hover {
-  background: #262d37;
-  color: var(--text-hi);
-}
-
-.findings-action-btn svg {
-  width: 14px;
-  height: 14px;
-}
-
-.findings-row.state-rejected {
-  opacity: 0.55;
-}
-
-.findings-row.state-accepted .findings-title-text {
-  text-decoration: line-through;
-  text-decoration-color: var(--green);
-  text-decoration-thickness: 1px;
-}
-
-.findings-note-text {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  margin-top: 4px;
-  color: var(--amber);
-  font-size: 11px;
-  font-style: italic;
-  line-height: 1.4;
-}
-
-.findings-note-text svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.findings-note-row {
-  cursor: default;
-}
-
-.findings-note-row td {
-  padding: 8px 10px 12px;
-  border-bottom: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.015);
-}
-
-.findings-note-editor {
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.findings-note-input {
-  flex: 1;
-  padding: 6px 8px;
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  color: var(--text-hi);
-  font-family: var(--sans);
-  font-size: 11.5px;
-  resize: vertical;
-}
-
-.findings-note-input:focus {
-  outline: none;
-  border-color: var(--blue);
-}
-
-.findings-note-save {
-  padding: 6px 14px;
-  background: var(--blue);
-  border: none;
-  border-radius: 4px;
-  color: #fff;
-  font-family: var(--sans);
-  font-size: 11.5px;
   font-weight: 600;
-  cursor: pointer;
-  flex-shrink: 0;
 }
 
-.findings-note-save:hover {
-  background: #5a9de0;
+.findings-state-label.state-pending {
+  color: var(--blue);
+}
+
+.findings-state-label.state-accepted {
+  color: var(--green);
+}
+
+.findings-state-label.state-rejected {
+  color: var(--text-low);
 }
