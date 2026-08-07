@@ -4,3 +4,6 @@ packages:
 allowBuilds:
   core-js: false
   esbuild: true
+
+scripts:
+  build:viewer: cd apps/viewer-oguc && pnpm build
