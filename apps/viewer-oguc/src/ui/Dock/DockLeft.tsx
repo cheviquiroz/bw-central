@@ -15,12 +15,21 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
-import { useLayoutState } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH } from "../LayoutStateContext";
+import { ResizeHandle } from "../ResizeHandle";
 import { DockPanel } from "./DockPanel";
 import { DockHeader } from "./DockHeader";
 import { ModelTree } from "./ModelTree";
 import { setModelBytes } from "../../core/ModelBytesRegistry";
 import "../../styles/dock.css";
+
+// 32px de padding exterior de .viewport (16 a cada lado) + 16px del
+// gutter propio de este dock hacia el canvas (margin-right en
+// .dock-panel) - el gutter del lado derecho solo se resta si DockRight
+// está montado, ver maxWidth más abajo. Repetir este número acá (en vez
+// de leerlo del CSS, que no es posible) documenta de dónde sale.
+const OUTER_PADDING_PX = 32;
+const GUTTER_PX = 16;
 
 interface DockLeftProps {
   hiddenByModel: Record<string, Set<number>>;
@@ -31,7 +40,7 @@ interface DockLeftProps {
 
 export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }: DockLeftProps) {
   const app = useApp();
-  const { zones, setZoneVisible } = useLayoutState();
+  const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth } = useLayoutState();
   const [loading, setLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +99,19 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
 
   if (!zones.left || !hasModel) return null;
 
+  // Máximo dinámico: lo que queda de la ventana después del piso del
+  // canvas (480px) y del otro dock lateral, SI está montado (su gutter
+  // de 16px solo existe mientras existe - ver el comentario largo sobre
+  // margin-owned gutters en Layout.css). Se recalcula en cada render, no
+  // una vez al montar - este componente ya re-renderiza en cada paso del
+  // drag (setLeftWidth dispara un cambio de contexto), así que el valor
+  // nunca queda stale ni siquiera si la ventana cambia de tamaño a mitad
+  // de un arrastre.
+  const rightOverhead = zones.right ? rightWidth + GUTTER_PX : 0;
+  const maxWidth = Math.max(MIN_SIDE_DOCK_WIDTH, window.innerWidth - OUTER_PADDING_PX - GUTTER_PX - rightOverhead - CANVAS_MIN_WIDTH);
+
   return (
-    <DockPanel>
+    <DockPanel style={{ width: `${leftWidth}px` }}>
       <input ref={fileInputRef} type="file" accept=".ifc" multiple onChange={handleFileChange} style={{ display: "none" }} />
 
       <DockHeader onAddClick={handleAddClick} onClose={() => setZoneVisible("left", false)} />
@@ -104,6 +124,16 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
         )}
         <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={onToggleElementVisibility} />
       </div>
+
+      <ResizeHandle
+        direction="horizontal"
+        side="left"
+        currentSize={leftWidth}
+        minSize={MIN_SIDE_DOCK_WIDTH}
+        maxSize={maxWidth}
+        onResize={setLeftWidth}
+        className="dock-panel-resize-handle"
+      />
     </DockPanel>
   );
 }

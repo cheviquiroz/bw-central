@@ -26,7 +26,12 @@ export const DEFAULT_LAYOUT_ZONES: LayoutZones = { left: true, right: true, bott
 // sola vez, al montar (ver getDefaultZones más abajo) - no en cada
 // resize de la ventana: encoger la ventana después de cargar no debe
 // cerrarle paneles al usuario por sorpresa, solo el ESTADO INICIAL de una
-// sesión sin nada persistido depende del ancho de pantalla.
+// sesión sin nada persistido depende del ancho de pantalla. Este mismo
+// criterio es por lo que el drag-resize de DockLeft/DockRight (ver
+// ResizeHandle.tsx) tampoco oculta DockRight en vivo por debajo de un
+// umbral de ventana - solo clampea su ANCHO al mínimo, nunca lo cierra
+// solo, la decisión ya se tomó acá y no vale la pena repetirla con un
+// criterio distinto en otro lugar del código.
 const NARROW_SCREEN_BREAKPOINT_PX = 1280;
 
 function getDefaultZones(): LayoutZones {
@@ -39,9 +44,26 @@ function getDefaultZones(): LayoutZones {
 export const DEFAULT_BOTTOM_DOCK_HEIGHT = 240;
 export const MIN_BOTTOM_DOCK_HEIGHT = 120;
 // El clamp superior es un porcentaje de la ventana (60vh), no un px fijo -
-// se recalcula en el propio handler de resize (ver DockBottom.tsx), este
-// valor solo documenta la regla.
+// se recalcula en el propio handler de resize (ver DockBottomShell.tsx),
+// este valor solo documenta la regla.
 export const MAX_BOTTOM_DOCK_HEIGHT_VH = 0.6;
+
+// Ancho de los paneles laterales (DockLeft/DockRight) - antes un valor
+// fijo de 272px hardcodeado en dock.css/dock-right.css, ahora el default
+// de un valor continuo que el usuario puede arrastrar (ver
+// ResizeHandle.tsx). 200px de mínimo es lo suficientemente angosto para
+// seguir leyendo el árbol/propiedades sin que el contenido se vuelva
+// ilegible; no hay un máximo fijo - el máximo real depende del ancho de
+// la ventana y de si el OTRO panel lateral está visible, y se calcula en
+// cada Dock (ver DockLeft.tsx/DockRight.tsx), no acá.
+export const DEFAULT_SIDE_DOCK_WIDTH = 272;
+export const MIN_SIDE_DOCK_WIDTH = 200;
+// Ancho mínimo que el canvas central nunca debe perder - mismo valor que
+// el piso de minmax(480px, 1fr) en Layout.css; repetido acá como
+// constante (no importado desde el CSS, que no es posible) para que el
+// cálculo de ancho máximo de cada dock lateral use el mismo número, no
+// uno reescrito a mano que podría desincronizarse.
+export const CANVAS_MIN_WIDTH = 480;
 
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 
@@ -52,7 +74,13 @@ const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 function getInitialLayout() {
   const persisted = loadPersistedLayout();
   if (persisted) return persisted;
-  return { zones: getDefaultZones(), propertiesTab: DEFAULT_PROPERTIES_TAB, bottomDockHeight: DEFAULT_BOTTOM_DOCK_HEIGHT };
+  return {
+    zones: getDefaultZones(),
+    propertiesTab: DEFAULT_PROPERTIES_TAB,
+    bottomDockHeight: DEFAULT_BOTTOM_DOCK_HEIGHT,
+    leftWidth: DEFAULT_SIDE_DOCK_WIDTH,
+    rightWidth: DEFAULT_SIDE_DOCK_WIDTH,
+  };
 }
 
 interface LayoutStateContextType {
@@ -63,21 +91,27 @@ interface LayoutStateContextType {
   setBottomDockHeight: (height: number) => void;
   propertiesTab: PropertiesTab;
   setPropertiesTab: (tab: PropertiesTab) => void;
+  leftWidth: number;
+  setLeftWidth: (width: number) => void;
+  rightWidth: number;
+  setRightWidth: (width: number) => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
 
 export function LayoutStateProvider({ children }: { children: ReactNode }) {
   // useState(getInitialLayout) sin llamarlo - lazy initializer, corre una
-  // sola vez al montar, no en cada render. Los 3 campos parten del MISMO
-  // objeto leído/calculado una vez (no 3 lecturas independientes de
+  // sola vez al montar, no en cada render. Los campos parten del MISMO
+  // objeto leído/calculado una vez (no lecturas independientes de
   // localStorage) para que un layout persistido parcialmente corrupto no
   // pueda mezclar, por accidente, zones de una versión con
-  // bottomDockHeight de otra.
+  // bottomDockHeight (o los anchos laterales) de otra.
   const [initialLayout] = useState(getInitialLayout);
   const [zones, setZones] = useState<LayoutZones>(initialLayout.zones);
   const [bottomDockHeight, setBottomDockHeight] = useState<number>(initialLayout.bottomDockHeight);
   const [propertiesTab, setPropertiesTab] = useState<PropertiesTab>(initialLayout.propertiesTab);
+  const [leftWidth, setLeftWidth] = useState<number>(initialLayout.leftWidth);
+  const [rightWidth, setRightWidth] = useState<number>(initialLayout.rightWidth);
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -91,12 +125,24 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   // desmonta en uso normal (es la app entera), así que "guardar al salir"
   // significaría, en la práctica, nunca guardar nada.
   useEffect(() => {
-    savePersistedLayout({ zones, propertiesTab, bottomDockHeight });
-  }, [zones, propertiesTab, bottomDockHeight]);
+    savePersistedLayout({ zones, propertiesTab, bottomDockHeight, leftWidth, rightWidth });
+  }, [zones, propertiesTab, bottomDockHeight, leftWidth, rightWidth]);
 
   return (
     <LayoutStateContext.Provider
-      value={{ zones, setZoneVisible, toggleZone, bottomDockHeight, setBottomDockHeight, propertiesTab, setPropertiesTab }}
+      value={{
+        zones,
+        setZoneVisible,
+        toggleZone,
+        bottomDockHeight,
+        setBottomDockHeight,
+        propertiesTab,
+        setPropertiesTab,
+        leftWidth,
+        setLeftWidth,
+        rightWidth,
+        setRightWidth,
+      }}
     >
       {children}
     </LayoutStateContext.Provider>

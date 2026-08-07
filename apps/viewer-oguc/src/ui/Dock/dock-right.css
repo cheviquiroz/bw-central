@@ -1,21 +1,43 @@
 /* src/ui/Dock/dock-right.css */
 @import "../../styles/tokens.css";
 
-/* Celda derecha del grid de .viewport (Layout.css). Ancho fijo, sin
-   estado intermedio: este dock o está montado a su ancho completo, o no
-   está montado en absoluto (ver DockRight.tsx). margin-left es el gutter
-   negro hacia el canvas - solo existe mientras este elemento existe (ver
-   el comentario largo en Layout.css sobre por qué esto reemplazó el
-   gap:16px del grid padre). Ya no hay tab bar acá (ver DockRight.tsx) -
-   .properties-panel ya trae su propio look (blur/radius/bg), así que este
-   contenedor solo necesita posicionar y darle el ancho fijo. */
+/* Celda derecha del grid de .viewport (Layout.css). Sin width fijo acá:
+   llega por style inline (ver DockRight.tsx), el mismo criterio que
+   DockPanel/dock.css usa para DockLeft - un valor continuo que el
+   usuario controla arrastrando .dock-right-resize-handle, no un ancho
+   fijo hardcodeado. margin-left es el gutter negro hacia el canvas -
+   solo existe mientras este elemento existe (ver el comentario largo en
+   Layout.css sobre por qué esto reemplazó el gap:16px del grid padre).
+   Ya no hay tab bar acá (ver DockRight.tsx) - .properties-panel ya trae
+   su propio look (blur/radius/bg), así que este contenedor solo necesita
+   posicionar y darle el ancho. position:relative es nuevo (antes no
+   hacía falta sin nada position:absolute adentro) - ancla el resize
+   handle a este contenedor. */
 .dock-right {
-  width: 272px;
+  position: relative;
   height: 100%;
   margin-left: 16px;
   display: flex;
 }
 
-.dock-right > * {
+.dock-right > *:not(.dock-right-resize-handle) {
   flex: 1;
+}
+
+/* Franja invisible sobre el borde IZQUIERDO del panel - left:0 (no
+   -4px), mismo criterio que .dock-panel-resize-handle (dock.css): un
+   contenedor con overflow:hidden recorta el hit-testing de un hijo que
+   se sale de sus bordes, así que el handle vive 100% adentro. Este
+   contenedor no tiene overflow:hidden hoy, pero mantenerlo adentro por
+   las mismas razones evita que se rompa en silencio si alguna vez lo
+   gana. */
+.dock-right-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 10;
+  touch-action: none;
 }

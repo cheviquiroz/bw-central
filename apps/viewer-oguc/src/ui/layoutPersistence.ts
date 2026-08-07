@@ -1,11 +1,14 @@
 // src/ui/layoutPersistence.ts
 //
-// Fase 5b: persiste visibilidad de paneles, tab activa de PropertiesPanel
-// y altura de DockBottom entre recargas. Versionado en la key misma
-// ("v1") - si el shape vuelve a cambiar, se sube a "v2" y el valor viejo
-// simplemente deja de matchear (ver isValidPersistedLayout), en vez de
-// migrar datos viejos a mano.
-const STORAGE_KEY = "bwise.viewer.layout.v1";
+// Fase 5b: persiste visibilidad de paneles, tab activa de PropertiesPanel,
+// altura de DockBottom y (desde el drag-resize de DockLeft/DockRight) el
+// ancho de ambos paneles laterales entre recargas. Versionado en la key
+// misma ("v2", antes "v1") - el ancho lateral es un campo nuevo en el
+// shape persistido, así que sube de versión en vez de reinterpretar "v1"
+// con un significado distinto (ver isValidPersistedLayout más abajo): un
+// valor "v1" viejo simplemente deja de matchear y cae a defaults, nunca
+// se migra a mano.
+const STORAGE_KEY = "bwise.viewer.layout.v2";
 
 // LayoutZones vive acá, no en LayoutStateContext.tsx (que la reexporta) -
 // ese archivo importa loadPersistedLayout/savePersistedLayout de este
@@ -24,6 +27,8 @@ export interface PersistedLayout {
   zones: LayoutZones;
   propertiesTab: PropertiesTab;
   bottomDockHeight: number;
+  leftWidth: number;
+  rightWidth: number;
 }
 
 function isValidZones(value: unknown): value is LayoutZones {
@@ -47,7 +52,11 @@ function isValidPersistedLayout(value: unknown): value is PersistedLayout {
     isValidZones(candidate.zones) &&
     isValidPropertiesTab(candidate.propertiesTab) &&
     typeof candidate.bottomDockHeight === "number" &&
-    Number.isFinite(candidate.bottomDockHeight)
+    Number.isFinite(candidate.bottomDockHeight) &&
+    typeof candidate.leftWidth === "number" &&
+    Number.isFinite(candidate.leftWidth) &&
+    typeof candidate.rightWidth === "number" &&
+    Number.isFinite(candidate.rightWidth)
   );
 }
 

@@ -18,16 +18,16 @@
 
 /* Ya no es position:absolute - es una celda real del grid de 3 columnas
    de .viewport (Layout.css), no un panel flotante superpuesto al canvas.
-   width fijo (no más interpolación 56-272px): este panel o está montado
-   a su ancho completo, o no está montado en absoluto (ver DockLeft.tsx) -
-   no existe más un estado intermedio para animar entre 56 y 272, así que
-   la vieja transition:width se retira con él. margin-right es el gutter
-   negro hacia el canvas - solo existe mientras este elemento existe, así
-   que un dock oculto no deja ningún resto de espacio reservado (ver el
-   comentario largo en Layout.css sobre por qué esto reemplazó el
-   gap:16px del grid padre). */
+   Sin width fijo acá: el ancho llega por style inline (ver DockPanel.tsx/
+   DockLeft.tsx) porque es un valor continuo que el usuario controla
+   arrastrando .dock-panel-resize-handle, el mismo criterio que
+   bottomDockHeight ya usaba para DockBottom - no hay más un estado
+   intermedio "colapsado" para animar, así que no hace falta
+   transition:width. margin-right es el gutter negro hacia el canvas -
+   solo existe mientras este elemento existe, así que un dock oculto no
+   deja ningún resto de espacio reservado (ver el comentario largo en
+   Layout.css sobre por qué esto reemplazó el gap:16px del grid padre). */
 .dock-panel {
-  width: 272px;
   height: 100%;
   margin-right: 16px;
   /* Sigue haciendo falta: el overlay del File Upload Modal es
@@ -46,6 +46,25 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* Franja invisible sobre el borde DERECHO del panel. right:0 (no -4px)
+   a propósito: .dock-panel tiene overflow:hidden (necesario para las
+   esquinas redondeadas del panel), que recorta tanto el pintado COMO el
+   hit-testing de cualquier hijo posicionado que se salga de sus bordes -
+   confirmado con elementFromPoint durante la verificación de esta tarea,
+   un handle a right:-4px devolvía el propio .dock-panel como blanco del
+   click, nunca el handle. Se mantiene apenas más angosto y 100% adentro
+   del borde en vez de "a caballo" sobre él. */
+.dock-panel-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 10;
+  touch-action: none;
 }
 
 .dock-header {

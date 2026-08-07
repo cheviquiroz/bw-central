@@ -8,9 +8,10 @@
    patrón que margin-right/margin-left en dock.css/dock-right.css: solo
    existe mientras este elemento existe, así que ocultar el dock no deja
    un hueco vacío flotando. La altura llega por style inline (ver
-   DockBottom.tsx) porque es un valor continuo controlado por el usuario
-   (drag del handle), no un breakpoint fijo como el ancho de los paneles
-   laterales. */
+   DockBottomShell.tsx) porque es un valor continuo controlado por el
+   usuario (drag del handle) - mismo criterio que el ancho de DockLeft/
+   DockRight, también arrastrable desde esta tarea (ver dock.css/
+   dock-right.css). */
 .dock-bottom {
   position: relative;
   margin-top: 16px;
@@ -23,15 +24,19 @@
   flex-direction: column;
 }
 
-/* Franja invisible sobre el borde superior del dock - se agranda un poco
-   más allá del propio borde (top:-4px) para dar un área de agarre cómoda
-   sin depender de acertarle al pixel exacto del borde de 1px. */
+/* Franja invisible sobre el borde superior del dock. top:0 (no -4px):
+   .dock-bottom tiene overflow:hidden, que recorta el hit-testing de un
+   hijo que se sale de sus bordes (confirmado con elementFromPoint al
+   verificar el resize de DockLeft en esta misma tarea - un handle a
+   -4px no era clickeable en la práctica, devolvía el propio contenedor
+   como blanco del click), así que el handle vive 100% adentro en vez de
+   "a caballo" sobre el borde. */
 .dock-bottom-resize-handle {
   position: absolute;
-  top: -4px;
+  top: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 6px;
   cursor: ns-resize;
   z-index: 10;
   touch-action: none;
