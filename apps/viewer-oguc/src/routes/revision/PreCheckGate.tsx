@@ -7,6 +7,7 @@
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { PreCheckIssue, PreCheckResult } from "@bw-central/oguc-core";
+import { LoadingOverlay } from "../../ui/LoadingOverlay";
 import "./precheck-gate.css";
 
 interface PreCheckGateProps {
@@ -133,13 +134,13 @@ export function PreCheckGate({ modelNames, resultsByModel, isLoading, onContinue
   }
 
   if (isLoading) {
-    return (
-      <div className="precheck-gate">
-        <div className="precheck-empty-state">
-          <p>Analizando el modelo…</p>
-        </div>
-      </div>
-    );
+    // isLoading is RevisionLayout.tsx's existing isPreCheckLoading - not
+    // a new isPreCheckRunning flag duplicating it under a different name
+    // (this prop already tracked exactly that state before this task).
+    // "paso 2 de 3" matches this task's own message, describing the real
+    // sequence: (1) el modelo ya se cargó en "/", (2) esto - re-parsear +
+    // correr Pre-Check -, (3) la revisión misma.
+    return <LoadingOverlay isVisible message="Validando pre-requisitos (paso 2 de 3)" />;
   }
 
   return (

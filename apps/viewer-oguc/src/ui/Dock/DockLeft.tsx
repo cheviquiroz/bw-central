@@ -17,6 +17,7 @@ import type React from "react";
 import { useApp } from "../AppContext";
 import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
+import { LoadingOverlay } from "../LoadingOverlay";
 import { DockPanel } from "./DockPanel";
 import { DockHeader } from "./DockHeader";
 import { ModelTree } from "./ModelTree";
@@ -43,6 +44,13 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
   const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth } = useLayoutState();
   const [loading, setLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
+  // web-ifc's own progress reporting is coarse (a handful of discrete
+  // jumps - 10%/30%/30-100% during geometry processing - not a smooth
+  // per-frame value), but it IS real, already threaded through
+  // app.importNewModel's onProgress callback below - not invented for
+  // this overlay. Kept separate from progressMessage (the human-readable
+  // status string) since LoadingOverlay wants a plain number.
+  const [loadingPercentage, setLoadingPercentage] = useState<number | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddClick = () => fileInputRef.current?.click();
@@ -66,6 +74,7 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
 
         const result = await app.importNewModel(file.name, bytes, (progress) => {
           setProgressMessage(`"${file.name}": ${progress.statusMessage}`);
+          setLoadingPercentage(progress.percentage);
         });
 
         if (result.success) {
@@ -85,6 +94,7 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
     }
 
     setLoading(false);
+    setLoadingPercentage(undefined);
     event.target.value = "";
 
     const parts: string[] = [];
@@ -134,6 +144,17 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
         onResize={setLeftWidth}
         className="dock-panel-resize-handle"
       />
+
+      {/* position:fixed - se pinta sobre TODA la ventana (toolbar,
+          canvas, ambos docks), no solo sobre este panel, sin importar que
+          esté anidado acá adentro. Vive junto al trigger real (este
+          input de archivo), no en Viewport.tsx - Viewport.tsx nunca
+          parsea un IFC, solo inicializa el motor 3D vacío; quien
+          realmente dispara app.importNewModel es este dock (y, para la
+          primera carga, FileUploadModal - ver Layout.tsx, que ya tiene
+          su propio spinner acotado al cuadro de carga y no se tocó acá
+          para no duplicar/pisar ese tratamiento). */}
+      <LoadingOverlay isVisible={loading} message={progressMessage || "Cargando tu modelo..."} progress={loadingPercentage} />
     </DockPanel>
   );
 }

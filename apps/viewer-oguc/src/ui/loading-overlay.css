@@ -1,0 +1,67 @@
+/* src/ui/loading-overlay.css */
+@import "../styles/tokens.css";
+
+/* pointer-events stays auto (the CSS default) here, not none - a fixed
+   overlay with pointer-events:none would let clicks fall straight
+   through to whatever's underneath, which is the OPPOSITE of "blocks
+   interaction" (this component's own stated purpose). There is nothing
+   clickable inside it (no close button, no backdrop-dismiss handler),
+   which already satisfies "clicking the overlay doesn't trigger
+   anything" without needing to also let clicks pass through to the app
+   behind it. */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.loading-overlay-spinner {
+  width: 48px;
+  height: 48px;
+  color: var(--text-hi, #fff);
+  animation: loading-overlay-spin 1s linear infinite;
+}
+
+@keyframes loading-overlay-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-overlay-message {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+  font-family: var(--sans);
+  text-align: center;
+}
+
+.loading-overlay-progress-track {
+  width: 220px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.loading-overlay-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(to right, #a5294e, #1b3b7a);
+  transition: width 0.2s ease-out;
+}
