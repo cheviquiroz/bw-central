@@ -1,0 +1,112 @@
+/* src/ui/components/Table/table.css
+ *
+ * Uses this app's REAL existing tokens (src/styles/tokens.css +
+ * src/styles/dock.css), not the --color-text-primary/--color-hover-bg/
+ * --color-selected-bg/--color-border names given in this task's brief -
+ * confirmed (again, same finding as an earlier task's Toolbar3DFloating
+ * color fix) that no --color-* tokens exist anywhere in this codebase.
+ * Introducing a second, parallel token system for one component would be
+ * the exact inconsistency that earlier fix corrected - reusing the same
+ * --text-hi/--text-mid/--dock-bg/--line/--blue tokens every other dark
+ * panel in this app already uses keeps this component visually consistent
+ * with DockLeft/DockRight/DockBottom "for free".
+ *
+ * display:grid was requested on .table itself, but .table is a real
+ * <table> element (see Table.tsx's header comment for why) - standard
+ * table layout (border-collapse) is used instead, matching this app's own
+ * existing findings-table.css/bcf-panel table CSS.
+ */
+@import "../../../styles/tokens.css";
+@import "../../../styles/dock.css";
+
+.table-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--text-mid);
+}
+
+.table-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dock-bg);
+}
+
+.table-header-cell {
+  text-align: left;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: var(--text-hi);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.table-header-cell--sortable {
+  cursor: pointer;
+}
+
+.table-header-cell--sortable:hover {
+  color: var(--blue);
+}
+
+/* Sort direction is carried by the ▲/▼ glyph TableHeader.tsx already
+   renders (see that file's header comment) - these two classes exist per
+   CONTRACT_FINAL_SEALED.md Section 7's named hooks, applied for any
+   additional visual treatment (e.g. an accent color on the active sort
+   column) beyond the glyph itself. */
+.table-header-cell--sort-asc,
+.table-header-cell--sort-desc {
+  color: var(--blue);
+}
+
+.table-sort-indicator {
+  margin-left: 4px;
+  font-size: 9px;
+}
+
+.table-body {
+}
+
+.table-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* Pure CSS hover - no JS-managed .table-row--hovered class, see
+   TableRow.tsx's header comment. */
+.table-row:hover {
+  background: var(--dock-hover-bg);
+}
+
+.table-row--selected {
+  background: var(--dock-selected-bg);
+  box-shadow: inset 2px 0 0 var(--dock-selected-border);
+}
+
+.table-cell {
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.table-empty-row td {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-low);
+}
+
+/* Mobile responsive - deferred per this task's own "(optional, can defer
+   to v1.1)" note. Reserved breakpoint, no rules yet: neither current
+   domain (Findings, BCF) has been adapted to use <Table> yet (Phase 2/3),
+   so there's no real column set to decide "which columns matter on a
+   375px screen" against - designing that now would be guessing. */
+@media (max-width: 768px) {
+}
