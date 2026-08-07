@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:viewer-oguc": "pnpm --filter viewer-oguc dev",
-    "build:viewer-oguc": "pnpm --filter viewer-oguc build",
+    "build": "pnpm --filter viewer-oguc build",
+    "dev": "pnpm --filter viewer-oguc dev",
     "check:architecture": "depcruise --config .dependency-cruiser.json packages apps/*/src"
   },
   "devDependencies": {
