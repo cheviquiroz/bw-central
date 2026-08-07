@@ -6,6 +6,7 @@
 // título/estado/prioridad/responsable/fecha, todo visible de un vistazo
 // en vez de scrollear tarjetas una debajo de otra.
 import type { BcfPriority, BcfStatus, BcfTopic } from "../../viewer/bcf/types/bcf";
+import { EmptyState } from "../EmptyState";
 
 interface IssueTableProps {
   topics: BcfTopic[];
@@ -30,8 +31,13 @@ const STATUS_COLOR: Record<BcfStatus, string> = {
 };
 
 export function IssueTable({ topics, activeTopic, onSelect, onActivate }: IssueTableProps) {
+  // No action button here - BcfPanel.tsx's own header already renders an
+  // "Importar BCF" button (BCF_PANEL_MODULES, registry/modules.ts) right
+  // above this table, always, not only while empty. A second import
+  // trigger inside the empty state would just be a duplicate of the one
+  // already onscreen.
   if (topics.length === 0) {
-    return <div className="issue-table-empty">Sin incidencias</div>;
+    return <EmptyState title="Importa un archivo BCF o crea una nueva incidencia" />;
   }
 
   return (

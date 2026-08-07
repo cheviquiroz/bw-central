@@ -98,16 +98,6 @@
   border-color: var(--blue);
 }
 
-.issue-table-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-low);
-  font-size: 12px;
-  text-align: center;
-}
-
 /* Tabla real, no tarjetas - Incidencias vive en DockBottom (full-width,
    ver DockBottom.tsx) desde la Fase 3 justamente para tener espacio
    horizontal para columnas reales. */

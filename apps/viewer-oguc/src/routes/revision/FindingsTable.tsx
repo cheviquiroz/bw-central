@@ -8,6 +8,7 @@
 // currently sorted).
 import { useMemo, useState } from "react";
 import type { Finding, FindingSeverity, FindingState } from "@bw-central/oguc-core";
+import { EmptyState } from "../../ui/EmptyState";
 import "./findings-table.css";
 
 // SVG, no emoji - same discipline as ModelTree.tsx/IssueTable.tsx
@@ -83,8 +84,17 @@ export function FindingsTable({ findings, onSelectFinding, onUpdateFinding }: Fi
   // the toolbar/filter chips still need a place to live conceptually,
   // but with nothing to filter/sort, showing just the empty message is
   // clearer than an interactive toolbar with every count at zero.
+  //
+  // Only one empty message, not the three-way split (still-running /
+  // blocked / compliant) - by the time this component can render at all,
+  // RevisionLayout has already routed through PreCheckGate, which itself
+  // blocks onContinue while there are unresolved blocking issues (see
+  // PreCheckGate.tsx's canContinue) and shows its own LoadingOverlay while
+  // isPreCheckLoading. So findings.length === 0 here can only mean "rules
+  // ran, model is compliant" - the other two states aren't reachable at
+  // this component.
   if (findings.length === 0) {
-    return <div className="findings-empty">Sin hallazgos - las reglas de cumplimiento aún no se han ejecutado, o el modelo no generó ninguno.</div>;
+    return <EmptyState title="Tu modelo cumple todas las reglas revisadas en esta fase" />;
   }
 
   return (

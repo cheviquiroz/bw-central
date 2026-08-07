@@ -6,6 +6,7 @@ import type { ProximityWarning } from "@bw-central/ifc-core";
 import { IconChevron, IconFolder, IconEye, IconTrash } from "../icons/dock";
 import { Tooltip } from "../Tooltip/Tooltip";
 import { clearModelBytes } from "../../core/ModelBytesRegistry";
+import { EmptyState } from "../EmptyState";
 
 function findPathToLocalId(node: ModelTreeNode, targetLocalId: number): number[] | null {
   if (node.localId === targetLocalId) {
@@ -288,12 +289,12 @@ export function ModelTree({ hiddenByModel, onToggleElementVisibility }: ModelTre
     return { expandedIdsByModel, selectedLocalIdByModel };
   }, [selection, trees, modelIds, app]);
 
+  // DockLeft ya no monta este componente salvo que hasModel sea true (ver
+  // su propio gate), así que llegar acá con modelIds vacío no es "todavía
+  // no se cargó nada" - es el caso raro de un modelo cargado cuyo árbol
+  // espacial salió vacío (ver SpatialTreeManager.ts).
   if (modelIds.length === 0) {
-    return (
-      <p style={{ fontSize: "12px", color: "var(--dock-text-secondary)", padding: "16px 20px" }}>
-        Sin modelos cargados todavía.
-      </p>
-    );
+    return <EmptyState title="Sin elementos en el árbol" />;
   }
 
   return (

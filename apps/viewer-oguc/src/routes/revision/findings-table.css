@@ -1,18 +1,6 @@
 /* src/routes/revision/findings-table.css */
 @import "../../styles/tokens.css";
 
-.findings-empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 24px;
-  text-align: center;
-  color: var(--text-low);
-  font-size: 12px;
-  font-family: var(--sans);
-}
-
 .findings-table-wrap {
   width: 100%;
   height: 100%;
