@@ -121,13 +121,21 @@ export type ModuleRuntimeMap = Record<string, ModuleRuntimeState>;
 export const MODULE_INTENT_ORDER: ModuleIntent[] = ["explore", "interrogate", "communicate", "review"];
 
 export const MODULE_REGISTRY: ModuleDefinition[] = [
-  // explore - orient and navigate the camera/scene.
+  // explore - orient and navigate the camera/scene. surface:
+  // "toolbar-3d-floating" moves these off the global Toolbar into
+  // Toolbar3DFloating (see that component and registry/modules-3d-floating.ts)
+  // - they act ON the 3D scene, not on the app shell, so they only make
+  // sense floating over the viewport that has one. Definitions stay here,
+  // not duplicated into a second array: this file's own header comment
+  // ("single declarative source of truth") already ruled out a second
+  // registry holding copies of the same structure.
   {
     id: "fit-all",
     label: "Encuadrar todo (Z)",
     intent: "explore",
     kind: "action",
     icon: IconFitAll,
+    surface: "toolbar-3d-floating",
     requiresModel: true,
     tier: "free",
   },
@@ -137,6 +145,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "explore",
     kind: "toggle",
     icon: IconXYZ,
+    surface: "toolbar-3d-floating",
     requiresModel: true,
     tier: "free",
   },
@@ -146,6 +155,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "explore",
     kind: "toggle",
     icon: IconSectionBox,
+    surface: "toolbar-3d-floating",
     requiresModel: true,
     tier: "free",
     children: [
@@ -171,6 +181,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "interrogate",
     kind: "toggle",
     icon: IconMeasure,
+    surface: "toolbar-3d-floating",
     requiresModel: true,
     tier: "free",
   },
@@ -180,6 +191,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     intent: "interrogate",
     kind: "toggle",
     icon: IconIsolate,
+    surface: "toolbar-3d-floating",
     requiresModel: true,
     tier: "free",
   },

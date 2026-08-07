@@ -18,7 +18,9 @@ import { BcfPinRenderer, PIN_VIEW_DISTANCE } from "../../viewer/bcf/BcfPinRender
 import type { BcfTopic } from "../../viewer/bcf/types/bcf";
 import { OrientationCube } from "../OrientationCube/OrientationCube";
 import { MeasurementToolbar } from "../MeasurementTool/MeasurementToolbar";
+import { Toolbar3DFloating } from "../Toolbar3DFloating/Toolbar3DFloating";
 import { useApp } from "../AppContext";
+import type { ModuleRuntimeMap } from "../registry/modules";
 
 interface ViewportProps {
   onViewerReady?: (handles: IfcViewerHandles) => void;
@@ -31,6 +33,16 @@ interface ViewportProps {
   bcfSyncRequest?: { topic: BcfTopic; nonce: number } | null;
   /** OrientationCube no tiene razón de existir sin geometría que orientar. */
   hasModels?: boolean;
+  /**
+   * fit-all/axes/section-box/measure/isolate's real onClick/isActive -
+   * built in Layout.tsx/RevisionLayout.tsx via useModelToolActions'
+   * toolModuleRuntime, same map Toolbar used to consume directly for
+   * these same module ids before they moved to Toolbar3DFloating.
+   * Optional because not every future Viewport consumer necessarily
+   * wants the floating 3D toolbar (mirrors bcfTopics/bcfSyncRequest,
+   * also optional, also "/"-specific extras above).
+   */
+  moduleRuntime?: ModuleRuntimeMap;
 }
 
 type CameraControls = NonNullable<IfcViewerHandles["world"]["camera"]["controls"]>;
@@ -43,6 +55,7 @@ export default function Viewport({
   bcfActiveTopic,
   bcfSyncRequest,
   hasModels,
+  moduleRuntime,
 }: ViewportProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const app = useApp();
@@ -338,6 +351,8 @@ export default function Viewport({
       }}
     >
       {cameraControls && <OrientationCube controls={cameraControls} hasModels={Boolean(hasModels)} />}
+
+      {moduleRuntime && <Toolbar3DFloating hasModels={Boolean(hasModels)} moduleRuntime={moduleRuntime} />}
 
       {isMeasuring && (
         <MeasurementToolbar

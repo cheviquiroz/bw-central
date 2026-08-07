@@ -41,7 +41,10 @@ interface ToolbarProps {
 // plane Section Box creates has no reason to exist before the plane
 // does). If a module ever needs more than one child, this function is
 // the one place that would need to grow past "children[0]".
-function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasModel: boolean) {
+// Exported for Toolbar3DFloating.tsx - same nested-child rendering
+// (parent + its one visible sub-control, e.g. Section Box/Hide Plane),
+// reused rather than re-implemented so the two surfaces can't drift.
+export function renderModule(module: ModuleDefinition, runtime: ModuleRuntimeMap, hasModel: boolean) {
   const state = runtime[module.id] ?? {};
   const disabled = module.requiresModel && !hasModel;
   const Icon = module.icon;

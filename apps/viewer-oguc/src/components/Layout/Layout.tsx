@@ -271,6 +271,7 @@ function LayoutInner() {
           bcfActiveTopic={bcfState.activeTopic}
           bcfSyncRequest={bcfSyncRequest}
           hasModels={hasModels}
+          moduleRuntime={moduleRuntime}
         />
         <DockRight />
         <DockBottom

@@ -285,7 +285,13 @@ function RevisionLayoutInner() {
 
       <main ref={viewportRef} className="viewport">
         <DockLeft hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} hasModel={hasModels} />
-        <Viewport onViewerReady={handleViewerReady} isSectionBoxActive={isSectionBoxActive} isMeasuring={isMeasuring} hasModels={hasModels} />
+        <Viewport
+          onViewerReady={handleViewerReady}
+          isSectionBoxActive={isSectionBoxActive}
+          isMeasuring={isMeasuring}
+          hasModels={hasModels}
+          moduleRuntime={moduleRuntime}
+        />
         <DockRight />
         <FindingsDock
           findings={findings}

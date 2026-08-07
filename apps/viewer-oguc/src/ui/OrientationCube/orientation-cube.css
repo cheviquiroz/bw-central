@@ -11,14 +11,20 @@
    versión (right = 40 + panelWidth + bcfPanelWidth + 16, luego una
    variante booleana con LayoutStateContext) recalculaba esto a mano cada
    vez que un hermano cambiaba de tamaño, y por eso se desincronizaba. */
+/* bottom-right, not top-right: Toolbar3DFloating (see
+   ../Toolbar3DFloating/) now owns the top-right corner of the same
+   canvas, z-index 110 - moved here so the two floating overlays don't
+   stack on the same corner. z-index 100 keeps it above the canvas but
+   below the toolbar (110), matching the stacking order that component
+   already documents for itself. */
 .orientation-cube {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  bottom: 16px;
+  right: 16px;
   width: 60px;
   height: 60px;
   perspective: 600px;
-  z-index: 90;
+  z-index: 100;
 }
 
 .orientation-cube-inner {
