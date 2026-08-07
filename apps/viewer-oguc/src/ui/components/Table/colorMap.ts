@@ -7,12 +7,22 @@ export const severityToColor: Record<"error" | "warning" | "info", BadgeColor> =
   info: "gray",
 };
 
-// Not filled in yet - BCF's Phase 3 adapter will populate these once it
-// exists (see PHASE_2_RISKS.md #8: this palette-resolution layer is shared
-// across domains, not Findings-specific, so it lives here rather than each
-// adapter inventing its own copy).
-export const statusToColor: Partial<Record<"Open" | "Pending Review" | "Resolved", BadgeColor>> = {};
-export const priorityToColor: Partial<Record<"Low" | "Medium" | "High", BadgeColor>> = {};
+// Filled in for Phase 3 (IssueTable). priority is BCF's badge/level axis
+// (CONTRACT_AMENDMENTS.md Amendment 1 - status is deliberately NOT badge/
+// level, see IssueTable.tsx's own header comment); statusToColor is still
+// exported for the status column's custom render, which reads it directly
+// rather than through badge.
+export const statusToColor: Record<"Open" | "Pending Review" | "Resolved", BadgeColor> = {
+  Open: "red",
+  "Pending Review": "orange",
+  Resolved: "green",
+};
+
+export const priorityToColor: Record<"Low" | "Medium" | "High", BadgeColor> = {
+  High: "red",
+  Medium: "orange",
+  Low: "green",
+};
 
 // Resolves badge.color's closed abstract enum (CONTRACT_FINAL_SEALED.md
 // Section 1) into an actual paintable CSS value. Same hex/var values
