@@ -12,6 +12,7 @@ import { parseBcf, normalizePriority, normalizeStatus } from "@bw-central/bcf-co
 import type { BcfTopic as CoreBcfTopic, BcfViewpoint as CoreBcfViewpoint, BcfComment as CoreBcfComment } from "@bw-central/bcf-core";
 import type { BcfComment, BcfProject, BcfTopic, BcfViewpoint } from "./types/bcf";
 import { bytesToBase64 } from "./base64";
+import { CoordinateTransform } from "../../utils/CoordinateTransform";
 
 const DEFAULT_VIEWPOINT: BcfViewpoint = {
   guid: "default",
@@ -25,12 +26,26 @@ const DEFAULT_VIEWPOINT: BcfViewpoint = {
 function adaptViewpoint(vp: CoreBcfViewpoint | undefined): BcfViewpoint {
   if (!vp) return DEFAULT_VIEWPOINT;
 
+  // Transforms BCF (Z-up) to Three.js (Y-up). Symmetric inverse in
+  // CoordinateTransform.threeJSToBcf() for future export. Only applied to
+  // REAL parsed BCF numbers - DEFAULT_VIEWPOINT.camera (the vp.camera-
+  // missing fallback below) is already authored directly in Three.js
+  // Y-up terms as a sensible default, not real BCF data - running it
+  // through this transform too would silently rotate it away from its
+  // intended meaning.
   const camera = vp.camera
-    ? { position: vp.camera.viewPoint, direction: vp.camera.direction, up: vp.camera.upVector }
+    ? {
+        position: CoordinateTransform.transformBcfVector(vp.camera.viewPoint),
+        direction: CoordinateTransform.transformBcfVector(vp.camera.direction),
+        up: CoordinateTransform.transformBcfVector(vp.camera.upVector),
+      }
     : DEFAULT_VIEWPOINT.camera;
 
   const clippingPlane = vp.clippingPlanes[0]
-    ? { location: vp.clippingPlanes[0].location, direction: vp.clippingPlanes[0].direction }
+    ? {
+        location: CoordinateTransform.transformBcfVector(vp.clippingPlanes[0].location),
+        direction: CoordinateTransform.transformBcfVector(vp.clippingPlanes[0].direction),
+      }
     : undefined;
 
   const snapshot = vp.snapshot
