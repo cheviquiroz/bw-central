@@ -75,6 +75,37 @@ export class CoordinateTransform {
     };
   }
 
+  /** Inverse of transformBcfVector - Three.js (Y-up) plain {x,y,z} -> BCF (Z-up) plain {x,y,z}. Same threeJSToBcf math, exposed the same way transformBcfVector exposes bcfToThreeJS, for BcfExporter.ts's call sites to use directly instead of constructing a THREE.Vector3 by hand at every field. */
+  static transformThreeVector(v: BcfVector3): BcfVector3 {
+    const transformed = this.threeJSToBcf(new THREE.Vector3(v.x, v.y, v.z));
+    return { x: transformed.x, y: transformed.y, z: transformed.z };
+  }
+
+  /**
+   * Inverse of transformBcfViewpoint - transforms every coordinate on a
+   * BcfViewpoint (camera position/direction/up, and the clipping plane's
+   * location/direction, if present) from this app's Three.js Y-up space
+   * back into BCF's Z-up space, for export. BcfExporter.ts's adaptViewpoint
+   * uses this so a round-tripped (import, no edits, export) BCF file's
+   * viewpoint numbers stay numerically identical to the original.
+   */
+  static transformThreeViewpoint(viewpoint: BcfViewpoint): BcfViewpoint {
+    return {
+      ...viewpoint,
+      camera: {
+        position: this.transformThreeVector(viewpoint.camera.position),
+        direction: this.transformThreeVector(viewpoint.camera.direction),
+        up: this.transformThreeVector(viewpoint.camera.up),
+      },
+      clippingPlane: viewpoint.clippingPlane
+        ? {
+            location: this.transformThreeVector(viewpoint.clippingPlane.location),
+            direction: this.transformThreeVector(viewpoint.clippingPlane.direction),
+          }
+        : undefined,
+    };
+  }
+
   /**
    * Verify that bcfToThreeJS and threeJSToBcf are mathematical inverses.
    * Exercised for real in CoordinateTransform.spec.ts, not just left as

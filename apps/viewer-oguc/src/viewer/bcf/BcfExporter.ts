@@ -11,6 +11,7 @@ import { writeBcf } from "@bw-central/bcf-core";
 import type { BcfTopic as CoreBcfTopic, BcfViewpoint as CoreBcfViewpoint, BcfComment as CoreBcfComment, BcfProject as CoreBcfProject } from "@bw-central/bcf-core";
 import type { BcfProject, BcfTopic, BcfViewpoint } from "./types/bcf";
 import { base64ToBytes } from "./base64";
+import { CoordinateTransform } from "../../utils/CoordinateTransform";
 
 function parseDataUri(dataUri: string): { bytes: Uint8Array; mimeType: string } | null {
   const match = /^data:([^;]+);base64,([\s\S]*)$/.exec(dataUri);
@@ -21,6 +22,20 @@ function parseDataUri(dataUri: string): { bytes: Uint8Array; mimeType: string } 
 function adaptViewpoint(vp: BcfViewpoint): CoreBcfViewpoint {
   const snapshotData = vp.snapshot ? parseDataUri(vp.snapshot) : null;
 
+  // Transform Three.js (Y-up) to BCF (Z-up) for export.
+  // Inverse of BcfImporter.adaptViewpoint(). See CoordinateTransform.ts.
+  //
+  // vp.camera.position/direction/up (and vp.clippingPlane.location/
+  // direction, if present) are all in this app's Three.js Y-up space -
+  // every one of them was BCF Z-up data on the way in
+  // (BcfImporter.adaptViewpoint applies CoordinateTransform.
+  // transformBcfVector to exactly these same fields), so every one of
+  // them needs the inverse applied on the way back out. Fixing only the
+  // camera fields and leaving the clipping plane raw would silently
+  // corrupt a re-exported BCF section box - the same class of bug this
+  // whole fix exists to close, just for a different field.
+  const transformed = CoordinateTransform.transformThreeViewpoint(vp);
+
   return {
     guid: vp.guid,
     // Esta app nunca distinguió Perspective/Orthogonal (el viewer original
@@ -28,11 +43,11 @@ function adaptViewpoint(vp: BcfViewpoint): CoreBcfViewpoint {
     // preserva ese mismo comportamiento, no es una regresión nueva.
     camera: {
       type: "Perspective",
-      viewPoint: vp.camera.position,
-      direction: vp.camera.direction,
-      upVector: vp.camera.up,
+      viewPoint: transformed.camera.position,
+      direction: transformed.camera.direction,
+      upVector: transformed.camera.up,
     },
-    clippingPlanes: vp.clippingPlane ? [vp.clippingPlane] : [],
+    clippingPlanes: transformed.clippingPlane ? [transformed.clippingPlane] : [],
     components: { selection: [], coloring: [] },
     snapshot: snapshotData?.bytes,
     snapshotMimeType: snapshotData?.mimeType,
@@ -59,17 +74,10 @@ function adaptTopic(topic: BcfTopic): CoreBcfTopic {
     comments: topic.comments.map(adaptComment),
     // Was [adaptViewpoint(topic.viewpoint)] (always exactly one) - now
     // exports every viewpoint the topic actually has, matching
-    // BcfTopic.viewpoints[] (BcfImporter.ts's adaptTopic, same task).
-    //
-    // NOT fixed here (pre-existing, separate bug, out of this task's
-    // scope): this function still does not apply
-    // CoordinateTransform.threeJSToBcf() to convert these Three.js
-    // (Y-up) coordinates back to BCF's Z-up space before writing them -
-    // an exported .bcf file's viewpoints are still numerically wrong
-    // today, the mirror image of the import bug CoordinateTransform.ts
-    // was built to fix (see that file's own "future BcfExporter usage"
-    // comment/PHASE roadmap docs). Flagged, not silently left
-    // undocumented.
+    // BcfTopic.viewpoints[] (BcfImporter.ts's adaptTopic). Coordinate
+    // transform (Y-up -> Z-up) happens inside adaptViewpoint above, per
+    // viewpoint - see BCF_EXPORT_COORDINATE_FIX.md for the bug this
+    // closes and its round-trip verification.
     viewpoints: topic.viewpoints.map(adaptViewpoint),
   };
 }
