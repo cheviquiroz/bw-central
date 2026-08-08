@@ -1,9 +1,10 @@
 // src/ui/BcfPanel/BcfPanel.tsx
 import { useEffect, useState } from "react";
-import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+import type { BcfFilterStatus, BcfManagerState, BcfPriority, BcfTopic } from "../../viewer/bcf/types/bcf";
 import { IconLock } from "../icons/dock";
 import { IssueTable } from "./IssueTable";
 import { BcfDetailPanel } from "./BcfDetailPanel";
+import { CreateTopicDialog } from "./CreateTopicDialog";
 import { FilterBar } from "./FilterBar";
 import { ToolbarButton } from "../Toolbar/ToolbarButton";
 import { getModulesForSurface } from "../registry/modules";
@@ -29,6 +30,16 @@ interface BcfPanelProps {
   hasModel: boolean;
   /** Fase 3: este panel ya no controla su propia visibilidad (era zones.right, compartido con PropertiesPanel) - ahora vive en DockBottom, que le pasa el toggle de zones.bottom. */
   onClose: () => void;
+  /**
+   * Dialog visibility + submit live in Layout.tsx (the "bcf-create"
+   * module's onClick sets it, via moduleRuntime, same as every other
+   * module here) - not local BcfPanel state. Matches the existing
+   * onFilterChange/onTopicSelect/onTopicActivate pattern: this
+   * component never touches BcfManager directly, it only relays.
+   */
+  createDialogOpen: boolean;
+  onCreateDialogClose: () => void;
+  onCreateTopicSubmit: (title: string, description: string, priority: BcfPriority) => boolean;
 }
 
 export function BcfPanel({
@@ -39,6 +50,9 @@ export function BcfPanel({
   moduleRuntime,
   hasModel,
   onClose,
+  createDialogOpen,
+  onCreateDialogClose,
+  onCreateTopicSubmit,
 }: BcfPanelProps) {
   const filteredTopics =
     state.filters.status === "All" ? state.topics : state.topics.filter((t) => t.status === state.filters.status);
@@ -57,16 +71,22 @@ export function BcfPanel({
     <div className="bcf-panel">
       <div className="bcf-header">
         <h3 className="bcf-title">Incidencias BCF</h3>
+        {state.isNewProject && <span className="badge-new-bcf">BCF (sin guardar)</span>}
         <div className="bcf-header-actions">
           {BCF_PANEL_MODULES.map((module) => {
             const moduleState = moduleRuntime[module.id] ?? {};
             const Icon = module.icon;
+            // Only bcf-export's label ever varies at runtime (per
+            // state.isNewProject) - every other module's label stays
+            // exactly what the registry declares, structure, not
+            // runtime-computed text.
+            const label = module.id === "bcf-export" && state.isNewProject ? "Exportar BCF nuevo" : module.label;
             return (
               <ToolbarButton
                 key={module.id}
                 id={`btn-${module.id}`}
                 icon={<Icon />}
-                label={module.label}
+                label={label}
                 onClick={moduleState.onClick}
                 isActive={moduleState.isActive}
                 disabled={module.requiresModel && !hasModel}
@@ -102,6 +122,8 @@ export function BcfPanel({
           }}
         />
       </div>
+
+      <CreateTopicDialog isOpen={createDialogOpen} onClose={onCreateDialogClose} onSubmit={onCreateTopicSubmit} />
     </div>
   );
 }

@@ -15,7 +15,7 @@
 import { useLayoutState } from "../LayoutStateContext";
 import { DockBottomShell } from "./DockBottomShell";
 import { BcfPanel } from "../BcfPanel/BcfPanel";
-import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+import type { BcfFilterStatus, BcfManagerState, BcfPriority, BcfTopic } from "../../viewer/bcf/types/bcf";
 import type { ModuleRuntimeMap } from "../registry/modules";
 
 interface DockBottomProps {
@@ -26,6 +26,9 @@ interface DockBottomProps {
   onBcfTopicActivate: (topic: BcfTopic, viewpointIndex?: number) => void;
   moduleRuntime: ModuleRuntimeMap;
   hasModel: boolean;
+  createDialogOpen: boolean;
+  onCreateDialogClose: () => void;
+  onCreateTopicSubmit: (title: string, description: string, priority: BcfPriority) => boolean;
 }
 
 export function DockBottom({
@@ -35,6 +38,9 @@ export function DockBottom({
   onBcfTopicActivate,
   moduleRuntime,
   hasModel,
+  createDialogOpen,
+  onCreateDialogClose,
+  onCreateTopicSubmit,
 }: DockBottomProps) {
   const { setZoneVisible } = useLayoutState();
 
@@ -48,6 +54,9 @@ export function DockBottom({
         moduleRuntime={moduleRuntime}
         hasModel={hasModel}
         onClose={() => setZoneVisible("bottom", false)}
+        createDialogOpen={createDialogOpen}
+        onCreateDialogClose={onCreateDialogClose}
+        onCreateTopicSubmit={onCreateTopicSubmit}
       />
     </DockBottomShell>
   );

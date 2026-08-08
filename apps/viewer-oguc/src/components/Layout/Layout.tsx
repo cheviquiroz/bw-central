@@ -16,7 +16,7 @@ import { useModelToolActions } from "./useModelToolActions";
 import { setModelBytes } from "../../core/ModelBytesRegistry";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
-import type { BcfFilterStatus, BcfManagerState, BcfTopic } from "../../viewer/bcf/types/bcf";
+import type { BcfFilterStatus, BcfManagerState, BcfPriority, BcfTopic } from "../../viewer/bcf/types/bcf";
 import type { ModuleRuntimeMap } from "../../ui/registry/modules";
 
 // LayoutStateProvider wraps the whole component (Toolbar included), not
@@ -45,8 +45,10 @@ function LayoutInner() {
     isMeasuring,
     handleViewerReady,
     toolModuleRuntime,
+    captureViewpoint,
   } = useModelToolActions(app);
   const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; viewpointIndex: number; nonce: number } | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [modelDisplayNames, setModelDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | undefined>(undefined);
@@ -206,6 +208,19 @@ function LayoutInner() {
     setBcfSyncRequest({ topic, viewpointIndex, nonce: Date.now() });
   };
 
+  // Returns false (per CreateTopicDialog's own contract) if the viewer
+  // hasn't finished initializing yet - captureViewpoint (from
+  // useModelToolActions) returns null in that case rather than throwing,
+  // and the dialog stays open with an error so the user's typed input
+  // isn't lost (this task's own edge-case requirement, Part 7.6).
+  const handleCreateTopicSubmit = (title: string, description: string, priority: BcfPriority): boolean => {
+    const viewpoint = captureViewpoint();
+    if (!viewpoint) return false;
+    bcfManager.addTopic(title, description, priority, viewpoint);
+    setCreateDialogOpen(false);
+    return true;
+  };
+
   // importNewModel no rechaza la Promise ante un IFC inválido - devuelve
   // { success: false, error } (mismo Result que usa DockLeft.handleFileChange)
   // - un try/catch solo no alcanza para mostrar el mensaje de error real.
@@ -220,6 +235,7 @@ function LayoutInner() {
       ...toolModuleRuntime,
       "bcf-import": { onClick: handleImportBcf },
       "bcf-export": { onClick: handleExportBcf },
+      "bcf-create": { onClick: () => setCreateDialogOpen(true) },
       "start-review": { onClick: handleStartReview },
       "panel-tree": { onClick: handleToggleTreePanel, isActive: zones.left },
       "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
@@ -301,6 +317,9 @@ function LayoutInner() {
           onBcfTopicActivate={handleBcfTopicActivate}
           moduleRuntime={moduleRuntime}
           hasModel={hasModels}
+          createDialogOpen={createDialogOpen}
+          onCreateDialogClose={() => setCreateDialogOpen(false)}
+          onCreateTopicSubmit={handleCreateTopicSubmit}
         />
       </main>
 

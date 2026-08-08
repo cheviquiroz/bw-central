@@ -1,0 +1,115 @@
+/* src/ui/BcfPanel/create-topic-dialog.css */
+@import "../../styles/tokens.css";
+
+.create-topic-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-topic-dialog {
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  padding: 20px;
+  font-family: var(--sans);
+}
+
+.create-topic-dialog h2 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.create-topic-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-mid);
+}
+
+.create-topic-field input,
+.create-topic-field textarea,
+.create-topic-field select {
+  padding: 7px 9px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--text-hi);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 400;
+  resize: vertical;
+}
+
+.create-topic-field input:focus,
+.create-topic-field textarea:focus,
+.create-topic-field select:focus {
+  outline: none;
+  border-color: var(--blue);
+}
+
+.create-topic-note {
+  margin: 4px 0 12px;
+  color: var(--green);
+  font-size: 11.5px;
+}
+
+.create-topic-error {
+  margin: 4px 0 12px;
+  color: #ef4444;
+  font-size: 11.5px;
+}
+
+.create-topic-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.create-topic-btn-primary {
+  padding: 8px 18px;
+  background: var(--blue);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.create-topic-btn-primary:hover {
+  background: #5a9de0;
+}
+
+.create-topic-btn-secondary {
+  padding: 8px 14px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.create-topic-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-hi);
+}

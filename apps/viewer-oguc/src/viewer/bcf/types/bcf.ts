@@ -79,4 +79,12 @@ export interface BcfManagerState {
   topics: BcfTopic[];
   activeTopic: BcfTopic | null;
   filters: { status: BcfFilterStatus };
+  /**
+   * True only when `project` was synthesized in-session by
+   * BcfManager.addTopic()'s lazy-create path (no .bcf/.bcfzip was ever
+   * imported) - false the moment a real file is loaded via loadBcf(),
+   * even if topics are added afterward. Drives the "BCF (sin guardar)"
+   * UI indicator and the export button's label.
+   */
+  isNewProject: boolean;
 }

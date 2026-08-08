@@ -13,7 +13,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ViewerActionsAdapter } from "../../engine/adapters/ViewerActionsAdapter";
 import { SearchManager } from "../../viewer/SearchManager";
 import { fitCameraToAllLoadedModels } from "../../core/IfcBootstrap";
+import { captureCurrentViewpoint } from "../../viewer/bcf/captureViewpoint";
+import type { IfcViewerHandles } from "../../core/IfcBootstrap";
 import type { ApplicationInstance } from "../../engine/createApplication";
+import type { BcfViewpoint } from "../../viewer/bcf/types/bcf";
 import type { ModuleRuntimeMap } from "../../ui/registry/modules";
 
 export function useModelToolActions(app: ApplicationInstance) {
@@ -26,11 +29,28 @@ export function useModelToolActions(app: ApplicationInstance) {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [externalQuery, setExternalQuery] = useState<{ value: string; nonce: number } | null>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  // Only for captureCurrentViewpoint (BCF "Crear incidencia") - every
+  // other handler in this hook already goes through actionsAdapter/
+  // searchManager, which don't expose the raw camera. A ref, not state:
+  // nothing needs to re-render when the viewer becomes ready, callers
+  // just need the current value at click time.
+  const viewerHandlesRef = useRef<IfcViewerHandles | null>(null);
 
-  const handleViewerReady = (viewerHandles: any) => {
+  const handleViewerReady = (viewerHandles: IfcViewerHandles) => {
+    viewerHandlesRef.current = viewerHandles;
     const adapter = new ViewerActionsAdapter(viewerHandles);
     setActionsAdapter(adapter);
     setSearchManager(new SearchManager(viewerHandles, app));
+  };
+
+  // null only if called before the viewer has finished initializing
+  // (milliseconds after mount in practice, same caveat Viewport.tsx's own
+  // bcfPinRendererRef already documents) - callers (Layout.tsx's "Crear
+  // incidencia" handler) treat null as "capture failed", per this task's
+  // own edge-case requirement (Part 7.6).
+  const captureViewpoint = (): BcfViewpoint | null => {
+    if (!viewerHandlesRef.current) return null;
+    return captureCurrentViewpoint(viewerHandlesRef.current);
   };
 
   // Los 4 handlers de abajo ya no pasan un ref de botón al adapter para
@@ -137,5 +157,6 @@ export function useModelToolActions(app: ApplicationInstance) {
     isMeasuring,
     handleViewerReady,
     toolModuleRuntime,
+    captureViewpoint,
   };
 }

@@ -106,6 +106,15 @@ export function IconBcfExport() {
   );
 }
 
+export function IconBcfCreate() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M4 15v4a2 2 0 002 2h12a2 2 0 002-2v-4" />
+      <path d="M12 4v9M7.5 8.5h9" />
+    </svg>
+  );
+}
+
 // Workspace toggles (Fase 2 de "WORKSPACE LAYOUT") - togglean paneles
 // propios del usuario, no herramientas sobre el modelo, así que se
 // dibujan como "paneles" abstractos (un rectángulo con una franja),
