@@ -32,7 +32,7 @@ interface ViewportProps {
   bcfActiveTopic?: BcfTopic | null;
   // Comando de un solo uso (nonce, no el topic solo) - ver el comentario en
   // Layout.tsx sobre por qué no alcanza con comparar el topic activo.
-  bcfSyncRequest?: { topic: BcfTopic; nonce: number } | null;
+  bcfSyncRequest?: { topic: BcfTopic; viewpointIndex: number; nonce: number } | null;
   /** OrientationCube no tiene razón de existir sin geometría que orientar. */
   hasModels?: boolean;
   /**
@@ -320,19 +320,26 @@ export default function Viewport({
     bcfPinRendererRef.current?.renderPins(bcfTopics ?? [], bcfActiveTopic?.guid ?? null);
   }, [bcfTopics, bcfActiveTopic]);
 
-  // Doble click en un issue del BcfPanel -> mover la cámara a su viewpoint.
-  // setLookAt(posición, target, transición) en una sola llamada, no
-  // setPosition()+setTarget() por separado (ambos son solo alias de
-  // setLookAt internamente - dos llamadas en vez de una no gana nada, y
-  // sin pasar enableTransition el salto queda seco en vez de suave). El
-  // target se proyecta a PIN_VIEW_DISTANCE en la dirección de la cámara,
-  // el mismo valor que usa BcfPinRenderer para ubicar el pin - así la
-  // cámara termina apuntando exactamente al punto marcado, no a donde
-  // estaba parado el revisor que sacó la captura original.
+  // Doble click en un issue del BcfPanel (o un click en un viewpoint
+  // específico dentro de BcfDetailPanel) -> mover la cámara a ESE
+  // viewpoint. viewpointIndex ahora es explícito en el request (antes
+  // siempre era, implícitamente, "el único viewpoint que existía" - ver
+  // BcfTopic.viewpoints[] en types/bcf.ts); Layout.tsx's
+  // handleBcfTopicActivate ya default-ea a 0 para el doble-click de
+  // siempre, así ese camino sigue exactamente igual. setLookAt(posición,
+  // target, transición) en una sola llamada, no setPosition()+setTarget()
+  // por separado (ambos son solo alias de setLookAt internamente - dos
+  // llamadas en vez de una no gana nada, y sin pasar enableTransition el
+  // salto queda seco en vez de suave). El target se proyecta a
+  // PIN_VIEW_DISTANCE en la dirección de la cámara, el mismo valor que
+  // usa BcfPinRenderer para ubicar el pin - así la cámara termina
+  // apuntando exactamente al punto marcado, no a donde estaba parado el
+  // revisor que sacó la captura original.
   useEffect(() => {
     if (!bcfSyncRequest || !cameraControls) return;
 
-    const { position, direction } = bcfSyncRequest.topic.viewpoint.camera;
+    const viewpoint = bcfSyncRequest.topic.viewpoints[bcfSyncRequest.viewpointIndex] ?? bcfSyncRequest.topic.viewpoints[0];
+    const { position, direction } = viewpoint.camera;
     cameraControls.setLookAt(
       position.x,
       position.y,

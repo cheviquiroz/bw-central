@@ -129,3 +129,133 @@
   border: 1px solid var(--line-soft);
 }
 
+/* .bcf-body: row layout, IssueTable (flex:1) + BcfDetailPanel (fixed
+   width) side by side. BcfPanel lives inside the full-width DockBottom,
+   not a narrow side dock, so there's real horizontal room for this -
+   ~300px is deliberately similar to this app's other side-dock widths
+   (DEFAULT_SIDE_DOCK_WIDTH=272 in LayoutStateContext.tsx) for visual
+   consistency, not because BcfDetailPanel actually lives in that dock. */
+.bcf-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.bcf-body > .table-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.bcf-detail-panel {
+  width: 300px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 14px;
+  border-left: 1px solid var(--line);
+  color: var(--text-mid);
+  font-family: var(--sans);
+  font-size: 12px;
+}
+
+.bcf-detail-title {
+  margin: 0 0 10px;
+  color: var(--text-hi);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.bcf-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.bcf-detail-badge {
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.bcf-detail-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 0 0 14px;
+}
+
+.bcf-detail-meta dt {
+  color: var(--text-low);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bcf-detail-meta dd {
+  margin: 0;
+  color: var(--text-mid);
+}
+
+.bcf-detail-section {
+  margin-bottom: 16px;
+}
+
+.bcf-detail-section h5 {
+  margin: 0 0 6px;
+  color: var(--text-low);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bcf-detail-description {
+  margin: 0;
+  color: var(--text-mid);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.bcf-detail-viewpoints {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 6px;
+}
+
+.bcf-detail-viewpoint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text-low);
+  cursor: pointer;
+}
+
+.bcf-detail-viewpoint:hover {
+  color: var(--text-hi);
+  border-color: var(--text-low);
+}
+
+.bcf-detail-viewpoint.active {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: rgba(74, 144, 217, 0.12);
+}
+
+.bcf-detail-viewpoint svg {
+  width: 16px;
+  height: 16px;
+}
+
+.bcf-detail-viewpoint span {
+  font-size: 10px;
+  font-weight: 600;
+}
+

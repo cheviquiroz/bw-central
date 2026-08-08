@@ -1,13 +1,15 @@
 // src/viewer/bcf/BcfImporter.ts
 //
 // Adaptador delgado sobre @bw-central/bcf-core: el parseo real (XML, ZIP,
-// componentes/coloring/visibility, múltiples viewpoints por topic) vive
-// ahí ahora, no acá. Este archivo solo traduce el modelo rico de bcf-core
-// al modelo angosto que ya consumen BcfPanel/IssueCard/BcfPinRenderer/
-// Viewport (un solo viewpoint por topic, Priority/TopicStatus normalizados
-// a un enum cerrado para poder indexar colores por Record<BcfStatus,...>) -
-// ese modelo angosto no cambió, así que ningún componente de UI ni
-// BcfPinRenderer necesitó tocarse.
+// componentes/coloring/visibility) vive ahí ahora, no acá. Este archivo
+// traduce el modelo rico de bcf-core al modelo angosto que ya consumen
+// BcfPanel/IssueTable/BcfDetailPanel/BcfPinRenderer/Viewport
+// (Priority/TopicStatus normalizados a un enum cerrado para poder indexar
+// colores por Record<BcfStatus,...>). Desde el fix de BcfDetailPanel,
+// viewpoints[] ya no se recorta a solo el primero - ver adaptTopic más
+// abajo -, así que BcfPinRenderer y el camera-jump de Viewport.tsx SÍ
+// necesitaron un ajuste mínimo (leer viewpoints[0]/viewpoints[index] en
+// vez de un campo singular).
 import { parseBcf, normalizePriority, normalizeStatus } from "@bw-central/bcf-core";
 import type { BcfTopic as CoreBcfTopic, BcfViewpoint as CoreBcfViewpoint, BcfComment as CoreBcfComment } from "@bw-central/bcf-core";
 import type { BcfComment, BcfProject, BcfTopic, BcfViewpoint } from "./types/bcf";
@@ -59,12 +61,19 @@ function adaptComment(c: CoreBcfComment): BcfComment {
   return { guid: c.guid, author: c.author, date: c.date, text: c.text, replyToGuid: c.viewpointGuid };
 }
 
-// bcf-core soporta N viewpoints por topic (gap real que tenía este módulo -
-// ver el commit que agrega bcf-core); esta app solo muestra/restaura uno,
-// así que se toma el primero. Si en el futuro la UI necesita navegar entre
-// varios viewpoints del mismo topic, ese trabajo es en esta capa de
-// adaptación, no en bcf-core.
+// bcf-core soporta N viewpoints por topic - esta app ahora los adapta
+// TODOS (ver BcfTopic.viewpoints en types/bcf.ts), no solo el primero -
+// ese hardcode (topic.viewpoints[0]) era el bug real que BcfDetailPanel
+// necesitaba resuelto para poder listar/saltar entre viewpoints. Un
+// topic sin ningún viewpoint (array vacío - bcf-core puede devolver eso,
+// ver reader.ts's resolveViewpoint) igual produce un array de un
+// elemento ([DEFAULT_VIEWPOINT]), no uno vacío - todo el código que ya
+// asumía "topic.viewpoint siempre existe" (BcfPinRenderer, el
+// camera-jump de doble click) sigue pudiendo leer viewpoints[0] sin un
+// chequeo de longitud nuevo.
 function adaptTopic(topic: CoreBcfTopic): BcfTopic {
+  const viewpoints = topic.viewpoints.length > 0 ? topic.viewpoints.map(adaptViewpoint) : [DEFAULT_VIEWPOINT];
+
   return {
     guid: topic.guid,
     title: topic.title || "Untitled",
@@ -74,7 +83,11 @@ function adaptTopic(topic: CoreBcfTopic): BcfTopic {
     priority: normalizePriority(topic.priority),
     status: normalizeStatus(topic.topicStatus),
     assignee: topic.assignedTo || undefined,
-    viewpoint: adaptViewpoint(topic.viewpoints[0]),
+    // Real data (bcf-core parses TopicType from <Topic TopicType="...">),
+    // just never threaded through this adapter before - added for
+    // BcfDetailPanel's badges row, not fabricated.
+    topicType: topic.topicType,
+    viewpoints,
     comments: topic.comments.map(adaptComment),
   };
 }

@@ -55,7 +55,11 @@ function topicToTableItem(topic: BcfTopic): TableItem {
         status: topic.status,
         assignee: topic.assignee,
         createdDate: topic.createdDate,
-        viewpoint: topic.viewpoint,
+        // Table (row/thumbnail) shows the topic's PRIMARY viewpoint only -
+        // topic.viewpoints[0], guaranteed to exist (BcfImporter.adaptTopic
+        // never produces an empty array). Every other viewpoint is
+        // reachable via BcfDetailPanel, not this row.
+        viewpoint: topic.viewpoints[0],
       },
     },
   };

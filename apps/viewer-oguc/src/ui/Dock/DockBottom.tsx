@@ -22,7 +22,8 @@ interface DockBottomProps {
   bcfState: BcfManagerState;
   onBcfFilterChange: (status: BcfFilterStatus) => void;
   onBcfTopicSelect: (topic: BcfTopic | null) => void;
-  onBcfTopicActivate: (topic: BcfTopic) => void;
+  /** viewpointIndex optional - BcfDetailPanel passes it explicitly, IssueTable's double-click omits it (defaults to 0 in Layout.tsx's handleBcfTopicActivate). */
+  onBcfTopicActivate: (topic: BcfTopic, viewpointIndex?: number) => void;
   moduleRuntime: ModuleRuntimeMap;
   hasModel: boolean;
 }

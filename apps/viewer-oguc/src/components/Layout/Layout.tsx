@@ -46,7 +46,7 @@ function LayoutInner() {
     handleViewerReady,
     toolModuleRuntime,
   } = useModelToolActions(app);
-  const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; nonce: number } | null>(null);
+  const [bcfSyncRequest, setBcfSyncRequest] = useState<{ topic: BcfTopic; viewpointIndex: number; nonce: number } | null>(null);
   const [modelDisplayNames, setModelDisplayNames] = useState<ModelDisplayNames>(app.getModelDisplayNames());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | undefined>(undefined);
@@ -196,9 +196,14 @@ function LayoutInner() {
   // mismo valor y no dispararía el efecto de nuevo). cameraControls no vive
   // acá - Layout.tsx no tiene acceso a él (es estado local de Viewport.tsx,
   // igual que el resto de la lógica de interacción con la cámara/escena).
-  const handleBcfTopicActivate = (topic: BcfTopic) => {
+  //
+  // viewpointIndex default 0 preserva el doble-click de siempre en
+  // IssueTable (topic.viewpoints[0], la vista "principal") sin que ese
+  // caller tenga que saber que ahora existe un índice - BcfDetailPanel es
+  // el único caller que pasa un índice explícito distinto de 0.
+  const handleBcfTopicActivate = (topic: BcfTopic, viewpointIndex = 0) => {
     bcfManager.setActiveTopic(topic);
-    setBcfSyncRequest({ topic, nonce: Date.now() });
+    setBcfSyncRequest({ topic, viewpointIndex, nonce: Date.now() });
   };
 
   // importNewModel no rechaza la Promise ante un IFC inválido - devuelve

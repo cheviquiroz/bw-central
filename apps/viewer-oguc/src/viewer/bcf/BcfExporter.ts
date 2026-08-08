@@ -57,7 +57,20 @@ function adaptTopic(topic: BcfTopic): CoreBcfTopic {
     referenceLinks: [],
     relatedTopics: [],
     comments: topic.comments.map(adaptComment),
-    viewpoints: [adaptViewpoint(topic.viewpoint)],
+    // Was [adaptViewpoint(topic.viewpoint)] (always exactly one) - now
+    // exports every viewpoint the topic actually has, matching
+    // BcfTopic.viewpoints[] (BcfImporter.ts's adaptTopic, same task).
+    //
+    // NOT fixed here (pre-existing, separate bug, out of this task's
+    // scope): this function still does not apply
+    // CoordinateTransform.threeJSToBcf() to convert these Three.js
+    // (Y-up) coordinates back to BCF's Z-up space before writing them -
+    // an exported .bcf file's viewpoints are still numerically wrong
+    // today, the mirror image of the import bug CoordinateTransform.ts
+    // was built to fix (see that file's own "future BcfExporter usage"
+    // comment/PHASE roadmap docs). Flagged, not silently left
+    // undocumented.
+    viewpoints: topic.viewpoints.map(adaptViewpoint),
   };
 }
 

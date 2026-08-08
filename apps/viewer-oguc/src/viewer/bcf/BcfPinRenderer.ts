@@ -49,7 +49,12 @@ export class BcfPinRenderer {
     });
     const mesh = new THREE.Mesh(geometry, material);
 
-    const { position, direction } = topic.viewpoint.camera;
+    // One pin per topic, placed using its primary (first) viewpoint -
+    // topic.viewpoints is guaranteed non-empty by BcfImporter.adaptTopic.
+    // Multiple viewpoints per topic don't get multiple pins; out of scope
+    // for this change (BcfDetailPanel's per-viewpoint camera jump moves
+    // the CAMERA to any viewpoint, it doesn't add more pins).
+    const { position, direction } = topic.viewpoints[0].camera;
     mesh.position.set(
       position.x + direction.x * PIN_VIEW_DISTANCE,
       position.y + direction.y * PIN_VIEW_DISTANCE,

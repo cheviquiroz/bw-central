@@ -40,7 +40,18 @@ export interface BcfTopic {
   priority: BcfPriority;
   status: BcfStatus;
   assignee?: string;
-  viewpoint: BcfViewpoint;
+  /** Real BCF TopicType, e.g. "Issue"/"Clash" - parsed by bcf-core but not previously threaded through the adapter (added for BcfDetailPanel's badges row). */
+  topicType?: string;
+  /**
+   * Every viewpoint the topic has, in source order - was `viewpoint:
+   * BcfViewpoint` (singular) until this change, which hardcoded
+   * viewpoints[0] in BcfImporter.adaptTopic() and silently discarded the
+   * rest. Always has at least one element (BcfImporter falls back to a
+   * single-element [DEFAULT_VIEWPOINT] array when a topic has none) -
+   * consumers can safely read viewpoints[0] as "the primary viewpoint"
+   * without an extra length check.
+   */
+  viewpoints: BcfViewpoint[];
   comments: BcfComment[];
   markup?: {
     snapshots?: string[]; // base64
