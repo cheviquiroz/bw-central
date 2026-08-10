@@ -319,17 +319,27 @@ function LayoutInner() {
           moduleRuntime={moduleRuntime}
         />
         <DockRight hasModel={hasModels} />
-        <DockBottom
-          bcfState={bcfState}
-          onBcfFilterChange={handleBcfFilterChange}
-          onBcfTopicSelect={handleBcfTopicSelect}
-          onBcfTopicActivate={handleBcfTopicActivate}
-          moduleRuntime={moduleRuntime}
-          hasModel={hasModels}
-          createDialogOpen={createDialogOpen}
-          onCreateDialogClose={() => setCreateDialogOpen(false)}
-          onCreateTopicSubmit={handleCreateTopicSubmit}
-        />
+        {/* Sin este gate, DockBottomShell solo se guarda por zones.bottom
+            (default false - LayoutStateContext.tsx), pero ese valor
+            persiste en localStorage (layoutPersistence.ts): si alguna vez
+            quedó true en una sesión anterior, el panel BCF completo
+            renderizaba sobre el empty state antes de cargar cualquier
+            modelo - mismo bug de fondo que ya se corrigió en DockRight,
+            solo que ahí se reproducía siempre (sin gate) y acá solo con
+            cierto estado persistido. */}
+        {hasModels && (
+          <DockBottom
+            bcfState={bcfState}
+            onBcfFilterChange={handleBcfFilterChange}
+            onBcfTopicSelect={handleBcfTopicSelect}
+            onBcfTopicActivate={handleBcfTopicActivate}
+            moduleRuntime={moduleRuntime}
+            hasModel={hasModels}
+            createDialogOpen={createDialogOpen}
+            onCreateDialogClose={() => setCreateDialogOpen(false)}
+            onCreateTopicSubmit={handleCreateTopicSubmit}
+          />
+        )}
       </main>
 
       {/* 5. STATUSBAR */}
