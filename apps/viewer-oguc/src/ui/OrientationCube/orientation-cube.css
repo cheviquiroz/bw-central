@@ -20,14 +20,15 @@
    .viewport-container crea al ser position:fixed desde Fase 1. */
 .orientation-cube {
   position: fixed;
-  /* 20px, no --toolbar-gap (12px) - spacing propio del cubo, a pedido
-     explícito, distinto del gap que usan toolbar/docks. width/height se
-     mantienen en 60px (no 100px): son el tamaño real de la cara del
-     cubo, atado a la constante HALF=30 en OrientationCube.tsx (mitad de
-     60) que ya calcula las transformaciones 3D de cada cara/vértice -
-     cambiar el tamaño acá sin tocar HALF desalinearía la geometría. */
-  top: calc(var(--toolbar-clearance) + 20px);
-  right: 20px;
+  /* --toolbar-gap ahora vale 20px (tokens.css) - el cubo ya no necesita
+     su propio literal separado del de toolbar/docks, los tres leen el
+     mismo token. width/height se mantienen en 60px (no 100px): son el
+     tamaño real de la cara del cubo, atado a la constante HALF=30 en
+     OrientationCube.tsx (mitad de 60) que ya calcula las
+     transformaciones 3D de cada cara/vértice - cambiar el tamaño acá
+     sin tocar HALF desalinearía la geometría. */
+  top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
+  right: var(--toolbar-gap);
   width: 60px;
   height: 60px;
   perspective: 600px;

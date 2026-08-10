@@ -8,7 +8,7 @@
    Viewport.css (ahí con top+left+width+height en vez de los 4 lados a
    la vez, para no sobre-restringir la caja - acá los 4 lados SÍ pueden
    convivir porque solo dos son opuestos entre sí, left/right, y el
-   tercero (bottom) es independiente). Mismo --toolbar-gap (12px) que
+   tercero (bottom) es independiente). Mismo --toolbar-gap que
    left/right/top de los docks laterales, para que el margen se lea
    igual en los 4 bordes de la ventana. La altura sigue llegando por
    style inline (ver DockBottomShell.tsx), valor continuo del drag del

@@ -77,8 +77,8 @@ export const CANVAS_MIN_WIDTH = 480;
 // custom property de CSS desde JS sin montar primero y leer
 // getComputedStyle, lo que introduciría un round-trip que el resto de
 // este archivo (cálculos de ancho síncronos, en render) no tiene hoy.
-export const TOOLBAR_GAP = 12;
-export const TOOLBAR_CLEARANCE = 68; // 12*2 + 44 (gap*2 + capsule height)
+export const TOOLBAR_GAP = 20;
+export const TOOLBAR_CLEARANCE = 84; // 20*2 + 44 (gap*2 + capsule height)
 export const CANVAS_INSET = 5;
 
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";

@@ -19,8 +19,8 @@
 /* Etapa 4a Fase 2 - position:fixed, no más celda de un grid de 3
    columnas (esa arquitectura era Fase 1 y antes). left/top con los
    mismos tokens que usan las cápsulas del toolbar (--toolbar-gap/
-   --toolbar-clearance, tokens.css), para que los 12px de separación se
-   lean iguales en toda la ventana. width sigue llegando por style
+   --toolbar-clearance, tokens.css), para que la separación se lea
+   igual en toda la ventana. width sigue llegando por style
    inline (DockPanel.tsx/DockLeft.tsx, valor continuo de
    .dock-panel-resize-handle) - height AHORA también, no por CSS: la
    altura depende de bottomDockHeight (un número de estado, no un token

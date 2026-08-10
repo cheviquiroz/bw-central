@@ -67,7 +67,7 @@
      arrastrables, el drag handler debe clampear su `top` a
      var(--toolbar-clearance) como mínimo - nunca deben poder invadir la
      franja reservada al toolbar. */
-  --toolbar-gap: 12px;
+  --toolbar-gap: 20px;
   --toolbar-capsule-height: 44px;
   --toolbar-clearance: calc(var(--toolbar-gap) * 2 + var(--toolbar-capsule-height));
 
