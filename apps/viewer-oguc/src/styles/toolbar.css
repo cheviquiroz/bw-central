@@ -25,7 +25,17 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.toolbar {
+/* Wrapper is not itself positioned - each .toolbar-capsule below floats
+   independently via position:fixed, so the wrapper only exists so
+   Layout.tsx has one element to render (no layout box of its own). */
+.toolbar-capsules {
+  display: contents;
+}
+
+.toolbar-capsule {
+  position: fixed;
+  top: 12px;
+  z-index: 100;
   height: 44px;
   padding: 0 14px;
   display: flex;
@@ -35,8 +45,23 @@ body {
      Ver el commit que reorganiza la Toolbar en categorías reales. */
   gap: 12px;
   background: var(--toolbar-bg);
-  border-bottom: 1px solid var(--toolbar-line);
+  border: 1px solid var(--toolbar-line);
+  border-radius: 12px;
   color: var(--text-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.toolbar-capsule-left {
+  left: 12px;
+}
+
+.toolbar-capsule-center {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toolbar-capsule-right {
+  right: 12px;
 }
 
 .toolbar-brand {

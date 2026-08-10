@@ -96,54 +96,60 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo, extraActio
   const workspaceModules = toolbarModules.filter((m) => m.intent === "workspace");
 
   return (
-    <header className="toolbar">
-      <Logo />
+    // Three independently-floating capsules (position:fixed, see toolbar.css) instead
+    // of one continuous header bar. Grouping still comes from the existing
+    // intent/workspace fields on the registry - no new "toolbar-left/center/right"
+    // surface values were invented, since intent already expresses the same split.
+    <div className="toolbar-capsules">
+      <div className="toolbar-capsule toolbar-capsule-left">
+        <Logo />
 
-      {backTo && (
-        <>
-          <button className="toolbar-back-btn" onClick={() => navigate(backTo.path)}>
-            {backTo.label}
-          </button>
-          <ToolbarSeparator />
-        </>
-      )}
-
-      {MODULE_INTENT_ORDER.map((intent) => {
-        const modules = toolbarModules.filter((m) => m.intent === intent);
-        // Un intent sin módulos visibles no renderiza nada - ni grupo
-        // vacío, ni separador huérfano. 'review' es exactamente este caso
-        // hoy (nada todavía; /revision llega ahí más adelante).
-        if (modules.length === 0) return null;
-        return (
-          <Fragment key={intent}>
-            <div className="toolbar-group">{modules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+        {backTo && (
+          <>
             <ToolbarSeparator />
-          </Fragment>
-        );
-      })}
+            <button className="toolbar-back-btn" onClick={() => navigate(backTo.path)}>
+              {backTo.label}
+            </button>
+          </>
+        )}
+      </div>
 
-      {searchBar}
+      <div className="toolbar-capsule toolbar-capsule-center">{searchBar}</div>
 
-      <div className="toolbar-spacer" />
+      <div className="toolbar-capsule toolbar-capsule-right">
+        {MODULE_INTENT_ORDER.map((intent) => {
+          const modules = toolbarModules.filter((m) => m.intent === intent);
+          // Un intent sin módulos visibles no renderiza nada - ni grupo
+          // vacío, ni separador huérfano. 'review' es exactamente este caso
+          // hoy (nada todavía; /revision llega ahí más adelante).
+          if (modules.length === 0) return null;
+          return (
+            <Fragment key={intent}>
+              <div className="toolbar-group">{modules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+              <ToolbarSeparator />
+            </Fragment>
+          );
+        })}
 
-      {workspaceModules.length > 0 && (
-        <>
-          <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
-          <ToolbarSeparator />
-        </>
-      )}
+        {workspaceModules.length > 0 && (
+          <>
+            <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
+            <ToolbarSeparator />
+          </>
+        )}
 
-      {extraActions && (
-        <>
-          {extraActions}
-          <ToolbarSeparator />
-        </>
-      )}
+        {extraActions && (
+          <>
+            {extraActions}
+            <ToolbarSeparator />
+          </>
+        )}
 
-      {/* Sin dato real de federación/proyecto detrás - a diferencia del
-          mockup, que hardcodea "Hospital La Serena", esto no debería
-          inventar un nombre de proyecto que no existe en el dominio real. */}
-      <ProjectPill label="Sesión local" />
-    </header>
+        {/* Sin dato real de federación/proyecto detrás - a diferencia del
+            mockup, que hardcodea "Hospital La Serena", esto no debería
+            inventar un nombre de proyecto que no existe en el dominio real. */}
+        <ProjectPill label="Sesión local" />
+      </div>
+    </div>
   );
 }

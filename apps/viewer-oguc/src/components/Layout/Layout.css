@@ -17,9 +17,11 @@ body {
      flotante dentro de .viewport (mismo criterio que DockLeft, ver
      comentario de .viewport más abajo). */
   grid-template-columns: 1fr;
-  grid-template-rows: 44px 1fr 26px; /* Altura toolbar/statusbar calcadas del mockup, cuerpo flexible */
+  /* Toolbar ya no reserva fila propia: sus 3 cápsulas son position:fixed
+     (ver .toolbar-capsule en toolbar.css) y flotan sobre .viewport, que
+     ahora ocupa el espacio que antes le correspondía a esa fila de 44px. */
+  grid-template-rows: 1fr 26px;
   grid-template-areas:
-    "toolbar"
     "viewport"
     "status";
   width: 100vw;
@@ -27,18 +29,11 @@ body {
   overflow: hidden;
 }
 
-/* Estilos visuales reales de .toolbar/.toolbar-btn viven en
-   src/styles/toolbar.css (importado por Toolbar.tsx) - acá solo se fija
-   la posición dentro del grid del layout. */
-.toolbar {
-  grid-area: toolbar;
-  /* position:relative es necesario para que z-index tenga efecto (por
-     defecto es static, donde z-index se ignora) - necesita quedar por
-     encima del overlay del File Upload Modal (z-index:50) mientras el modal
-     está activo, ver src/ui/FileUploadModal/file-upload-modal.css. */
-  position: relative;
-  z-index: 100;
-}
+/* .toolbar-capsules es display:contents (ver toolbar.css) - no ocupa
+   grid-area propia, sus hijos flotan vía position:fixed. Los estilos
+   visuales reales viven en src/styles/toolbar.css (importado por
+   Toolbar.tsx); su z-index:100 ya queda por encima del overlay del File
+   Upload Modal (z-index:50), ver src/ui/FileUploadModal/file-upload-modal.css. */
 
 /* Grid real de 3 columnas (izquierda | centro dominante | derecha), no
    paneles flotantes superpuestos sobre el canvas 3D - ver el commit que
