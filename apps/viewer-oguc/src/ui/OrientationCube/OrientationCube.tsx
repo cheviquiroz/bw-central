@@ -44,6 +44,11 @@ const VIEWS: Record<ViewDirection, { theta: number; phi: number }> = {
 
 const HALF = 30; // mitad del lado del cubo (60px)
 const ANIMATION_DURATION_MS = 400;
+// Spacing propio del cubo (20px, a pedido explícito) - mismo valor que
+// orientation-cube.css usa para top/right por defecto, repetido acá
+// porque el cálculo de `right` cuando DockRight está abierto vive en JS
+// (ver más abajo), no en CSS puro.
+const CUBE_GAP = 20;
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -161,9 +166,15 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
   // (style inline) hace que ambos deriven del mismo número en el mismo
   // ciclo de render - estructuralmente no pueden desincronizarse entre
   // sí, sin necesitar leer el DOM ya pintado.
-  // TOOLBAR_GAP*2 + rightWidth = el propio gap de DockRight hacia el
-  // borde de la ventana (dock-right.css: right:var(--toolbar-gap)) + su
-  // ancho + un gap más de separación hacia el cubo.
+  // CUBE_GAP (20px, a pedido explícito) + rightWidth + TOOLBAR_GAP =
+  // separación propia del cubo hacia el dock/borde + el ancho real de
+  // DockRight + el gap real que DockRight YA tiene hacia el borde de la
+  // ventana (dock-right.css: right:var(--toolbar-gap), 12px, sin
+  // cambios - ese es el gap del dock, no el del cubo). Son dos
+  // constantes de spacing distintas a propósito: CUBE_GAP es "cuánto
+  // aire quiere el cubo alrededor suyo", TOOLBAR_GAP sigue siendo "cuánto
+  // aire quieren toolbar/docks" - coincidían en 12px antes de este
+  // cambio, dejaron de coincidir ahora que el cubo pidió 20px.
   //
   // Portal a document.body: el cubo sigue siendo hijo de Viewport.tsx
   // (dentro de .viewport-container), que es position:fixed con su
@@ -171,7 +182,7 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
   // atraparía cualquier cambio de posición/z-index interno sin importar
   // el valor (mismo motivo que KeyboardShortcutsModal/Toolbar3DFloating/
   // LoadingOverlay ya necesitaron portal).
-  const cubeRight = zones.right ? TOOLBAR_GAP * 2 + rightWidth : TOOLBAR_GAP;
+  const cubeRight = zones.right ? CUBE_GAP + rightWidth + TOOLBAR_GAP : CUBE_GAP;
 
   return createPortal(
     <div className="orientation-cube" style={{ right: `${cubeRight}px` }}>
