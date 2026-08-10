@@ -22,4 +22,20 @@
   /* Tipografía */
   --sans: 'Inter', sans-serif;
   --mono: 'JetBrains Mono', monospace;
+
+  /* Gap system - toolbar/paneles.
+     --toolbar-gap es el único número que hay que tocar: separación entre
+     el borde de la ventana y las cápsulas del toolbar (toolbar.css), y
+     entre el toolbar y todo lo que vive debajo (DockLeft/DockRight/
+     canvas/orientation-cube, vía --toolbar-clearance en Layout.css).
+     --toolbar-clearance se deriva (gap + capsule + gap), no se hardcodea:
+     si --toolbar-capsule-height cambia, la separación con los paneles se
+     recalcula sola.
+     Etapa 4c (drag de paneles, futuro): cuando los paneles sean
+     arrastrables, el drag handler debe clampear su `top` a
+     var(--toolbar-clearance) como mínimo - nunca deben poder invadir la
+     franja reservada al toolbar. */
+  --toolbar-gap: 12px;
+  --toolbar-capsule-height: 44px;
+  --toolbar-clearance: calc(var(--toolbar-gap) * 2 + var(--toolbar-capsule-height));
 }

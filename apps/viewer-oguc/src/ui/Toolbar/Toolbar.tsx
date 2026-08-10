@@ -6,7 +6,6 @@ import "../../styles/toolbar.css";
 import { Logo } from "./Logo";
 import { ToolbarButton } from "./ToolbarButton";
 import { ToolbarSeparator } from "./ToolbarSeparator";
-import { ProjectPill } from "./ProjectPill";
 import { MODULE_INTENT_ORDER, getModulesForSurface } from "../registry/modules";
 import type { ModuleDefinition, ModuleRuntimeMap } from "../registry/modules";
 
@@ -143,13 +142,6 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo, extraActio
             {extraActions}
           </>
         )}
-
-        <ToolbarSeparator />
-
-        {/* Sin dato real de federación/proyecto detrás - a diferencia del
-            mockup, que hardcodea "Hospital La Serena", esto no debería
-            inventar un nombre de proyecto que no existe en el dominio real. */}
-        <ProjectPill label="Sesión local" />
       </div>
     </div>
   );

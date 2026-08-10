@@ -1,4 +1,5 @@
 /* src/components/Layout/Layout.css */
+@import "../../styles/tokens.css";
 
 * {
   box-sizing: border-box;
@@ -80,6 +81,14 @@ body {
   grid-template-columns: auto minmax(480px, 1fr) auto;
   grid-template-rows: 1fr auto;
   padding: 16px;
+  /* padding-top propio (no el 16px del gutter lateral/inferior): tiene que
+     dejar libre toda la franja que ocupan las cápsulas del toolbar
+     (--toolbar-clearance, ver tokens.css) para que DockLeft/DockRight/el
+     canvas empiecen debajo del toolbar con el mismo --toolbar-gap de
+     separación, en vez de arrancar a 16px y quedar pegados/tapados por
+     las cápsulas (que flotan con top:var(--toolbar-gap) sobre esta
+     misma grid area). */
+  padding-top: var(--toolbar-clearance);
   width: 100%;
   height: 100%;
   overflow: hidden;

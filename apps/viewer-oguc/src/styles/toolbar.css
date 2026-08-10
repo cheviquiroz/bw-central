@@ -34,7 +34,7 @@ body {
 
 .toolbar-capsule {
   position: fixed;
-  top: 12px;
+  top: var(--toolbar-gap);
   /* 55, not 100: real z-index values discovered across the app (not
      assumed) - .dock-panel (DockLeft, src/styles/dock.css) is 100,
      .orientation-cube is 90, measurement-toolbar is 60, all of which sit
@@ -50,7 +50,7 @@ body {
      a capsule visually overlaps them, without needing every button to
      remember to set this itself. */
   pointer-events: none;
-  height: 44px;
+  height: var(--toolbar-capsule-height);
   padding: 0 14px;
   display: flex;
   align-items: center;
@@ -70,7 +70,7 @@ body {
 }
 
 .toolbar-capsule-left {
-  left: 12px;
+  left: var(--toolbar-gap);
 }
 
 .toolbar-capsule-center {
@@ -79,7 +79,7 @@ body {
 }
 
 .toolbar-capsule-right {
-  right: 12px;
+  right: var(--toolbar-gap);
 }
 
 .toolbar-brand {
@@ -234,30 +234,3 @@ body {
   color: var(--text-primary);
 }
 
-.toolbar-project-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #262d37;
-  border: 1px solid var(--toolbar-line);
-  padding: 5px 10px 5px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.toolbar-project-pill .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 0 3px rgba(95, 196, 141, 0.15);
-  flex-shrink: 0;
-}
-
-.toolbar-project-pill b {
-  color: var(--text-primary);
-  font-weight: 600;
-}
