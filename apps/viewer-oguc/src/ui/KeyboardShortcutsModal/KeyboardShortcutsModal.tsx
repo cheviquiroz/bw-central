@@ -7,6 +7,7 @@
 // ToolbarButtons at all, so they have no registry entry to read from).
 import { useEffect, useRef } from "react";
 import type React from "react";
+import { createPortal } from "react-dom";
 import "./keyboard-shortcuts-modal.css";
 
 interface KeyboardShortcutsModalProps {
@@ -49,7 +50,18 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
     if (event.target === event.currentTarget) onClose();
   };
 
-  return (
+  // Portal a document.body (Etapa 4a Fase 1) - este modal se renderiza
+  // como hijo de Viewport.tsx, y .viewport-container (su ancestro) pasó a
+  // ser position:fixed con z-index propio, lo que lo convierte en un
+  // stacking context real. Sin este portal, el backdrop (z-index:1000)
+  // queda atrapado DENTRO de ese contexto y no puede ganarle a hermanos
+  // de nivel raíz como .dock-panel/.dock-right (z-index:100) - bug real
+  // confirmado visualmente: el fondo oscuro no tapaba los docks
+  // laterales, que quedaban dibujados por encima sin atenuar. Mismo
+  // patrón que ya usa CreateTopicDialog.tsx por la misma razón
+  // (backdrop-filter/position:fixed de un ancestro crea containing
+  // block/stacking context nuevo), documentado en el handoff de Etapa 3.
+  return createPortal(
     <div className="shortcuts-modal-backdrop" onClick={handleBackdropClick}>
       <div className="shortcuts-modal" ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title">
         <header className="shortcuts-modal-header">
@@ -71,6 +83,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
           </table>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

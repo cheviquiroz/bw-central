@@ -352,17 +352,7 @@ export default function Viewport({
   }, [bcfSyncRequest, cameraControls]);
 
   return (
-    <div
-      ref={containerRef}
-      className="viewport-container"
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "block",
-        overflow: "hidden"
-      }}
-    >
+    <div ref={containerRef} className="viewport-container">
       {cameraControls && <OrientationCube controls={cameraControls} hasModels={Boolean(hasModels)} />}
 
       {moduleRuntime && <Toolbar3DFloating hasModels={Boolean(hasModels)} moduleRuntime={moduleRuntime} />}

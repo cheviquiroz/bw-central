@@ -37,15 +37,22 @@ body {
    Upload Modal (z-index:50) pero por debajo de .dock-panel/.orientation-cube
    (100/90), ver src/ui/FileUploadModal/file-upload-modal.css. */
 
-/* Grid real de 3 columnas (izquierda | centro dominante | derecha), no
-   paneles flotantes superpuestos sobre el canvas 3D - ver el commit que
-   resuelve el conflicto DockLeft/PropertiesPanel/BcfPanel por espacio.
-   Las columnas laterales son "auto": cuando un panel lateral no está
-   montado (zona oculta - ver LayoutStateContext.tsx), esa columna no
-   tiene contenido y "auto" la colapsa a 0px sola, sin necesitar que este
-   grid sepa nada de qué está visible. La columna central "1fr" es la
-   única que puede crecer/achicarse: eso es lo que garantiza que el
-   viewport 3D nunca quede tapado.
+/* Grid de 3 columnas (izquierda | espaciador central | derecha) para los
+   DOCKS únicamente - el canvas (.viewport-container) dejó de vivir acá
+   en Etapa 4a Fase 1 (es position:fixed, ver Viewport.css), así que la
+   columna central ya no tiene contenido propio. Se mantiene igual (no
+   colapsada a 2 columnas) porque sigue cumpliendo dos cosas reales: (1)
+   fuerza el track a ocupar todo el ancho restante entre los docks, que
+   es lo que mantiene a .dock-right pegado al borde derecho real de
+   .viewport y a .dock-bottom (grid-column:1/-1) abarcando el ancho
+   completo; (2) su piso de 480px (minmax(480px,1fr) - Fase 5a) sigue
+   garantizando una separación mínima entre ambos docks incluso en la
+   ventana más angosta, aunque ya no protege al canvas de aplastarse
+   (eso ahora lo resuelve position:fixed, no el grid). Las columnas
+   laterales son "auto": cuando un panel lateral no está montado (zona
+   oculta - ver LayoutStateContext.tsx), esa columna no tiene contenido
+   y "auto" la colapsa a 0px sola, sin necesitar que este grid sepa nada
+   de qué está visible.
 
    padding:16px da el gutter negro contra los bordes de la ventana
    (toolbar/statusbar/laterales) - se mantiene fijo, no depende de qué
@@ -59,21 +66,13 @@ body {
    ningún resto de espacio reservado.
 
    Dos filas desde Fase 3: la fila superior (auto 1fr auto) sigue siendo
-   izquierda | canvas | derecha; la fila inferior es DockBottom
+   izquierda | espaciador | derecha; la fila inferior es DockBottom
    (Incidencias), full-width - spanea las 3 columnas via grid-column:1/-1
    en vez de vivir en una columna propia (ver el comentario en
    DockBottom.tsx sobre por qué full-width). La fila inferior es "auto":
    sin DockBottom montado (zones.bottom === false) no hay contenido y la
    fila colapsa a 0px sola, mismo truco que ya usan las columnas
    laterales. */
-/* La columna central es minmax(480px, 1fr), no "1fr" a secas (Fase 5a):
-   sin un piso, un grid nunca encoge una celda "1fr" por debajo de su
-   min-content, así que si algo raro pasara con ese cálculo el canvas
-   podría, en teoría, llegar a 0 - el piso hace explícita la garantía "el
-   canvas nunca se aplasta", en vez de confiar en el comportamiento
-   default de la celda intermedia. 480px alcanza para seguir viendo el
-   modelo con algo de contexto incluso en la ventana más angosta que este
-   layout soporta sin ocultar paneles. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
@@ -94,35 +93,26 @@ body {
   overflow: hidden;
 }
 
-/* Pines explícitos de columna/fila para los 4 hijos directos de .viewport
-   (DockLeft/.dock-panel, Viewport/.viewport-container, DockRight/
+/* Pines explícitos de columna/fila para los hijos de .viewport que siguen
+   siendo celdas de grid reales (DockLeft/.dock-panel, DockRight/
    .dock-right, DockBottom/.dock-bottom). SIN esto, un grid ubica a sus
    hijos por auto-placement en orden de aparición en el DOM - bug real
    encontrado al verificar este ítem: al desmontar DockLeft (zones.left
-   false), .viewport-container pasaba a ocupar la columna 1 (pensada para
-   el dock izquierdo) y .dock-right pasaba a ocupar la columna 2 (la
-   "1fr" central), dejando la columna 3 vacía y ~288px de gutter negro de
-   más flotando entre el panel derecho y el borde de la ventana - un
-   defecto visible, no solo el corrimiento del cubo que lo hizo evidente.
-   Estos pines aseguran que cada elemento vive SIEMPRE en su columna,
-   monte lo que monte a su lado. */
+   false), el siguiente hijo pasaba a ocupar la columna 1 (pensada para
+   el dock izquierdo), corriendo todo un lugar y dejando la columna 3
+   vacía con gutter negro de más flotando entre el panel derecho y el
+   borde de la ventana - un defecto visible, no solo el corrimiento del
+   cubo que lo hizo evidente. Estos pines aseguran que cada dock vive
+   SIEMPRE en su columna, monte lo que monte a su lado.
+
+   .viewport-container (Viewport/Viewport.tsx) YA NO es uno de estos
+   hijos de grid (Etapa 4a Fase 1) - es position:fixed (ver
+   src/ui/Viewport/Viewport.css), así que grid-column/grid-row no
+   tendrían ningún efecto sobre él; se removió su pin de acá para no
+   dejar CSS muerto describiendo una relación que ya no existe. */
 .viewport > .dock-panel {
   grid-column: 1;
   grid-row: 1;
-}
-
-/* El contenedor del visor 3D (Viewport.tsx, className="viewport-container")
-   es un hijo de grid normal ahora - por defecto los hijos de grid se
-   estiran para llenar su celda (align-items/justify-items:stretch, el
-   default), así que alcanza con min-width:0 para que el propio Three.js
-   pueda encogerse por debajo de su tamaño de contenido intrínseco si la
-   ventana se achica (sin esto, un elemento de grid nunca se encoge más
-   allá de su min-content por default, y "1fr" no alcanza para forzarlo). */
-.viewport > .viewport-container {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-  min-height: 0;
 }
 
 .viewport > .dock-right {

@@ -15,6 +15,15 @@
    handle a este contenedor. */
 .dock-right {
   position: relative;
+  /* z-index explícito, no "auto" (Etapa 4a Fase 1) - .viewport-container
+     (canvas) pasó a position:fixed con z-index:1, que es un stacking
+     context real. Un elemento positioned con z-index:auto pinta DEBAJO de
+     cualquier hermano con z-index numérico, sin importar el orden en el
+     DOM (ver CSS2.1 stacking order, pasos 6 vs 7) - sin este z-index,
+     .dock-right quedaba invisible detrás del canvas pese a estar después
+     en el DOM. Mismo valor que .dock-panel (dock.css) para no inventar
+     una jerarquía nueva entre los dos docks laterales. */
+  z-index: 100;
   height: 100%;
   margin-left: 16px;
   display: flex;

@@ -1,23 +1,39 @@
 /* src/ui/Viewport/Viewport.css */
+@import "../../styles/tokens.css";
+
+/* Etapa 4a Fase 1 - .viewport-container ya no es un hijo de grid dentro de
+   .viewport (Layout.css lo sigue posicionando en grid-column:2, pero eso ya
+   no importa: position:fixed lo saca del flujo de ese grid por completo) -
+   pasa a ser una capa fullscreen fija sobre toda la ventana, por debajo de
+   docks/toolbar (z-index 1 contra 55/90/100). Esto revierte a propósito la
+   decisión "canvas se achica cuando un dock abre" de la Fase anterior -
+   ver el commit que introduce este cambio para el porqué (confirmado con
+   el usuario antes de hacerlo, dos veces).
+   top/left/width/height (no right/bottom/margin) a propósito: usar los 4
+   lados fixed (top+left+right+bottom) A LA VEZ que width/height explícitos
+   sobre-restringe el box (el brief original pedía ambos juntos, lo cual es
+   inconsistente) - con solo top+left+width+height, --canvas-width/
+   --canvas-height (tokens.css) ya dejan el margen de --canvas-inset
+   implícito en el borde derecho/inferior sin necesidad de declararlo de
+   nuevo acá. */
 .viewport-container {
-  /* width/height 100% of its own grid cell, not the window - this stays a
-     grid child of .viewport (Layout.css), not a fixed full-viewport layer;
-     see the commit that kept the grid-column dock architecture instead of
-     converting to floating docks. margin gives it a small inset within
-     that cell and border-radius (clipped by the overflow:hidden already
-     here) rounds the canvas corners - purely cosmetic, no z-index or
-     position change. */
-  /* calc(100% - 10px), not 100% + margin:5px - margin isn't part of the
-     width/height box even with box-sizing:border-box, so 100% + a 5px
-     margin on every side would overflow this grid cell by 10px. */
-  width: calc(100% - 10px);
-  height: calc(100% - 10px);
-  margin: 5px;
-  box-sizing: border-box;
-  border-radius: 16px;
-  position: relative;
+  position: fixed;
+  top: calc(var(--canvas-inset) + var(--toolbar-clearance));
+  left: var(--canvas-inset);
+  width: var(--canvas-width);
+  height: var(--canvas-height);
+  z-index: 1;
+  display: block;
   overflow: hidden;
+  border-radius: 16px;
+  pointer-events: auto;
   background-color: #202022;
+}
+
+.viewport-container canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* 🎯 CAZADOR DE MARCAS DE AGUA INTEGRAL 🎯 */

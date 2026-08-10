@@ -8,19 +8,22 @@
    not a one-off blue color nobody else on screen uses. */
 @import "../../styles/dock.css";
 
-/* bottom-center, not top-right: lives inside .viewport-container (see
-   OrientationCube.tsx's own comment on that anchor), which only spans
-   the canvas's own grid row - DockBottom/FindingsDock is a SEPARATE row
-   below it (see Layout.css), so "bottom:16px" here already lands above
-   that dock without needing to read its height. left:50% +
-   translateX(-50%) centers on the canvas's own width, not the whole
-   window - shifts with it exactly like OrientationCube's fixed corner
-   already does when a side dock opens/closes.
+/* bottom-center, not top-right. Etapa 4a Fase 1: ya no vive dentro de
+   .viewport-container (portal a document.body, ver Toolbar3DFloating.tsx
+   - necesario para escapar el stacking context que .viewport-container
+   ahora crea al ser position:fixed, o .dock-bottom le vuelve a tapar
+   pese al z-index:110 > 100). position:fixed (no absolute) centra contra
+   la ventana real, no contra un ancestro posicionado - el canvas ya es
+   fullscreen, así que el resultado visual es el mismo que antes (el
+   canvas casi siempre llenaba el alto completo igual). "bottom:16px" ya
+   no necesita leer la altura de .dock-bottom: cuando Incidencias está
+   abierto, el z-index más alto de este toolbar simplemente lo dibuja por
+   encima, en vez de necesitar quedar geométricamente arriba suyo.
    flex-direction: row, not column - a horizontal strip of 5 icon
-   buttons reads as a toolbar; centered at the bottom of the canvas, a
+   buttons reads as a toolbar; centered at the bottom of the screen, a
    tall single-file column would awkwardly bisect the view instead. */
 .toolbar-3d-floating {
-  position: absolute;
+  position: fixed;
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
