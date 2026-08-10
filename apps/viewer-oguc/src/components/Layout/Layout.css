@@ -37,102 +37,38 @@ body {
    Upload Modal (z-index:50) pero por debajo de .dock-panel/.orientation-cube
    (100/90), ver src/ui/FileUploadModal/file-upload-modal.css. */
 
-/* Grid de 3 columnas (izquierda | espaciador central | derecha) para los
-   DOCKS únicamente - el canvas (.viewport-container) dejó de vivir acá
-   en Etapa 4a Fase 1 (es position:fixed, ver Viewport.css), así que la
-   columna central ya no tiene contenido propio. Se mantiene igual (no
-   colapsada a 2 columnas) porque sigue cumpliendo dos cosas reales: (1)
-   fuerza el track a ocupar todo el ancho restante entre los docks, que
-   es lo que mantiene a .dock-right pegado al borde derecho real de
-   .viewport y a .dock-bottom (grid-column:1/-1) abarcando el ancho
-   completo; (2) su piso de 480px (minmax(480px,1fr) - Fase 5a) sigue
-   garantizando una separación mínima entre ambos docks incluso en la
-   ventana más angosta, aunque ya no protege al canvas de aplastarse
-   (eso ahora lo resuelve position:fixed, no el grid). Las columnas
-   laterales son "auto": cuando un panel lateral no está montado (zona
-   oculta - ver LayoutStateContext.tsx), esa columna no tiene contenido
-   y "auto" la colapsa a 0px sola, sin necesitar que este grid sepa nada
-   de qué está visible.
-
-   padding:16px da el gutter negro contra los bordes de la ventana
-   (toolbar/statusbar/laterales) - se mantiene fijo, no depende de qué
-   paneles estén visibles. La separación ENTRE paneles y canvas ya NO es
-   un gap:16px acá (ver el comentario largo de por qué en el commit que
-   introduce visibilidad binaria): un gap fijo entre 3 tracks deja un
-   hueco vacío flotando cuando uno de los laterales no tiene contenido.
-   En su lugar, cada panel lateral pone su propio margin hacia el canvas
-   (margin-right en .dock-panel, margin-left en .dock-right) - ese margin
-   solo existe cuando el panel existe, así que un panel oculto no deja
-   ningún resto de espacio reservado.
-
-   Dos filas desde Fase 3: la fila superior (auto 1fr auto) sigue siendo
-   izquierda | espaciador | derecha; la fila inferior es DockBottom
-   (Incidencias), full-width - spanea las 3 columnas via grid-column:1/-1
-   en vez de vivir en una columna propia (ver el comentario en
-   DockBottom.tsx sobre por qué full-width). La fila inferior es "auto":
-   sin DockBottom montado (zones.bottom === false) no hay contenido y la
-   fila colapsa a 0px sola, mismo truco que ya usan las columnas
-   laterales. */
+/* Etapa 4a Fase 2 - .viewport dejó de ser un grid. DockLeft/DockRight/
+   DockBottom (dock.css/dock-right.css/dock-bottom.css) y el canvas
+   (Viewport.css, desde Fase 1) son todos position:fixed ahora, así que
+   ninguno depende de una celda de este contenedor para su tamaño o
+   posición - el viejo grid de 3 columnas (izquierda | espaciador |
+   derecha) que existía solo para sostener esa relación quedó sin
+   ningún hijo real que posicionar. .viewport sigue existiendo como el
+   elemento de la grid-area "viewport" de .layout (ver más abajo) y como
+   padre en el DOM de estos componentes (por props/eventos, no por
+   layout - todos escapan de su caja via position:fixed), nada más. Sin
+   padding: cada hijo fixed ya trae su propio inset via --toolbar-gap/
+   --canvas-inset (tokens.css), no hereda ningún gutter de acá. */
 .viewport {
   grid-area: viewport;
   background: #141414; /* Un gris más profundo para resaltar el modelo */
-  display: grid;
-  grid-template-columns: auto minmax(480px, 1fr) auto;
-  grid-template-rows: 1fr auto;
-  padding: 16px;
-  /* padding-top propio (no el 16px del gutter lateral/inferior): tiene que
-     dejar libre toda la franja que ocupan las cápsulas del toolbar
-     (--toolbar-clearance, ver tokens.css) para que DockLeft/DockRight/el
-     canvas empiecen debajo del toolbar con el mismo --toolbar-gap de
-     separación, en vez de arrancar a 16px y quedar pegados/tapados por
-     las cápsulas (que flotan con top:var(--toolbar-gap) sobre esta
-     misma grid area). */
-  padding-top: var(--toolbar-clearance);
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
-/* Pines explícitos de columna/fila para los hijos de .viewport que siguen
-   siendo celdas de grid reales (DockLeft/.dock-panel, DockRight/
-   .dock-right, DockBottom/.dock-bottom). SIN esto, un grid ubica a sus
-   hijos por auto-placement en orden de aparición en el DOM - bug real
-   encontrado al verificar este ítem: al desmontar DockLeft (zones.left
-   false), el siguiente hijo pasaba a ocupar la columna 1 (pensada para
-   el dock izquierdo), corriendo todo un lugar y dejando la columna 3
-   vacía con gutter negro de más flotando entre el panel derecho y el
-   borde de la ventana - un defecto visible, no solo el corrimiento del
-   cubo que lo hizo evidente. Estos pines aseguran que cada dock vive
-   SIEMPRE en su columna, monte lo que monte a su lado.
-
-   .viewport-container (Viewport/Viewport.tsx) YA NO es uno de estos
-   hijos de grid (Etapa 4a Fase 1) - es position:fixed (ver
-   src/ui/Viewport/Viewport.css), así que grid-column/grid-row no
-   tendrían ningún efecto sobre él; se removió su pin de acá para no
-   dejar CSS muerto describiendo una relación que ya no existe. */
-.viewport > .dock-panel {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.viewport > .dock-right {
-  grid-column: 3;
-  grid-row: 1;
-}
-
-.viewport > .dock-bottom {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-
-/* /revision's Pre-Check gate (PreCheckGate.tsx) - spans every column/row
-   of this grid, on top of DockLeft/Viewport/DockRight/DockBottom (all of
-   which stay MOUNTED underneath, never disposed, while the gate is up -
-   see RevisionLayout.tsx's own comment on why). Only "/revision" ever
-   renders this class; harmless no-op CSS on "/". */
-.viewport > .precheck-overlay {
-  grid-column: 1 / -1;
-  grid-row: 1 / -1;
+/* /revision's Pre-Check gate (PreCheckGate.tsx) - antes spaneaba todas
+   las columnas/filas del grid de .viewport (ese grid ya no existe,
+   Fase 2); ahora es su propio overlay fullscreen fijo, independiente de
+   cualquier layout padre - mismo resultado visual (cubre TODA la
+   ventana, por encima de DockLeft/Viewport/DockRight/DockBottom, que
+   siguen MOUNTED debajo mientras el gate está arriba - ver el comentario
+   de RevisionLayout.tsx sobre por qué). z-index:150 sin cambios - ya
+   estaba por encima de los docks (100) y del toolbar (55). Solo
+   "/revision" renderiza esta clase; no-op en "/". */
+.precheck-overlay {
+  position: fixed;
+  inset: 0;
   z-index: 150;
   background: rgba(10, 13, 17, 0.85);
   backdrop-filter: blur(4px);

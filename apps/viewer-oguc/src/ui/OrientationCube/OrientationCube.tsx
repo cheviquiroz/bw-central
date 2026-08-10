@@ -1,7 +1,9 @@
 // src/ui/OrientationCube/OrientationCube.tsx
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { IfcViewerHandles } from "../../core/IfcBootstrap";
+import { useLayoutState } from "../LayoutStateContext";
 import "./orientation-cube.css";
 
 // Se deriva del tipo real en vez de importar "camera-controls" directo -
@@ -71,6 +73,7 @@ interface OrientationCubeProps {
 }
 
 export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
+  const { zones } = useLayoutState();
   const [angles, setAngles] = useState({ theta: 0, phi: PI / 2 });
   const animationFrameRef = useRef<number | null>(null);
 
@@ -148,8 +151,29 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
     transform: `rotateX(${phiDeg - 90}deg) rotateY(${-thetaDeg}deg)`,
   };
 
-  return (
-    <div className="orientation-cube">
+  // Etapa 4a Fase 2 - DockRight es position:fixed ahora (dock-right.css),
+  // no una columna de grid que le cede ancho al canvas: el cubo (fijo en
+  // la esquina superior derecha DEL CANVAS, que desde Fase 1 es
+  // fullscreen) queda geométricamente bajo DockRight cada vez que está
+  // abierto - lo cual es casi siempre, es el estado por default (ver
+  // DEFAULT_LAYOUT_ZONES en LayoutStateContext.tsx). z-index reactivo por
+  // estado real de React (zones.right), no MutationObserver/geometría del
+  // DOM - sube por encima del dock (100) solo cuando hace falta, en vez
+  // de ganarle siempre (que rompería la regla ya establecida "los docks
+  // ganan" para cualquier otro overlap). Portal a document.body: el cubo
+  // sigue siendo hijo de Viewport.tsx (dentro de .viewport-container),
+  // que es position:fixed con su propio z-index desde Fase 1 - eso crea
+  // un stacking context que capa cualquier z-index interno a 1 sin
+  // importar el valor, así que sin el portal este cambio de z-index no
+  // tendría ningún efecto visual (mismo bug ya encontrado y resuelto para
+  // KeyboardShortcutsModal/Toolbar3DFloating en el commit de Fase 1).
+  // position:fixed (no absolute) porque ya no cuelga de
+  // .viewport-container - top/right replican el mismo offset visual de
+  // siempre (--canvas-inset, el propio borde del canvas, + 24px de
+  // margen), ahora medido contra la ventana real en vez de contra su
+  // antiguo contenedor.
+  return createPortal(
+    <div className="orientation-cube" style={{ zIndex: zones.right ? 200 : 90 }}>
       <div className="orientation-cube-inner" style={cubeStyle}>
         <Face label="FRONT" direction="front" onClick={handleViewChange} />
         <Face label="BACK" direction="back" onClick={handleViewChange} />
@@ -167,7 +191,8 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
         <Vertex x={HALF} y={HALF} z={-HALF} direction="bottom-back-right" onClick={handleViewChange} />
         <Vertex x={-HALF} y={HALF} z={-HALF} direction="bottom-back-left" onClick={handleViewChange} />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

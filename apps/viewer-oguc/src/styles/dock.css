@@ -16,27 +16,30 @@
   --dock-selected-border: var(--blue);
 }
 
-/* Ya no es position:absolute - es una celda real del grid de 3 columnas
-   de .viewport (Layout.css), no un panel flotante superpuesto al canvas.
-   Sin width fijo acá: el ancho llega por style inline (ver DockPanel.tsx/
-   DockLeft.tsx) porque es un valor continuo que el usuario controla
-   arrastrando .dock-panel-resize-handle, el mismo criterio que
-   bottomDockHeight ya usaba para DockBottom - no hay más un estado
-   intermedio "colapsado" para animar, así que no hace falta
-   transition:width. margin-right es el gutter negro hacia el canvas -
-   solo existe mientras este elemento existe, así que un dock oculto no
-   deja ningún resto de espacio reservado (ver el comentario largo en
-   Layout.css sobre por qué esto reemplazó el gap:16px del grid padre). */
+/* Etapa 4a Fase 2 - position:fixed, no más celda de un grid de 3
+   columnas (esa arquitectura era Fase 1 y antes). left/top con los
+   mismos tokens que usan las cápsulas del toolbar (--toolbar-gap/
+   --toolbar-clearance, tokens.css), para que los 12px de separación se
+   lean iguales en toda la ventana. width sigue llegando por style
+   inline (DockPanel.tsx/DockLeft.tsx, valor continuo de
+   .dock-panel-resize-handle) - height AHORA también, no por CSS: la
+   altura depende de bottomDockHeight (un número de estado, no un token
+   CSS estático) cuando DockBottom está abierto, para que este panel se
+   acorte y no lo tape en vez de superponerse (ver el cálculo en
+   DockLeft.tsx, y TOOLBAR_GAP/TOOLBAR_CLEARANCE en LayoutStateContext.tsx,
+   que espejan estos mismos tokens para ese cálculo). margin-right ya no
+   hace falta - el gutter hacia el canvas ahora es el propio gap del
+   position:fixed, no un margin de flujo normal de grid. */
 .dock-panel {
-  height: 100%;
-  margin-right: 16px;
+  position: fixed;
+  left: var(--toolbar-gap);
+  top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
   /* Sigue haciendo falta: el overlay del File Upload Modal es
      position:fixed con z-index:50 (ver file-upload-modal.css) y cubre
      TODA la ventana - sin esto, el botón "+" del dock (una de las dos
      formas reales de cargar un modelo, junto con soltar el archivo en el
      modal) quedaría debajo del overlay y dejaría de recibir clicks
      mientras el modal está activo. */
-  position: relative;
   z-index: 100;
   background: var(--dock-bg);
   border: 1px solid var(--dock-line);

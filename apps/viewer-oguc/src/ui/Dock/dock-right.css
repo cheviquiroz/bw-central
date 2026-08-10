@@ -1,20 +1,19 @@
 /* src/ui/Dock/dock-right.css */
 @import "../../styles/tokens.css";
 
-/* Celda derecha del grid de .viewport (Layout.css). Sin width fijo acá:
-   llega por style inline (ver DockRight.tsx), el mismo criterio que
-   DockPanel/dock.css usa para DockLeft - un valor continuo que el
-   usuario controla arrastrando .dock-right-resize-handle, no un ancho
-   fijo hardcodeado. margin-left es el gutter negro hacia el canvas -
-   solo existe mientras este elemento existe (ver el comentario largo en
-   Layout.css sobre por qué esto reemplazó el gap:16px del grid padre).
-   Ya no hay tab bar acá (ver DockRight.tsx) - .properties-panel ya trae
-   su propio look (blur/radius/bg), así que este contenedor solo necesita
-   posicionar y darle el ancho. position:relative es nuevo (antes no
-   hacía falta sin nada position:absolute adentro) - ancla el resize
-   handle a este contenedor. */
+/* Etapa 4a Fase 2 - position:fixed, ya no celda del grid de .viewport
+   (Layout.css). right/top con los mismos tokens que .dock-panel
+   (dock.css) - ver ese comentario para el porqué. width sigue llegando
+   por style inline (DockRight.tsx, valor continuo de
+   .dock-right-resize-handle) - height AHORA también (mismo motivo que
+   .dock-panel: depende de bottomDockHeight, un número de estado). Ya no
+   hay tab bar acá (ver DockRight.tsx) - .properties-panel ya trae su
+   propio look (blur/radius/bg), así que este contenedor solo necesita
+   posicionar y darle el tamaño. */
 .dock-right {
-  position: relative;
+  position: fixed;
+  right: var(--toolbar-gap);
+  top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
   /* z-index explícito, no "auto" (Etapa 4a Fase 1) - .viewport-container
      (canvas) pasó a position:fixed con z-index:1, que es un stacking
      context real. Un elemento positioned con z-index:auto pinta DEBAJO de
@@ -24,8 +23,6 @@
      en el DOM. Mismo valor que .dock-panel (dock.css) para no inventar
      una jerarquía nueva entre los dos docks laterales. */
   z-index: 100;
-  height: 100%;
-  margin-left: 16px;
   display: flex;
 }
 

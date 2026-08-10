@@ -15,10 +15,16 @@
    inconsistente) - con solo top+left+width+height, --canvas-width/
    --canvas-height (tokens.css) ya dejan el margen de --canvas-inset
    implícito en el borde derecho/inferior sin necesidad de declararlo de
-   nuevo acá. */
+   nuevo acá.
+   Fase 2: top pasó de calc(--canvas-inset + --toolbar-clearance) a solo
+   --canvas-inset - el toolbar ya no necesita una franja reservada del
+   canvas para sí mismo, porque ahora FLOTA por encima de él (mismo
+   z-index:55 de siempre, layer aparte) en vez de compartir su borde
+   superior. --canvas-height (tokens.css) se actualizó junto con esto -
+   ya no resta --toolbar-clearance, mismo motivo. */
 .viewport-container {
   position: fixed;
-  top: calc(var(--canvas-inset) + var(--toolbar-clearance));
+  top: var(--canvas-inset);
   left: var(--canvas-inset);
   width: var(--canvas-width);
   height: var(--canvas-height);

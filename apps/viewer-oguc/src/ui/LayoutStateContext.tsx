@@ -65,6 +65,22 @@ export const MIN_SIDE_DOCK_WIDTH = 200;
 // uno reescrito a mano que podría desincronizarse.
 export const CANVAS_MIN_WIDTH = 480;
 
+// Mirrors of the toolbar/gap tokens in src/styles/tokens.css
+// (--toolbar-gap/--toolbar-clearance) - repetidos acá (no importables
+// desde CSS, mismo motivo que CANVAS_MIN_WIDTH arriba) porque
+// DockLeft.tsx/DockRight.tsx (Etapa 4a Fase 2) necesitan calcular su
+// `height` inline en JS: es position:fixed y depende de bottomDockHeight
+// (un número de estado, no expresable como token CSS estático), así que
+// no alcanza con dejarle el alto a calc() en la hoja de estilos como sí
+// se pudo hacer con el canvas en Fase 1. Si tokens.css cambia estos
+// valores, hay que actualizar acá también - no hay forma de leer un
+// custom property de CSS desde JS sin montar primero y leer
+// getComputedStyle, lo que introduciría un round-trip que el resto de
+// este archivo (cálculos de ancho síncronos, en render) no tiene hoy.
+export const TOOLBAR_GAP = 12;
+export const TOOLBAR_CLEARANCE = 68; // 12*2 + 44 (gap*2 + capsule height)
+export const CANVAS_INSET = 5;
+
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 
 // Fase 5b: lo persistido (si existe y tiene un shape válido - ver

@@ -1,25 +1,28 @@
 /* src/ui/Dock/dock-bottom.css */
 @import "../../styles/tokens.css";
 
-/* Fila inferior del grid de dos filas de .viewport (Layout.css), abarca
-   las 3 columnas (izquierda/canvas/derecha) - ver el comentario en
-   DockBottom.tsx sobre por qué full-width y no "entre los paneles
-   laterales". margin-top es el gutter negro hacia el canvas - mismo
-   patrón que margin-right/margin-left en dock.css/dock-right.css: solo
-   existe mientras este elemento existe, así que ocultar el dock no deja
-   un hueco vacío flotando. La altura llega por style inline (ver
-   DockBottomShell.tsx) porque es un valor continuo controlado por el
-   usuario (drag del handle) - mismo criterio que el ancho de DockLeft/
-   DockRight, también arrastrable desde esta tarea (ver dock.css/
-   dock-right.css). */
+/* Etapa 4a Fase 2 - position:fixed, ya no fila del grid de .viewport
+   (Layout.css). left/right/bottom en vez de spanear columnas de grid -
+   left+right (ambos puestos, sin width explícito) ya definen el ancho
+   completo automáticamente, mismo principio que el canvas usa en
+   Viewport.css (ahí con top+left+width+height en vez de los 4 lados a
+   la vez, para no sobre-restringir la caja - acá los 4 lados SÍ pueden
+   convivir porque solo dos son opuestos entre sí, left/right, y el
+   tercero (bottom) es independiente). Mismo --toolbar-gap (12px) que
+   left/right/top de los docks laterales, para que el margen se lea
+   igual en los 4 bordes de la ventana. La altura sigue llegando por
+   style inline (ver DockBottomShell.tsx), valor continuo del drag del
+   usuario - igual que antes de Fase 2, sin cambios ahí. */
 .dock-bottom {
-  position: relative;
+  position: fixed;
+  left: var(--toolbar-gap);
+  right: var(--toolbar-gap);
+  bottom: var(--toolbar-gap);
   /* z-index explícito, no "auto" - mismo motivo que .dock-right
      (dock-right.css): el canvas (.viewport-container) es position:fixed
      con z-index:1 desde Etapa 4a Fase 1, y un hermano positioned sin
      z-index numérico pinta debajo de eso sin importar el orden del DOM. */
   z-index: 100;
-  margin-top: 16px;
   background: rgba(23, 28, 34, 0.88);
   border: 1px solid var(--line);
   border-radius: 12px;

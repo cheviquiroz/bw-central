@@ -6,16 +6,19 @@
 // column can't give). This dock now holds only PropertiesPanel, so the
 // tab bar that used to switch between "Datos"/"Incidencias" is gone -
 // there is nothing left to switch between.
-import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, TOOLBAR_CLEARANCE } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
 import PropertiesPanel from "../../components/PropertiesPanel/PropertiesPanel";
 import "./dock-right.css";
 
-const OUTER_PADDING_PX = 32;
-const GUTTER_PX = 16;
+// Ver el comentario equivalente en DockLeft.tsx (Etapa 4a Fase 2) - ya
+// no hay padding de .viewport ni margin-left propio que restar, solo el
+// inset de TOOLBAR_GAP de este dock (y del otro lateral, si está
+// montado).
+const GUTTER_PX = TOOLBAR_GAP;
 
 export function DockRight() {
-  const { zones, leftWidth, rightWidth, setRightWidth } = useLayoutState();
+  const { zones, leftWidth, rightWidth, setRightWidth, bottomDockHeight } = useLayoutState();
 
   if (!zones.right) return null;
 
@@ -23,10 +26,17 @@ export function DockRight() {
   // espejado: acá se resta el ancho (+ gutter, si está montado) de
   // DockLeft en vez del de DockRight.
   const leftOverhead = zones.left ? leftWidth + GUTTER_PX : 0;
-  const maxWidth = Math.max(MIN_SIDE_DOCK_WIDTH, window.innerWidth - OUTER_PADDING_PX - GUTTER_PX - leftOverhead - CANVAS_MIN_WIDTH);
+  const maxWidth = Math.max(MIN_SIDE_DOCK_WIDTH, window.innerWidth - GUTTER_PX - leftOverhead - CANVAS_MIN_WIDTH);
+
+  // Etapa 4a Fase 2 (Opción A) - ver el comentario equivalente en
+  // DockLeft.tsx, mismo cálculo exacto (ambos docks laterales comparten
+  // el mismo `top` y se acortan igual cuando DockBottom está abierto).
+  const topOffset = TOOLBAR_CLEARANCE + TOOLBAR_GAP;
+  const bottomReserved = zones.bottom ? bottomDockHeight + TOOLBAR_GAP : TOOLBAR_GAP;
+  const height = window.innerHeight - topOffset - bottomReserved;
 
   return (
-    <div className="dock-right" style={{ width: `${rightWidth}px` }}>
+    <div className="dock-right" style={{ width: `${rightWidth}px`, height: `${height}px` }}>
       <ResizeHandle
         direction="horizontal"
         side="right"

@@ -42,8 +42,12 @@
   /* Canvas fullscreen (Etapa 4a Fase 1) - .viewport-container pasa de vivir
      dentro de la grid cell de .viewport (Layout.css) a position:fixed sobre
      toda la ventana, así que estos porcentajes ya no resuelven contra su
-     antigua celda sino contra el viewport real - ver Viewport.css. */
+     antigua celda sino contra el viewport real - ver Viewport.css.
+     --canvas-height ya NO resta --toolbar-clearance (Fase 2) - el toolbar
+     flota ENCIMA del canvas (z-index 55 contra 1) en vez de compartir su
+     borde superior, así que el canvas no necesita dejarle una franja
+     propia reservada. */
   --canvas-inset: 5px;
   --canvas-width: calc(100% - var(--canvas-inset) * 2);
-  --canvas-height: calc(100% - var(--canvas-inset) * 2 - var(--toolbar-clearance));
+  --canvas-height: calc(100% - var(--canvas-inset) * 2);
 }

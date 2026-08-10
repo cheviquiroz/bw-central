@@ -2,27 +2,27 @@
 @import "../../styles/tokens.css";
 
 /* Fase 4: sin cálculo, sin lectura de contexto, sin dependencia del
-   estado de ningún panel. El cubo vive dentro de .viewport-container
-   (position:relative - ver Viewport.tsx), que ES el canvas: su ancho ya
-   se ajusta solo cuando un dock lateral aparece/desaparece (columna
-   "1fr" del grid de .viewport, ver Layout.css). Un inset fijo relativo a
-   ESE contenedor queda anclado a la esquina del canvas automáticamente,
-   para siempre, sin importar cuántos paneles estén abiertos - la vieja
-   versión (right = 40 + panelWidth + bcfPanelWidth + 16, luego una
-   variante booleana con LayoutStateContext) recalculaba esto a mano cada
-   vez que un hermano cambiaba de tamaño, y por eso se desincronizaba. */
-/* Restored to its original Phase 4 position (top-right) - Toolbar3DFloating
-   (see ../Toolbar3DFloating/) now lives bottom-CENTER of the same canvas,
-   so top-right was never actually in conflict with it; the earlier
-   bottom-right detour is reverted. */
+   estado de ningún panel PARA POSICIONARSE - ese principio se mantiene
+   en Fase 2 (Etapa 4a): top/right siguen siendo un inset fijo, nunca una
+   función del ancho de un dock (la vieja versión pre-Fase-4 hacía eso y
+   se desincronizaba, ver historial de este comentario). Lo único que
+   ahora SÍ depende de estado de React es el z-index (OrientationCube.tsx,
+   zones.right) - la posición del cubo nunca se mueve, solo a veces pasa
+   a dibujarse por encima de DockRight en vez de detrás.
+   position:fixed, no absolute (Fase 2) - portal a document.body
+   (OrientationCube.tsx) para escapar el stacking context que
+   .viewport-container crea al ser position:fixed desde Fase 1; ya no
+   cuelga de ese contenedor, así que top/right se miden contra la ventana
+   real. --canvas-inset es el mismo borde que usa el propio canvas
+   (Viewport.css) - el cubo se ancla al borde REAL del canvas (5px), no a
+   un número repetido a mano, + 24px de margen propio. */
 .orientation-cube {
-  position: absolute;
-  top: 24px;
-  right: 24px;
+  position: fixed;
+  top: calc(var(--canvas-inset) + 24px);
+  right: calc(var(--canvas-inset) + 24px);
   width: 60px;
   height: 60px;
   perspective: 600px;
-  z-index: 90;
 }
 
 .orientation-cube-inner {

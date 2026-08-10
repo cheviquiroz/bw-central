@@ -15,7 +15,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
-import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, TOOLBAR_CLEARANCE } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
 import { LoadingOverlay } from "../LoadingOverlay";
 import { DockPanel } from "./DockPanel";
@@ -24,13 +24,15 @@ import { ModelTree } from "./ModelTree";
 import { setModelBytes } from "../../core/ModelBytesRegistry";
 import "../../styles/dock.css";
 
-// 32px de padding exterior de .viewport (16 a cada lado) + 16px del
-// gutter propio de este dock hacia el canvas (margin-right en
-// .dock-panel) - el gutter del lado derecho solo se resta si DockRight
-// está montado, ver maxWidth más abajo. Repetir este número acá (en vez
-// de leerlo del CSS, que no es posible) documenta de dónde sale.
-const OUTER_PADDING_PX = 32;
-const GUTTER_PX = 16;
+// Etapa 4a Fase 2: ya no hay padding de .viewport ni margin-right propio
+// que restar (ambos existían para el layout de grid de Fase 1 y antes,
+// ver Layout.css/dock.css) - cada dock lateral es position:fixed con su
+// propio inset de TOOLBAR_GAP (12px) desde el borde real de la ventana
+// que le toca, así que el único número que queda por restar por cada
+// lado involucrado es ese mismo TOOLBAR_GAP (uno para este dock, otro
+// para el otro dock lateral si también está montado - ver maxWidth más
+// abajo).
+const GUTTER_PX = TOOLBAR_GAP;
 
 interface DockLeftProps {
   hiddenByModel: Record<string, Set<number>>;
@@ -41,7 +43,7 @@ interface DockLeftProps {
 
 export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }: DockLeftProps) {
   const app = useApp();
-  const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth } = useLayoutState();
+  const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth, bottomDockHeight } = useLayoutState();
   const [loading, setLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
   // web-ifc's own progress reporting is coarse (a handful of discrete
@@ -118,10 +120,23 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
   // nunca queda stale ni siquiera si la ventana cambia de tamaño a mitad
   // de un arrastre.
   const rightOverhead = zones.right ? rightWidth + GUTTER_PX : 0;
-  const maxWidth = Math.max(MIN_SIDE_DOCK_WIDTH, window.innerWidth - OUTER_PADDING_PX - GUTTER_PX - rightOverhead - CANVAS_MIN_WIDTH);
+  const maxWidth = Math.max(MIN_SIDE_DOCK_WIDTH, window.innerWidth - GUTTER_PX - rightOverhead - CANVAS_MIN_WIDTH);
+
+  // Etapa 4a Fase 2 (Opción A): este panel ahora es position:fixed
+  // (dock.css), así que ya no hereda su alto de una fila de grid - hay
+  // que calcularlo. Se acorta cuando DockBottom está abierto, en vez de
+  // superponerse con él (mismo criterio "sin solapamiento" que
+  // maxWidth ya aplica contra DockRight arriba). bottomDockHeight es un
+  // número de estado (arrastrable, ver LayoutStateContext.tsx), no un
+  // token CSS estático, así que este cálculo tiene que vivir en JS, no
+  // en dock.css - TOOLBAR_GAP/TOOLBAR_CLEARANCE espejan los mismos
+  // tokens que dock.css usa para `top` (--toolbar-gap/--toolbar-clearance).
+  const topOffset = TOOLBAR_CLEARANCE + TOOLBAR_GAP;
+  const bottomReserved = zones.bottom ? bottomDockHeight + TOOLBAR_GAP : TOOLBAR_GAP;
+  const height = window.innerHeight - topOffset - bottomReserved;
 
   return (
-    <DockPanel style={{ width: `${leftWidth}px` }}>
+    <DockPanel style={{ width: `${leftWidth}px`, height: `${height}px` }}>
       <input ref={fileInputRef} type="file" accept=".ifc" multiple onChange={handleFileChange} style={{ display: "none" }} />
 
       <DockHeader onAddClick={handleAddClick} onClose={() => setZoneVisible("left", false)} />
