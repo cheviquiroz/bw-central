@@ -1,28 +1,36 @@
 /* src/ui/OrientationCube/orientation-cube.css */
 @import "../../styles/tokens.css";
 
-/* Fase 4: sin cálculo, sin lectura de contexto, sin dependencia del
-   estado de ningún panel PARA POSICIONARSE - ese principio se mantiene
-   en Fase 2 (Etapa 4a): top/right siguen siendo un inset fijo, nunca una
-   función del ancho de un dock (la vieja versión pre-Fase-4 hacía eso y
-   se desincronizaba, ver historial de este comentario). Lo único que
-   ahora SÍ depende de estado de React es el z-index (OrientationCube.tsx,
-   zones.right) - la posición del cubo nunca se mueve, solo a veces pasa
-   a dibujarse por encima de DockRight en vez de detrás.
+/* El cubo SÍ se mueve ahora (a pedido explícito) cuando DockRight está
+   abierto - el principio "Fase 4" de nunca leer geometría del DOM para
+   reposicionarse se mantiene, pero ya no significa "nunca se mueve": la
+   posición se deriva de rightWidth (LayoutStateContext, el mismo número
+   que ya maneja el ancho real de DockRight vía style inline en
+   DockRight.tsx), calculada en OrientationCube.tsx en el mismo render,
+   nunca leída del DOM con querySelector/getBoundingClientRect en un
+   efecto - eso es exactamente lo que la vieja versión pre-Fase-4 hacía y
+   por lo que se desincronizaba (ver el historial de este comentario).
+   Usar el mismo state que ya es la fuente de verdad de DockRight hace
+   imposible que el cubo y el dock queden desincronizados entre sí -
+   ambos leen el mismo rightWidth en el mismo ciclo de render. `right`
+   (y por lo tanto `top`) llegan como style inline calculado - acá solo
+   quedan top/right por defecto (DockRight cerrado) y la transición.
    position:fixed, no absolute (Fase 2) - portal a document.body
    (OrientationCube.tsx) para escapar el stacking context que
-   .viewport-container crea al ser position:fixed desde Fase 1; ya no
-   cuelga de ese contenedor, así que top/right se miden contra la ventana
-   real. --canvas-inset es el mismo borde que usa el propio canvas
-   (Viewport.css) - el cubo se ancla al borde REAL del canvas (5px), no a
-   un número repetido a mano, + 24px de margen propio. */
+   .viewport-container crea al ser position:fixed desde Fase 1. */
 .orientation-cube {
   position: fixed;
-  top: calc(var(--canvas-inset) + 24px);
-  right: calc(var(--canvas-inset) + 24px);
+  top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
+  right: var(--toolbar-gap);
   width: 60px;
   height: 60px;
   perspective: 600px;
+  z-index: 90;
+  /* Desliza al costado del dock en vez de saltar - los otros ejes
+     (top/width/height) no cambian nunca, solo right, así que animar esa
+     única propiedad alcanza para que se sienta como un movimiento, no un
+     salto. */
+  transition: right 0.2s ease;
 }
 
 .orientation-cube-inner {
