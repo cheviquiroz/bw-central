@@ -282,12 +282,21 @@ function LayoutInner() {
         <FileUploadModal onFilesSelected={handleFilesSelected} isLoading={isUploading} error={uploadError} />
       )}
 
-      {/* 1. TOOLBAR */}
-      <Toolbar
-        searchBar={<SearchBar searchManager={searchManager} externalQuery={externalQuery} />}
-        moduleRuntime={moduleRuntime}
-        hasModel={hasModels}
-      />
+      {/* 1. TOOLBAR - solo con modelo cargado. Antes se mostraba siempre
+          (a propósito, ver el commit de Etapa 4a Fase 1: su z-index:55
+          se eligió específicamente para quedar por encima del overlay
+          del FileUploadModal y que sus botones siguieran usables durante
+          el empty state) - ese diseño se revierte acá a pedido explícito.
+          Sin pérdida funcional real: casi todos los módulos del toolbar
+          ya requieren modelo (requiresModel en registry/modules.ts) y
+          quedaban disabled de todas formas sin uno cargado. */}
+      {hasModels && (
+        <Toolbar
+          searchBar={<SearchBar searchManager={searchManager} externalQuery={externalQuery} />}
+          moduleRuntime={moduleRuntime}
+          hasModel={hasModels}
+        />
+      )}
 
       {/* 2. VISOR PRINCIPAL + DOCK IZQUIERDO + DOCK DERECHO + DOCK INFERIOR */}
       {/* Grid real de 2 filas x 3 columnas (izquierda | centro dominante |
