@@ -309,7 +309,7 @@ function LayoutInner() {
           hasModels={hasModels}
           moduleRuntime={moduleRuntime}
         />
-        <DockRight />
+        <DockRight hasModel={hasModels} />
         <DockBottom
           bcfState={bcfState}
           onBcfFilterChange={handleBcfFilterChange}

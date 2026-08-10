@@ -17,10 +17,15 @@ import "./dock-right.css";
 // montado).
 const GUTTER_PX = TOOLBAR_GAP;
 
-export function DockRight() {
+interface DockRightProps {
+  /** Mismo gate que ya usa DockLeft.tsx (zones.left/hasModel) - sin esto, este panel mostraba "Ningún elemento seleccionado" antes de cargar cualquier modelo, la única diferencia real (no cosmética) entre el empty state y lo esperado. */
+  hasModel: boolean;
+}
+
+export function DockRight({ hasModel }: DockRightProps) {
   const { zones, leftWidth, rightWidth, setRightWidth, bottomDockHeight } = useLayoutState();
 
-  if (!zones.right) return null;
+  if (!zones.right || !hasModel) return null;
 
   // Ver el comentario equivalente en DockLeft.tsx - mismo cálculo,
   // espejado: acá se resta el ancho (+ gutter, si está montado) de

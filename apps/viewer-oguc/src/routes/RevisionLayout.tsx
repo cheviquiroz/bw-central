@@ -289,7 +289,7 @@ function RevisionLayoutInner() {
           hasModels={hasModels}
           moduleRuntime={moduleRuntime}
         />
-        <DockRight />
+        <DockRight hasModel={hasModels} />
         <FindingsDock findings={findings} searchManager={searchManager} />
 
         {!preCheckPassed && (
