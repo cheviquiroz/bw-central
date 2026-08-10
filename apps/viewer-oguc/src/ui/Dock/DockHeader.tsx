@@ -9,7 +9,16 @@ import { Tooltip } from "../Tooltip/Tooltip";
 export function DockHeader({ onAddClick, onClose }: { onAddClick: () => void; onClose: () => void }) {
   return (
     <div className="dock-header visible">
-      <span className="dock-title">Modelos</span>
+      {/* Etapa 4a Fase 3 - zona de arrastre visual solamente, sin lógica de
+          drag real todavía (eso es Etapa 4c). onMouseDown no hace nada más
+          que documentar la intención por ahora - no capturar pointer, no
+          mover el panel. Envuelve el título existente en vez de duplicarlo
+          con un label nuevo hardcodeado ("Model Tree" en el brief no es el
+          texto real de este header, que ya es "Modelos" - ver arriba). */}
+      <div className="dock-drag-handle" onMouseDown={() => console.log("Drag DockLeft started (not implemented yet)")}>
+        <span className="dock-drag-handle-icon" aria-hidden="true">⋮⋮</span>
+        <span className="dock-title">Modelos</span>
+      </div>
       <div className="dock-header-actions">
         <Tooltip label="Agregar IFC">
           <span className="dock-action" onClick={onAddClick}>

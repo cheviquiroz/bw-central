@@ -11,6 +11,7 @@
 // inline SVG for the same reason (see icons/toolbar/index.tsx's own
 // comment on redrawing a lucide icon rather than installing the
 // library). The spinner below is drawn the same way, animated via CSS.
+import { createPortal } from "react-dom";
 import "./loading-overlay.css";
 
 export interface LoadingOverlayProps {
@@ -25,7 +26,18 @@ export function LoadingOverlay({ isVisible, message, progress }: LoadingOverlayP
 
   const showProgressBar = progress !== undefined && progress > 0;
 
-  return (
+  // Portal a document.body (encontrado y corregido durante Etapa 4a
+  // Fase 3, no pedido por el brief) - DockLeft.tsx renderiza esto dentro
+  // de .dock-panel, que desde Fase 2 es position:fixed con su propio
+  // z-index (100), un stacking context real. Sin el portal, el
+  // z-index:1000 de este overlay queda atrapado adentro y no puede
+  // ganarle a DockRight/DockBottom (100) mientras se importa un modelo -
+  // mismo bug, mismo fix, que KeyboardShortcutsModal/Toolbar3DFloating/
+  // OrientationCube (ver Z-INDEX-SYSTEM.md). PreCheckGate.tsx's uso de
+  // este mismo componente no necesitaba el portal (no vive dentro de
+  // ningún ancestro fixed+z-index), pero portar siempre es más simple y
+  // más seguro que portar condicionalmente según el caller.
+  return createPortal(
     <div className="loading-overlay" role="status" aria-live="polite">
       <div className="loading-overlay-content">
         <svg className="loading-overlay-spinner" viewBox="0 0 24 24" fill="none">
@@ -39,6 +51,7 @@ export function LoadingOverlay({ isVisible, message, progress }: LoadingOverlayP
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

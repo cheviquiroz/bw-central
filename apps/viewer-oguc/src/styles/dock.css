@@ -100,6 +100,33 @@
   gap: 2px;
 }
 
+/* Etapa 4a Fase 3 - zona de arrastre visual (Etapa 4c trae la lógica
+   real de mover el panel). Compartida por los 3 headers de dock
+   (DockHeader.tsx, PropertiesPanel.tsx, BcfPanel.tsx) - regla repetida
+   igual en dock.css/properties.css/bcf-panel.css en vez de forzar un
+   import cruzado entre esas 3 hojas de estilo (que hoy no se importan
+   entre sí), mismo criterio que border-radius:12px ya se repite entre
+   dock.css/dock-bottom.css sin deduplicar. */
+.dock-drag-handle {
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dock-drag-handle:active {
+  cursor: grabbing;
+}
+
+.dock-drag-handle-icon {
+  font-size: 12px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
 .dock-action {
   width: 22px;
   height: 22px;

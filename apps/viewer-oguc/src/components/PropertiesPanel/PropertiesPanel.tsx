@@ -219,10 +219,18 @@ export default function PropertiesPanel() {
     <div className="properties-panel">
       {/* Header contextual: siempre presente, con placeholders si no hay selección */}
       <div className="properties-header">
-        <div className="properties-header-text">
-          <p className={`prop-type${hasSelection ? " has-selection" : ""}`}>{hasSelection ? ifcCategory : "IFCElement"}</p>
-          <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
-          <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
+        {/* Etapa 4a Fase 3 - zona de arrastre visual solamente (Etapa 4c
+            trae la lógica real). Envuelve el header contextual existente
+            en vez de agregar un label nuevo hardcodeado - el título real
+            acá es dinámico (categoría/nombre del elemento seleccionado),
+            no un "Properties" fijo como asumía el brief. */}
+        <div className="dock-drag-handle" onMouseDown={() => console.log("Drag DockRight started (not implemented yet)")}>
+          <span className="dock-drag-handle-icon" aria-hidden="true">⋮⋮</span>
+          <div className="properties-header-text">
+            <p className={`prop-type${hasSelection ? " has-selection" : ""}`}>{hasSelection ? ifcCategory : "IFCElement"}</p>
+            <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
+            <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
+          </div>
         </div>
         <button className="properties-pin" onClick={() => setZoneVisible("right", false)} title="Ocultar panel">
           <IconLock />

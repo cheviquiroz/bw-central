@@ -70,7 +70,14 @@ export function BcfPanel({
   return (
     <div className="bcf-panel">
       <div className="bcf-header">
-        <h3 className="bcf-title">Incidencias BCF</h3>
+        {/* Etapa 4a Fase 3 - zona de arrastre visual solamente (Etapa 4c
+            trae la lógica real). Envuelve el título existente en vez de
+            duplicarlo con el label hardcodeado del brief ("Issues / BCF" -
+            el título real es "Incidencias BCF"). */}
+        <div className="dock-drag-handle" onMouseDown={() => console.log("Drag DockBottom started (not implemented yet)")}>
+          <span className="dock-drag-handle-icon" aria-hidden="true">⋮⋮</span>
+          <h3 className="bcf-title">Incidencias BCF</h3>
+        </div>
         {state.isNewProject && <span className="badge-new-bcf">BCF (sin guardar)</span>}
         <div className="bcf-header-actions">
           {BCF_PANEL_MODULES.map((module) => {

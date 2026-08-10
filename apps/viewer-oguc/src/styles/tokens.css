@@ -2,6 +2,38 @@
    Tokens visuales compartidos, calcados de :root en public/mockup-v1.0.html.
    Consumidos por toolbar.css, dock.css y properties.css vía @import. */
 
+/*
+ * Z-INDEX HIERARCHY — viewer-oguc (de atrás hacia adelante)
+ * Tabla completa + por qué, en src/styles/Z-INDEX-SYSTEM.md - acá solo
+ * un resumen rápido para no tener que abrir ese archivo cada vez.
+ * Ningún valor de acá es un token CSS (serían números sin unidad,
+ * inválidos como custom property numérica reusable en cualquier
+ * z-index); son literales reales, uno por archivo, listados tal como
+ * están hoy en el código - no una aspiración.
+ *
+ *   z-index: 1      = Canvas 3D (.viewport-container, Viewport.css)
+ *   z-index: 10     = Resize handles de los 3 docks
+ *   z-index: 50     = Fondo del File Upload Modal
+ *   z-index: 55     = Toolbar (.toolbar-capsule, toolbar.css)
+ *   z-index: 60     = Measurement toolbar
+ *   z-index: 90/200 = Orientation Cube (90 normal, 200 si DockRight abierto)
+ *   z-index: 100    = Los 3 docks (.dock-panel/.dock-right/.dock-bottom)
+ *   z-index: 110    = Toolbar 3D flotante (Toolbar3DFloating)
+ *   z-index: 150    = Pre-check overlay (solo /revision)
+ *   z-index: 300    = Tooltip
+ *   z-index: 500    = Toast
+ *   z-index: 600    = Extra actions del toolbar en /revision
+ *   z-index: 1000   = Modales reales (shortcuts, create-topic, loading, file-upload)
+ *
+ * Regla de oro: si algo con z-index alto queda atrapado detrás de algo
+ * con z-index más bajo, casi siempre es un stacking context (un
+ * ancestro position:fixed/sticky, o con filter/backdrop-filter !=
+ * none) atrapándolo, NO un número mal elegido - subir el z-index no
+ * arregla eso. El fix establecido en este proyecto es
+ * createPortal(..., document.body) - ver Z-INDEX-SYSTEM.md para los 4
+ * casos reales donde ya hizo falta.
+ */
+
 :root {
   /* Fondo y líneas */
   --bg-1: #171c22;
