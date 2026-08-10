@@ -114,9 +114,7 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo, extraActio
         )}
       </div>
 
-      <div className="toolbar-capsule toolbar-capsule-center">{searchBar}</div>
-
-      <div className="toolbar-capsule toolbar-capsule-right">
+      <div className="toolbar-capsule toolbar-capsule-center">
         {MODULE_INTENT_ORDER.map((intent) => {
           const modules = toolbarModules.filter((m) => m.intent === intent);
           // Un intent sin módulos visibles no renderiza nada - ni grupo
@@ -132,18 +130,21 @@ export function Toolbar({ searchBar, moduleRuntime, hasModel, backTo, extraActio
         })}
 
         {workspaceModules.length > 0 && (
-          <>
-            <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
-            <ToolbarSeparator />
-          </>
+          <div className="toolbar-group">{workspaceModules.map((m) => renderModule(m, moduleRuntime, hasModel))}</div>
         )}
+      </div>
+
+      <div className="toolbar-capsule toolbar-capsule-right">
+        {searchBar}
 
         {extraActions && (
           <>
-            {extraActions}
             <ToolbarSeparator />
+            {extraActions}
           </>
         )}
+
+        <ToolbarSeparator />
 
         {/* Sin dato real de federación/proyecto detrás - a diferencia del
             mockup, que hardcodea "Hospital La Serena", esto no debería
