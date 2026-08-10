@@ -32,8 +32,9 @@ body {
 /* .toolbar-capsules es display:contents (ver toolbar.css) - no ocupa
    grid-area propia, sus hijos flotan vía position:fixed. Los estilos
    visuales reales viven en src/styles/toolbar.css (importado por
-   Toolbar.tsx); su z-index:100 ya queda por encima del overlay del File
-   Upload Modal (z-index:50), ver src/ui/FileUploadModal/file-upload-modal.css. */
+   Toolbar.tsx); su z-index:55 queda por encima del overlay del File
+   Upload Modal (z-index:50) pero por debajo de .dock-panel/.orientation-cube
+   (100/90), ver src/ui/FileUploadModal/file-upload-modal.css. */
 
 /* Grid real de 3 columnas (izquierda | centro dominante | derecha), no
    paneles flotantes superpuestos sobre el canvas 3D - ver el commit que
