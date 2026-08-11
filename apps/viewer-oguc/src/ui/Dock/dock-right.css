@@ -12,7 +12,11 @@
    posicionar y darle el tamaño. */
 .dock-right {
   position: fixed;
-  right: var(--toolbar-gap);
+  /* 40px, no var(--toolbar-gap) (20px) - a pedido explícito, alineado
+     con .toolbar-capsule-right (toolbar.css) y .orientation-cube
+     (orientation-cube.css). left/top de .dock-panel (dock.css) siguen
+     en var(--toolbar-gap) sin cambios - solo el borde derecho diverge. */
+  right: 40px;
   top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
   /* z-index explícito, no "auto" (Etapa 4a Fase 1) - .viewport-container
      (canvas) pasó a position:fixed con z-index:1, que es un stacking

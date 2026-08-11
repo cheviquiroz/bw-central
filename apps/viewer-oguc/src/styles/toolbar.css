@@ -79,7 +79,13 @@ body {
 }
 
 .toolbar-capsule-right {
-  right: var(--toolbar-gap);
+  /* 40px, no var(--toolbar-gap) (20px) - a pedido explícito, alineado
+     con .dock-right (dock-right.css) y .orientation-cube
+     (orientation-cube.css), que usan el mismo literal por la misma
+     razón. Solo el borde derecho diverge del token; left/top del
+     toolbar (toolbar-capsule-left/toolbar-capsule) siguen en
+     var(--toolbar-gap), sin cambios. */
+  right: 40px;
 }
 
 .toolbar-brand {
