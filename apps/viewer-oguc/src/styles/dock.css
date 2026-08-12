@@ -33,7 +33,17 @@
 .dock-panel {
   position: fixed;
   left: var(--toolbar-gap);
-  top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
+  /* 80px, no calc(--toolbar-clearance + --toolbar-gap) (104px) - a
+     pedido explícito, para acercar el dock al toolbar (cápsula
+     bottom edge = --toolbar-gap(20) + --toolbar-capsule-height(44) =
+     64px; 80px deja un gap de 16px, "muy cerca" sin tocarlo). Literal
+     propio, no derivado de esos tokens - mismo criterio que el borde
+     derecho (40px) ya decidió no seguir el gap system general. El
+     mismo literal se repite en dock-right.css (.dock-right) y como
+     DOCK_TOP_OFFSET en LayoutStateContext.tsx (DockLeft.tsx/
+     DockRight.tsx necesitan este número en JS para calcular su
+     `height`, no solo `top` - ver ese archivo). */
+  top: 80px;
   /* Sigue haciendo falta: el overlay del File Upload Modal es
      position:fixed con z-index:50 (ver file-upload-modal.css) y cubre
      TODA la ventana - sin esto, el botón "+" del dock (una de las dos

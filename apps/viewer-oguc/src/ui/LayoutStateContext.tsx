@@ -80,6 +80,13 @@ export const CANVAS_MIN_WIDTH = 480;
 export const TOOLBAR_GAP = 20;
 export const TOOLBAR_CLEARANCE = 84; // 20*2 + 44 (gap*2 + capsule height)
 export const CANVAS_INSET = 5;
+// 80px - mismo literal que .dock-panel/.dock-right usan para su propio
+// `top` (dock.css/dock-right.css), a pedido explícito de acercar los
+// docks al toolbar. Ya no se deriva de TOOLBAR_CLEARANCE + TOOLBAR_GAP
+// (104px) - DockLeft.tsx/DockRight.tsx necesitan este número acá porque
+// su `height` (`window.innerHeight - topOffset - bottomReserved`)
+// depende de saber dónde arranca el panel, no solo el propio CSS `top`.
+export const DOCK_TOP_OFFSET = 80;
 
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 

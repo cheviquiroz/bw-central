@@ -15,7 +15,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
-import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, TOOLBAR_CLEARANCE } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, DOCK_TOP_OFFSET } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
 import { LoadingOverlay } from "../LoadingOverlay";
 import { DockPanel } from "./DockPanel";
@@ -129,9 +129,11 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
   // maxWidth ya aplica contra DockRight arriba). bottomDockHeight es un
   // número de estado (arrastrable, ver LayoutStateContext.tsx), no un
   // token CSS estático, así que este cálculo tiene que vivir en JS, no
-  // en dock.css - TOOLBAR_GAP/TOOLBAR_CLEARANCE espejan los mismos
-  // tokens que dock.css usa para `top` (--toolbar-gap/--toolbar-clearance).
-  const topOffset = TOOLBAR_CLEARANCE + TOOLBAR_GAP;
+  // en dock.css - DOCK_TOP_OFFSET espeja el mismo literal que dock.css
+  // usa para `top` (80px, ya no derivado de --toolbar-clearance/
+  // --toolbar-gap - ver el comentario en dock.css y en
+  // LayoutStateContext.tsx sobre por qué).
+  const topOffset = DOCK_TOP_OFFSET;
   const bottomReserved = zones.bottom ? bottomDockHeight + TOOLBAR_GAP : TOOLBAR_GAP;
   const height = window.innerHeight - topOffset - bottomReserved;
 
