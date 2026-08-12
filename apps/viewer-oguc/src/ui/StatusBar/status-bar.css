@@ -1,12 +1,30 @@
 /* src/ui/StatusBar/status-bar.css */
 @import "../../styles/tokens.css";
 
+/* position:fixed con inset (Etapa 4a) - antes era la última pieza de
+   .layout que seguía viviendo en su grid de 2 filas (fila reservada de
+   26px, full-width, sin redondear); ahora flota igual que toolbar/docks/
+   canvas, con el mismo --canvas-inset (5px) que usa el propio canvas
+   (Viewport.css) para su borde inferior/laterales - border-radius:12px
+   por consistencia con docks/toolbar. z-index:100 explícito, no "auto":
+   .viewport-container (canvas) es position:fixed con su propio z-index
+   desde Fase 1, así que un hermano positioned sin z-index numérico
+   pinta debajo de él sin importar el orden del DOM (mismo bug ya
+   encontrado y resuelto para .dock-right/.dock-bottom en ese commit) -
+   mismo valor que los docks, no una jerarquía nueva. border-top se cae:
+   ya no hace falta separar visualmente de un canvas de borde recto,
+   el propio inset + border-radius ya lo separan. */
 .status-bar {
+  position: fixed;
+  bottom: var(--canvas-inset);
+  left: var(--canvas-inset);
+  right: var(--canvas-inset);
+  z-index: 100;
   display: flex;
   align-items: center;
   height: 26px;
   background: var(--bg-2);
-  border-top: 1px solid var(--line);
+  border-radius: 12px;
   padding: 0 14px;
   gap: 16px;
   font-family: var(--mono);
