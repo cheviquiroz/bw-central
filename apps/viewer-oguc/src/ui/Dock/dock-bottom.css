@@ -8,16 +8,19 @@
    Viewport.css (ahí con top+left+width+height en vez de los 4 lados a
    la vez, para no sobre-restringir la caja - acá los 4 lados SÍ pueden
    convivir porque solo dos son opuestos entre sí, left/right, y el
-   tercero (bottom) es independiente). Mismo --toolbar-gap que
-   left/right/top de los docks laterales, para que el margen se lea
-   igual en los 4 bordes de la ventana. La altura sigue llegando por
-   style inline (ver DockBottomShell.tsx), valor continuo del drag del
-   usuario - igual que antes de Fase 2, sin cambios ahí. */
+   tercero (bottom) es independiente). left/right en --toolbar-gap, mismo
+   que los docks laterales - bottom en --status-bar-clearance, NO
+   --toolbar-gap (ver ese token en tokens.css): .status-bar es
+   position:fixed encima del canvas desde este mismo commit, y con solo
+   --toolbar-gap de margen este panel terminaba ~11px por debajo de su
+   borde superior, tapándola. La altura sigue llegando por style inline
+   (ver DockBottomShell.tsx), valor continuo del drag del usuario -
+   igual que antes de Fase 2, sin cambios ahí. */
 .dock-bottom {
   position: fixed;
   left: var(--toolbar-gap);
   right: var(--toolbar-gap);
-  bottom: var(--toolbar-gap);
+  bottom: var(--status-bar-clearance);
   /* z-index explícito, no "auto" - mismo motivo que .dock-right
      (dock-right.css): el canvas (.viewport-container) es position:fixed
      con z-index:1 desde Etapa 4a Fase 1, y un hermano positioned sin

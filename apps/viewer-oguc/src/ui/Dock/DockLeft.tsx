@@ -15,7 +15,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { useApp } from "../AppContext";
-import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, DOCK_TOP_OFFSET } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, DOCK_TOP_OFFSET, STATUS_BAR_CLEARANCE } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
 import { LoadingOverlay } from "../LoadingOverlay";
 import { DockPanel } from "./DockPanel";
@@ -134,7 +134,18 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
   // --toolbar-gap - ver el comentario en dock.css y en
   // LayoutStateContext.tsx sobre por qué).
   const topOffset = DOCK_TOP_OFFSET;
-  const bottomReserved = zones.bottom ? bottomDockHeight + TOOLBAR_GAP : TOOLBAR_GAP;
+  // Ambos branches usan STATUS_BAR_CLEARANCE ahora, no TOOLBAR_GAP -
+  // dock-bottom.css's `bottom` también es STATUS_BAR_CLEARANCE (ver ese
+  // archivo), así que esta cuenta tiene que espejar exactamente la misma
+  // constante en los dos lados para seguir quedando a ras de DockBottom
+  // (bottomDockHeight + STATUS_BAR_CLEARANCE = el mismo borde superior
+  // de DockBottom, sin importar dónde esté anclado su `bottom`) - antes
+  // de este fix DockBottom se movió (Etapa 4a, misma tarea) pero este
+  // cálculo se quedó con el TOOLBAR_GAP viejo, y el panel terminaba
+  // solapando 27px con DockBottom en vez de tocarlo justo. zones.bottom
+  // false: se acorta hasta STATUS_BAR_CLEARANCE solo, para no tapar
+  // .status-bar cuando DockBottom no está montado.
+  const bottomReserved = zones.bottom ? bottomDockHeight + STATUS_BAR_CLEARANCE : STATUS_BAR_CLEARANCE;
   const height = window.innerHeight - topOffset - bottomReserved;
 
   return (

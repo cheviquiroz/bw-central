@@ -87,6 +87,15 @@ export const CANVAS_INSET = 5;
 // su `height` (`window.innerHeight - topOffset - bottomReserved`)
 // depende de saber dónde arranca el panel, no solo el propio CSS `top`.
 export const DOCK_TOP_OFFSET = 80;
+// Mirror of --status-bar-clearance (tokens.css) - DockLeft.tsx/
+// DockRight.tsx need this in JS for the same reason DOCK_TOP_OFFSET
+// does: their `height` is computed from window.innerHeight, not left to
+// a CSS calc(). Replaces the plain TOOLBAR_GAP that used to be the
+// "margin to the window's bottom edge" term in that height formula -
+// with .status-bar now floating there (position:fixed, Etapa 4a), that
+// margin has to clear its full box (--canvas-inset + its height + a
+// 16px gap), not just the old flat 20px.
+export const STATUS_BAR_CLEARANCE = 47; // 5 (canvas-inset) + 26 (status-bar height) + 16 (gap)
 
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 

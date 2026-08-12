@@ -6,7 +6,7 @@
 // column can't give). This dock now holds only PropertiesPanel, so the
 // tab bar that used to switch between "Datos"/"Incidencias" is gone -
 // there is nothing left to switch between.
-import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, DOCK_TOP_OFFSET } from "../LayoutStateContext";
+import { useLayoutState, CANVAS_MIN_WIDTH, MIN_SIDE_DOCK_WIDTH, TOOLBAR_GAP, DOCK_TOP_OFFSET, STATUS_BAR_CLEARANCE } from "../LayoutStateContext";
 import { ResizeHandle } from "../ResizeHandle";
 import PropertiesPanel from "../../components/PropertiesPanel/PropertiesPanel";
 import "./dock-right.css";
@@ -37,7 +37,11 @@ export function DockRight({ hasModel }: DockRightProps) {
   // DockLeft.tsx, mismo cálculo exacto (ambos docks laterales comparten
   // el mismo `top` y se acortan igual cuando DockBottom está abierto).
   const topOffset = DOCK_TOP_OFFSET;
-  const bottomReserved = zones.bottom ? bottomDockHeight + TOOLBAR_GAP : TOOLBAR_GAP;
+  // Ver el comentario equivalente en DockLeft.tsx - ambos branches usan
+  // STATUS_BAR_CLEARANCE ahora (no solo el de DockBottom cerrado), para
+  // seguir quedando a ras del borde superior de DockBottom, que también
+  // se movió a STATUS_BAR_CLEARANCE (dock-bottom.css).
+  const bottomReserved = zones.bottom ? bottomDockHeight + STATUS_BAR_CLEARANCE : STATUS_BAR_CLEARANCE;
   const height = window.innerHeight - topOffset - bottomReserved;
 
   return (

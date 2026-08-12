@@ -82,4 +82,19 @@
   --canvas-inset: 5px;
   --canvas-width: calc(100% - var(--canvas-inset) * 2);
   --canvas-height: calc(100% - var(--canvas-inset) * 2);
+
+  /* Franja reservada sobre .status-bar (Etapa 4a) - .dock-bottom (bottom)
+     y la altura de .dock-panel/.dock-right (JS, ver STATUS_BAR_CLEARANCE
+     en LayoutStateContext.tsx) usaban var(--toolbar-gap) (20px) como
+     margen contra el borde inferior de la ventana - eso ya no alcanza
+     desde que .status-bar pasó a ser position:fixed encima del canvas
+     (bottom:var(--canvas-inset), height:26px): los tres docks terminaban
+     ~11px por debajo del borde superior real de la barra, tapándola.
+     Se deriva del tamaño real de .status-bar (--canvas-inset + su altura
+     de 26px) + 16px de aire - el mismo gap que ya separa las cápsulas
+     del toolbar de los docks arriba (top:20px + 44px de alto = 64px,
+     dock top:80px = 16px de por medio), para que el gap se lea igual
+     arriba y abajo. */
+  --status-bar-height: 26px;
+  --status-bar-clearance: calc(var(--canvas-inset) + var(--status-bar-height) + 16px);
 }
