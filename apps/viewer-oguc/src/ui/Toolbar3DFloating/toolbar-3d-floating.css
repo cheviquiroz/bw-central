@@ -21,10 +21,18 @@
    encima, en vez de necesitar quedar geométricamente arriba suyo.
    flex-direction: row, not column - a horizontal strip of 5 icon
    buttons reads as a toolbar; centered at the bottom of the screen, a
-   tall single-file column would awkwardly bisect the view instead. */
+   tall single-file column would awkwardly bisect the view instead.
+   bottom: var(--status-bar-clearance) (Etapa 4a), not the flat 16px
+   this had before - .status-bar is position:fixed at the bottom of the
+   screen too (same commit that added this token, see tokens.css), and
+   a flat 16px put this toolbar's bottom edge 15px BELOW status-bar's
+   top edge, overlapping it. --status-bar-clearance already bakes in a
+   16px gap above the bar (same reasoning, same token the docks use),
+   so the visual gap stays 16px, just measured from the real obstacle
+   now instead of from the window edge. */
 .toolbar-3d-floating {
   position: fixed;
-  bottom: 16px;
+  bottom: var(--status-bar-clearance);
   left: 50%;
   transform: translateX(-50%);
   z-index: 110;
