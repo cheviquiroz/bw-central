@@ -20,19 +20,17 @@
    .viewport-container crea al ser position:fixed desde Fase 1. */
 .orientation-cube {
   position: fixed;
-  /* right: 40px, no var(--toolbar-gap) (20px) - a pedido explícito, el
-     borde derecho (cube/toolbar-capsule-right/dock-right) ahora usa un
-     spacing propio, distinto del que sigue usando el resto (docks
-     izquierdo/inferior, top del toolbar) - ver el mismo literal 40px en
-     toolbar.css (.toolbar-capsule-right) y dock-right.css (.dock-right),
-     los 3 deben coincidir para que el borde derecho se lea alineado.
-     width/height se mantienen en 60px (no 100px): son el tamaño real de
-     la cara del cubo, atado a la constante HALF=30 en
-     OrientationCube.tsx (mitad de 60) que ya calcula las
-     transformaciones 3D de cada cara/vértice - cambiar el tamaño acá
-     sin tocar HALF desalinearía la geometría. */
+  /* right: var(--toolbar-gap) de nuevo, no el literal 40px de un commit
+     anterior - a pedido explícito, para que el borde derecho vuelva a
+     ser simétrico con left:20px (.dock-panel/.toolbar-capsule-left).
+     Mismo token que .toolbar-capsule-right (toolbar.css) y .dock-right
+     (dock-right.css) vuelven a usar. width/height se mantienen en 60px
+     (no 100px): son el tamaño real de la cara del cubo, atado a la
+     constante HALF=30 en OrientationCube.tsx (mitad de 60) que ya
+     calcula las transformaciones 3D de cada cara/vértice - cambiar el
+     tamaño acá sin tocar HALF desalinearía la geometría. */
   top: calc(var(--toolbar-clearance) + var(--toolbar-gap));
-  right: 40px;
+  right: var(--toolbar-gap);
   width: 60px;
   height: 60px;
   perspective: 600px;

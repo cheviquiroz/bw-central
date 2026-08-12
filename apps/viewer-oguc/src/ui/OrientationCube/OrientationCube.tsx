@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { IfcViewerHandles } from "../../core/IfcBootstrap";
-import { useLayoutState } from "../LayoutStateContext";
+import { useLayoutState, TOOLBAR_GAP } from "../LayoutStateContext";
 import "./orientation-cube.css";
 
 // Se deriva del tipo real en vez de importar "camera-controls" directo -
@@ -44,12 +44,6 @@ const VIEWS: Record<ViewDirection, { theta: number; phi: number }> = {
 
 const HALF = 30; // mitad del lado del cubo (60px)
 const ANIMATION_DURATION_MS = 400;
-// 40px - spacing propio del borde derecho (cube/toolbar-capsule-right/
-// dock-right), distinto de --toolbar-gap (20px, el resto del gap
-// system) desde este commit. Repetido como literal en
-// orientation-cube.css (right por defecto) y dock-right.css (right) -
-// los 3 deben coincidir para que el borde derecho se lea alineado.
-const CUBE_RIGHT_GAP = 40;
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -167,13 +161,14 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
   // (style inline) hace que ambos deriven del mismo número en el mismo
   // ciclo de render - estructuralmente no pueden desincronizarse entre
   // sí, sin necesitar leer el DOM ya pintado.
-  // CUBE_RIGHT_GAP (40px, a pedido explícito - ver orientation-cube.css)
-  // + rightWidth + CUBE_RIGHT_GAP = separación del cubo hacia el dock +
-  // el ancho real de DockRight + el gap que DockRight ya tiene hacia el
-  // borde de la ventana (dock-right.css: right:40px, mismo literal, no
-  // var(--toolbar-gap) - el borde derecho diverge del resto del gap
-  // system a propósito desde este commit). No TOOLBAR_GAP acá: ese token
-  // sigue en 20px y ya no describe el spacing de este borde.
+  // TOOLBAR_GAP + rightWidth + TOOLBAR_GAP = separación del cubo hacia
+  // el dock + el ancho real de DockRight + el gap que DockRight ya
+  // tiene hacia el borde de la ventana (dock-right.css:
+  // right:var(--toolbar-gap)). Vuelve a ser el mismo token que
+  // toolbar/docks usan en todo el resto del gap system - el borde
+  // derecho ya no diverge (un commit anterior lo separó a 40px propio,
+  // a pedido explícito; este commit revierte eso, también a pedido
+  // explícito, por simetría con el borde izquierdo).
   //
   // Portal a document.body: el cubo sigue siendo hijo de Viewport.tsx
   // (dentro de .viewport-container), que es position:fixed con su
@@ -181,7 +176,7 @@ export function OrientationCube({ controls, hasModels }: OrientationCubeProps) {
   // atraparía cualquier cambio de posición/z-index interno sin importar
   // el valor (mismo motivo que KeyboardShortcutsModal/Toolbar3DFloating/
   // LoadingOverlay ya necesitaron portal).
-  const cubeRight = zones.right ? CUBE_RIGHT_GAP * 2 + rightWidth : CUBE_RIGHT_GAP;
+  const cubeRight = zones.right ? TOOLBAR_GAP * 2 + rightWidth : TOOLBAR_GAP;
 
   return createPortal(
     <div className="orientation-cube" style={{ right: `${cubeRight}px` }}>

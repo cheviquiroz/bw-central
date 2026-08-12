@@ -12,11 +12,12 @@
    posicionar y darle el tamaño. */
 .dock-right {
   position: fixed;
-  /* 40px, no var(--toolbar-gap) (20px) - a pedido explícito, alineado
-     con .toolbar-capsule-right (toolbar.css) y .orientation-cube
-     (orientation-cube.css). left de .dock-panel (dock.css) sigue en
-     var(--toolbar-gap) sin cambios - solo el borde derecho diverge. */
-  right: 40px;
+  /* var(--toolbar-gap) de nuevo, no el literal 40px de un commit
+     anterior - a pedido explícito, para que izquierda y derecha vuelvan
+     a ser simétricas (left:20px de .dock-panel = right:20px acá). Mismo
+     token que .toolbar-capsule-right (toolbar.css) y .orientation-cube
+     (orientation-cube.css) vuelven a usar. */
+  right: var(--toolbar-gap);
   /* 80px, mismo literal y mismo motivo que .dock-panel (dock.css) - ver
      ese comentario. */
   top: 80px;
