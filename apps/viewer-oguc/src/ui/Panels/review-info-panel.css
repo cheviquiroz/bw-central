@@ -1,0 +1,100 @@
+/* src/ui/Panels/review-info-panel.css */
+@import "../../styles/dock.css";
+
+.review-info-empty {
+  margin: auto;
+  padding: 24px;
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* PreCheckGate (routes/revision/precheck-gate.css) fue diseñado para un
+   overlay fullscreen (.precheck-overlay, Layout.css - 100vw/100vh) - acá
+   vive dentro de un FloatingPanel (320-500px por default, resizable).
+   No se tocó ese CSS (compartido con /revision, no le pertenece a este
+   panel): .precheck-panel usa max-width, no width fijo, así que se reduce
+   solo al ancho real disponible sin overflow horizontal - el único costo
+   real es que se ve más apretado que en /revision a su tamaño default,
+   igual que cualquier otro contenido dentro de un panel angosto. */
+.review-info-gate-wrap {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.review-info-retry-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid var(--dock-line);
+  color: var(--dock-text-hover);
+  font-family: var(--sans);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.review-info-retry-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--dock-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dock-text-hover);
+  font-family: var(--sans);
+  font-size: 11px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.review-info-retry-btn:hover {
+  background-color: var(--dock-hover-bg);
+}
+
+.review-info-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.review-info-mode-selector {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--dock-line);
+  flex-shrink: 0;
+}
+
+.review-info-mode-btn {
+  padding: 5px 10px;
+  border: 1px solid var(--dock-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.review-info-mode-btn:hover {
+  color: var(--dock-text-hover);
+}
+
+.review-info-mode-btn.active {
+  background-color: var(--dock-selected-bg);
+  border-color: var(--dock-selected-border);
+  color: var(--dock-text-hover);
+}
+
+.review-info-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

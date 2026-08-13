@@ -12,6 +12,7 @@ import { IconPanelTree, IconPanelIssues, IconFileManager, IconSchedules, IconRev
 import { FileManager } from "../../ui/Panels/FileManager";
 import { ReviewGeometry } from "../../ui/Panels/ReviewGeometry";
 import { Schedules } from "../../ui/Panels/Schedules";
+import { ReviewInfoPanel } from "../../ui/Panels/ReviewInfoPanel";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
@@ -19,6 +20,7 @@ import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../../ui/LayoutStateContext";
 import { useModelToolActions } from "./useModelToolActions";
+import { useReviewInfoState } from "./useReviewInfoState";
 import { setModelBytes } from "../../core/ModelBytesRegistry";
 import type { ModelDisplayNames } from "../../engine/createApplication";
 import { BcfManager } from "../../viewer/bcf/BcfManager";
@@ -132,6 +134,12 @@ function LayoutInner() {
   };
 
   const hasModels = Object.keys(modelDisplayNames).length > 0;
+
+  // Etapa 4b-6 - Pre-Check/findings de review-info vive acá (Layout.tsx
+  // nunca se desmonta), no dentro de ReviewInfoPanel - ver el comentario
+  // en useReviewInfoState.ts sobre por qué (FloatingPanel desmonta sus
+  // children al cerrarse).
+  const reviewInfoState = useReviewInfoState(hasModels, modelDisplayNames);
 
   // Ctrl/Cmd+1/2/3 - sin colisión encontrada: esta app no tenía ningún
   // listener de teclado global antes de este cambio (grep de keydown en
@@ -380,8 +388,13 @@ function LayoutInner() {
             (requiresModel:true en el registry, ver registry/modules.ts).
             Etapa 4b-5: file-manager/schedules/review-geometry ya tienen
             contenido real (UI + mock data, sin lógica todavía - ver
-            src/ui/Panels/). review-info se queda como placeholder "Contenido
-            pendiente" a propósito, para Etapa 4b-6 (toca /revision).
+            src/ui/Panels/). Etapa 4b-6: review-info monta ReviewInfoPanel,
+            que reimplementa el Pre-Check gate + FindingsTable de
+            RevisionLayout.tsx con estado LOCAL propio (no delegado a la
+            ruta /revision, que sigue existiendo sin cambios - ver el
+            comentario dentro de ReviewInfoPanel.tsx sobre por qué
+            hasModels/modelDisplayNames llegan como props en vez de una
+            segunda suscripción a app.getModelDisplayNames()).
             element-info sigue sin FloatingPanel propio a propósito -
             panel-data ya lo controla vía DockRight/zones.right, ver el
             comentario en registry/modules.ts sobre por qué no se agregó
@@ -424,7 +437,12 @@ function LayoutInner() {
 
           {hasModels && (
             <FloatingPanel id="review-info" title="Info de Revisión" icon={<IconReviewInfo />}>
-              <p className="floating-panel-placeholder">Contenido pendiente</p>
+              <ReviewInfoPanel
+                searchManager={searchManager}
+                hasModels={hasModels}
+                modelDisplayNames={modelDisplayNames}
+                {...reviewInfoState}
+              />
             </FloatingPanel>
           )}
 
