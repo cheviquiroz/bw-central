@@ -25,8 +25,9 @@
 /* Header contextual: sigue mostrando categoría/nombre/modelo del elemento
    seleccionado (no se reemplaza por un título genérico "Properties" - acá
    no existía ese título estático, inventar uno hubiera sido redundante con
-   la info real que ya muestra). El botón de pin se agrega como hermano en
-   la misma fila, no como una segunda barra de header aparte. */
+   la info real que ya muestra). Etapa 4b-7: ya no tiene un botón de pin
+   como hermano (ver el comentario sobre .properties-pin más abajo) -
+   queda un solo hijo real en la fila. */
 .properties-header {
   display: flex;
   align-items: flex-start;
@@ -43,35 +44,10 @@
   overflow: hidden;
 }
 
-.properties-pin {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: var(--text-low);
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.properties-pin:hover {
-  background: #262d37;
-  color: var(--text-mid);
-}
-
-.properties-pin.active {
-  color: var(--blue);
-  background: rgba(74, 144, 217, 0.16);
-}
-
-.properties-pin svg {
-  width: 13px;
-  height: 13px;
-}
+/* .properties-pin (botón de cerrar propio) se quitó en Etapa 4b-7 junto
+   con el JSX que lo usaba - FloatingPanel (el único caller que queda,
+   ver Layout.tsx) ya provee su propio botón de cerrar, mismo criterio
+   que bcf-panel.css ya documenta para .bcf-pin-btn (Etapa 4b-3). */
 
 .prop-type {
   font-size: 11px;

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { readIfcName, readIfcPropertyValue, groupPropertySets } from "@bw-central/ifc-core";
 import { useApp } from "../../ui/AppContext";
 import type { SelectionState } from "../../engine/createApplication";
-import { IconLock } from "../../ui/icons/dock";
 import { useLayoutState } from "../../ui/LayoutStateContext";
 import "../../styles/properties.css";
 
@@ -92,7 +91,7 @@ export default function PropertiesPanel() {
   // BcfPanel (Fase 3 lo mudó a DockBottom) - este panel ocupa su ancho
   // fijo completo mientras está montado (ver properties.css), la única
   // pregunta binaria es si está montado o no.
-  const { setZoneVisible, propertiesTab: activeTab, setPropertiesTab: setActiveTab } = useLayoutState();
+  const { propertiesTab: activeTab, setPropertiesTab: setActiveTab } = useLayoutState();
 
   useEffect(() => {
     const unsubscribe = app.subscribeToSelection((newSelection) => {
@@ -219,22 +218,22 @@ export default function PropertiesPanel() {
     <div className="properties-panel">
       {/* Header contextual: siempre presente, con placeholders si no hay selección */}
       <div className="properties-header">
-        {/* Etapa 4a Fase 3 - zona de arrastre visual solamente (Etapa 4c
-            trae la lógica real). Envuelve el header contextual existente
-            en vez de agregar un label nuevo hardcodeado - el título real
-            acá es dinámico (categoría/nombre del elemento seleccionado),
-            no un "Properties" fijo como asumía el brief. */}
-        <div className="dock-drag-handle" onMouseDown={() => console.log("Drag DockRight started (not implemented yet)")}>
-          <span className="dock-drag-handle-icon" aria-hidden="true">⋮⋮</span>
-          <div className="properties-header-text">
-            <p className={`prop-type${hasSelection ? " has-selection" : ""}`}>{hasSelection ? ifcCategory : "IFCElement"}</p>
-            <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
-            <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
-          </div>
+        {/* Etapa 4b-7: el drag-handle-stub (⋮⋮, console.log, nunca tuvo
+            lógica real - Etapa 4a Fase 3) y el botón de cerrar propios se
+            quitaron acá: este panel ahora vive exclusivamente dentro de un
+            FloatingPanel (ver Layout.tsx), que ya provee su propia
+            titlebar arrastrable de verdad y su propio botón de cerrar -
+            mismo criterio que BcfPanel.tsx ya siguió en Etapa 4b-3. El
+            título real de FloatingPanel es estático ("Info del Elemento");
+            este bloque de texto SÍ se conserva (a diferencia del título de
+            BcfPanel, que era puramente redundante) porque es dinámico -
+            categoría/nombre del elemento seleccionado, información real
+            que el título estático del FloatingPanel no puede reemplazar. */}
+        <div className="properties-header-text">
+          <p className={`prop-type${hasSelection ? " has-selection" : ""}`}>{hasSelection ? ifcCategory : "IFCElement"}</p>
+          <p className={`prop-name${hasSelection ? " has-selection" : ""}`}>{hasSelection ? elementName : "Ningún elemento seleccionado"}</p>
+          <p className="prop-model">{hasSelection ? activeModelId : "—"}</p>
         </div>
-        <button className="properties-pin" onClick={() => setZoneVisible("right", false)} title="Ocultar panel">
-          <IconLock />
-        </button>
       </div>
 
       <div className="properties-tabs">

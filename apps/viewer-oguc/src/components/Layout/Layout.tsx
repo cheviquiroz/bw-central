@@ -4,11 +4,11 @@ import { useNavigate } from "react-router-dom";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
-import { DockRight } from "../../ui/Dock/DockRight";
 import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
 import { ModelTree } from "../../ui/Dock/ModelTree";
 import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
-import { IconPanelTree, IconPanelIssues, IconFileManager, IconSchedules, IconReviewInfo, IconReviewGeometry } from "../../ui/icons/toolbar";
+import PropertiesPanel from "../PropertiesPanel/PropertiesPanel";
+import { IconPanelTree, IconPanelData, IconPanelIssues, IconFileManager, IconSchedules, IconReviewInfo, IconReviewGeometry } from "../../ui/icons/toolbar";
 import { FileManager } from "../../ui/Panels/FileManager";
 import { ReviewGeometry } from "../../ui/Panels/ReviewGeometry";
 import { Schedules } from "../../ui/Panels/Schedules";
@@ -67,7 +67,26 @@ function LayoutInner() {
   // useState local ahí se perdía cada vez que el usuario colapsaba el
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { zones, toggleZone, toggleShowShortcuts, panels, togglePanel } = useLayoutState();
+  const { setZoneVisible, toggleShowShortcuts, panels, togglePanel } = useLayoutState();
+
+  // Etapa 4b-7 - element-info se migró de DockRight (zones.right) a un
+  // FloatingPanel (panels["element-info"]), así que nada en "/" vuelve a
+  // llamar setZoneVisible("right", ...)/toggleZone("right") nunca más -
+  // zones.right se quedaría trabado en su default (true, ver
+  // DEFAULT_LAYOUT_ZONES) para siempre. El único consumidor que le queda
+  // a esa flag en esta ruta es OrientationCube (corre el cubo hacia la
+  // izquierda cuando zones.right es true, asumiendo que hay un DockRight
+  // real ocupando ese espacio - ver orientation-cube.css/OrientationCube.tsx,
+  // sin cambios, siguen leyendo el context normal) - sin este fix el cubo
+  // quedaría permanentemente corrido para un dock que "/" ya nunca monta,
+  // encontrado leyendo ese archivo mientras se armaba esta migración, no
+  // reportado por el usuario. /revision tiene su propio LayoutStateProvider
+  // separado (RevisionLayoutInner) - esto no lo afecta, DockRight ahí sigue
+  // real y zones.right sigue siendo su fuente de verdad real.
+  useEffect(() => {
+    setZoneVisible("right", false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -96,8 +115,13 @@ function LayoutInner() {
     togglePanel("model-tree");
   };
 
+  // Etapa 4b-7 - mismo criterio que handleToggleTreePanel/
+  // handleToggleIssuesPanel ya siguieron para model-tree/bcf: el toggle
+  // real pasa a ser panels["element-info"], no zones.right (DockRight
+  // dejó de montarse en "/" - sigue existiendo tal cual en /revision, que
+  // no se tocó).
   const handleTogglePropertiesPanel = () => {
-    toggleZone("right");
+    togglePanel("element-info");
   };
 
   // Etapa 4b-3: BCF se mudó de DockBottom (zones.bottom) a un
@@ -285,7 +309,9 @@ function LayoutInner() {
       // comentario en handleToggleTreePanel de por qué ese pasó a ser la
       // única fuente de verdad para este botón.
       "panel-tree": { onClick: handleToggleTreePanel, isActive: panels["model-tree"].open },
-      "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
+      // isActive lee panels["element-info"].open, no zones.right (Etapa
+      // 4b-7) - mismo motivo que "panel-tree" arriba.
+      "panel-data": { onClick: handleTogglePropertiesPanel, isActive: panels["element-info"].open },
       // isActive lee panels["bcf"].open, no zones.bottom - mismo motivo
       // que "panel-tree" arriba.
       "panel-issues": { onClick: handleToggleIssuesPanel, isActive: panels["bcf"].open },
@@ -295,7 +321,7 @@ function LayoutInner() {
       "panel-schedules": { onClick: handleToggleSchedulesPanel, isActive: panels["schedules"].open },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toolModuleRuntime, zones.right, panels]
+    [toolModuleRuntime, panels]
   );
 
   const handleFilesSelected = async (files: File[]) => {
@@ -371,34 +397,23 @@ function LayoutInner() {
           hasModels={hasModels}
           moduleRuntime={moduleRuntime}
         />
-        <DockRight hasModel={hasModels} />
+        {/* Etapa 4b-7: DockRight ya NO se monta en "/" - element-info se
+            migró a un FloatingPanel (ver más abajo). DockRight.tsx en sí
+            NO se eliminó (sigue siendo real en /revision, RevisionLayout.tsx
+            lo sigue montando sin cambios). */}
 
-        {/* Etapa 4b-1/4b-2/4b-3 - infraestructura de paneles flotantes,
-            coexiste con los docks fijos que quedan (DockRight; DockLeft
-            ya tiene su propio gate contra panels["model-tree"].open más
-            arriba en el árbol). Dos paneles migrados hasta ahora:
-            model-tree (4b-1, reusa ModelTree) y bcf (4b-3, reusa
-            BcfPanel - DockBottom.tsx se eliminó en este mismo commit,
-            no le quedaba nada más que envolver). Etapa 4b-4 agrega 4
-            shells más ("Contenido pendiente" - sin migración real de
-            contenido todavía, solo el botón+panel para que el toggle
-            exista): file-manager y schedules, sin gate de hasModels
-            (mismo criterio que model-tree, panel siempre montado);
-            review-info y review-geometry, con el mismo gate que bcf
-            (requiresModel:true en el registry, ver registry/modules.ts).
-            Etapa 4b-5: file-manager/schedules/review-geometry ya tienen
-            contenido real (UI + mock data, sin lógica todavía - ver
-            src/ui/Panels/). Etapa 4b-6: review-info monta ReviewInfoPanel,
-            que reimplementa el Pre-Check gate + FindingsTable de
-            RevisionLayout.tsx con estado LOCAL propio (no delegado a la
-            ruta /revision, que sigue existiendo sin cambios - ver el
-            comentario dentro de ReviewInfoPanel.tsx sobre por qué
-            hasModels/modelDisplayNames llegan como props en vez de una
-            segunda suscripción a app.getModelDisplayNames()).
-            element-info sigue sin FloatingPanel propio a propósito -
-            panel-data ya lo controla vía DockRight/zones.right, ver el
-            comentario en registry/modules.ts sobre por qué no se agregó
-            un módulo/panel nuevo para eso acá. */}
+        {/* Etapa 4b-1..4b-7 - infraestructura de paneles flotantes.
+            model-tree (4b-1, reusa ModelTree), bcf (4b-3, reusa BcfPanel -
+            DockBottom.tsx se eliminó en ese commit), file-manager/
+            schedules/review-geometry (4b-5, UI + mock data, ver
+            src/ui/Panels/), review-info (4b-6, ReviewInfoPanel + Pre-Check
+            gate, estado en useReviewInfoState.ts - ver ese archivo sobre
+            por qué NO vive dentro del panel), element-info (4b-7, reusa
+            PropertiesPanel - DockRight ya no se monta en "/", ver el
+            comentario arriba). file-manager/schedules/model-tree sin gate
+            de hasModels (siempre montados); element-info/bcf/review-info/
+            review-geometry SÍ lo tienen (requiresModel:true en el
+            registry, ver registry/modules.ts). */}
         {/* Sin este gate, el panel BCF flotante solo se guarda por
             panels["bcf"].open (default false - LayoutStateContext.tsx),
             pero ese valor persiste en localStorage
@@ -410,6 +425,12 @@ function LayoutInner() {
           <FloatingPanel id="model-tree" title="Árbol de Modelos" icon={<IconPanelTree />}>
             <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
           </FloatingPanel>
+
+          {hasModels && (
+            <FloatingPanel id="element-info" title="Info del Elemento" icon={<IconPanelData />}>
+              <PropertiesPanel />
+            </FloatingPanel>
+          )}
 
           {hasModels && (
             <FloatingPanel id="bcf" title="Gestor de BCF" icon={<IconPanelIssues />}>
