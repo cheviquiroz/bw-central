@@ -6,6 +6,9 @@ import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
 import { DockRight } from "../../ui/Dock/DockRight";
 import { DockBottom } from "../../ui/Dock/DockBottom";
+import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
+import { ModelTree } from "../../ui/Dock/ModelTree";
+import { IconPanelTree } from "../../ui/icons/toolbar";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
@@ -59,7 +62,7 @@ function LayoutInner() {
   // useState local ahí se perdía cada vez que el usuario colapsaba el
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { zones, toggleZone, toggleShowShortcuts } = useLayoutState();
+  const { zones, toggleZone, toggleShowShortcuts, panels, togglePanel } = useLayoutState();
 
   const handleToggleElementVisibility = (modelId: string, localId: number) => {
     setHiddenByModel((prev) => {
@@ -76,8 +79,16 @@ function LayoutInner() {
     });
   };
 
+  // Etapa 4b-1 - este mismo botón/atajo (Ctrl+1, ya existente) pasa a
+  // controlar el panel flotante piloto (panels["model-tree"]) en vez de
+  // zones.left: es la fuente de verdad ÚNICA que decide si se ve el
+  // árbol de modelos, no dos toggles independientes que habría que
+  // mantener sincronizados. zones.left se queda sin usar por este botón
+  // a propósito (sigue existiendo en el contexto, sin tocar, por si algo
+  // más la necesita) - ver el gate de <DockLeft> más abajo, que ahora
+  // también depende de panels["model-tree"].open, no de zones.left.
   const handleToggleTreePanel = () => {
-    toggleZone("left");
+    togglePanel("model-tree");
   };
 
   const handleTogglePropertiesPanel = () => {
@@ -237,12 +248,15 @@ function LayoutInner() {
       "bcf-export": { onClick: handleExportBcf },
       "bcf-create": { onClick: () => setCreateDialogOpen(true) },
       "start-review": { onClick: handleStartReview },
-      "panel-tree": { onClick: handleToggleTreePanel, isActive: zones.left },
+      // isActive lee panels["model-tree"].open, no zones.left - ver el
+      // comentario en handleToggleTreePanel de por qué ese pasó a ser la
+      // única fuente de verdad para este botón.
+      "panel-tree": { onClick: handleToggleTreePanel, isActive: panels["model-tree"].open },
       "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
       "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.bottom },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toolModuleRuntime, zones.left, zones.right, zones.bottom]
+    [toolModuleRuntime, zones.right, zones.bottom, panels]
   );
 
   const handleFilesSelected = async (files: File[]) => {
@@ -340,6 +354,24 @@ function LayoutInner() {
             onCreateTopicSubmit={handleCreateTopicSubmit}
           />
         )}
+
+        {/* Etapa 4b-1 - infraestructura de paneles flotantes, coexiste
+            con los docks fijos de arriba (no se tocan en esta fase salvo
+            DockLeft, ver su propio gate contra panels["model-tree"].open
+            más arriba en el árbol). Solo UN panel piloto en esta fase
+            (model-tree, reusando el ModelTree real que DockLeft ya usa) -
+            element-info/bcf/file-manager/review-info/review-geometry/
+            schedules quedan para fases futuras, a propósito, no acá.
+            Sin el resto del chrome de DockHeader (ej. el botón "+" de
+            agregar IFC) - FloatingPanel tiene su propio titlebar
+            genérico, no el de DockHeader; portar esa funcionalidad
+            puntual queda para cuando este panel reemplace a DockLeft de
+            verdad. */}
+        <div className="panel-layer">
+          <FloatingPanel id="model-tree" title="Árbol de Modelos" icon={<IconPanelTree />}>
+            <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
+          </FloatingPanel>
+        </div>
       </main>
 
       {/* 5. STATUSBAR */}

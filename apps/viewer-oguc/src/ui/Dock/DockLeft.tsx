@@ -43,7 +43,7 @@ interface DockLeftProps {
 
 export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }: DockLeftProps) {
   const app = useApp();
-  const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth, bottomDockHeight } = useLayoutState();
+  const { zones, setZoneVisible, leftWidth, setLeftWidth, rightWidth, bottomDockHeight, panels } = useLayoutState();
   const [loading, setLoading] = useState(false);
   const [progressMessage, setProgressMessage] = useState("");
   // web-ifc's own progress reporting is coarse (a handful of discrete
@@ -109,7 +109,12 @@ export function DockLeft({ hiddenByModel, onToggleElementVisibility, hasModel }:
     }
   };
 
-  if (!zones.left || !hasModel) return null;
+  // Etapa 4b-1: mientras el panel flotante piloto (panels["model-tree"],
+  // FloatingPanel.tsx) esté abierto, este dock NO renderiza - evita
+  // mostrar el mismo árbol dos veces. zones.left sigue existiendo y sin
+  // tocar (el toggle real ahora es togglePanel("model-tree"), ver
+  // Layout.tsx), pero deja de ser la única condición que decide esto.
+  if (!zones.left || !hasModel || panels["model-tree"].open) return null;
 
   // Máximo dinámico: lo que queda de la ventana después del piso del
   // canvas (480px) y del otro dock lateral, SI está montado (su gutter

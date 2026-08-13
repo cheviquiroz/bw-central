@@ -18,6 +18,26 @@ import type { LayoutZones, PropertiesTab } from "./layoutPersistence";
 
 export type { LayoutZones };
 
+// Etapa 4b-1 - tipos del panel state, definidos ACÁ (no en
+// layoutPersistence.ts, a diferencia de LayoutZones) porque su
+// persistencia vive en una key de localStorage propia y separada
+// ("bwise-panels-state-v1", ver más abajo), no en el mismo blob
+// versionado que zones/anchos/alturas - no hay ciclo de import que
+// evitar moviéndolos a otro archivo, así que se quedan donde se usan.
+export type PanelId = "model-tree" | "file-manager" | "element-info" | "bcf" | "review-info" | "review-geometry" | "schedules";
+
+export interface PanelPosition {
+  open: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
+  dock: "free" | "left" | "right" | "bottom";
+}
+
+export type PanelState = Record<PanelId, PanelPosition>;
+
 export const DEFAULT_LAYOUT_ZONES: LayoutZones = { left: true, right: true, bottom: false };
 
 // Fase 5a: por debajo de este ancho, arrancar con los dos paneles
@@ -97,6 +117,148 @@ export const DOCK_TOP_OFFSET = 80;
 // 16px gap), not just the old flat 20px.
 export const STATUS_BAR_CLEARANCE = 47; // 5 (canvas-inset) + 26 (status-bar height) + 16 (gap)
 
+// Etapa 4b-1: infraestructura de paneles flotantes (FloatingPanel.tsx) -
+// coexiste con los docks fijos por ahora (DockLeft/DockRight/DockBottom
+// no se tocan en esta fase salvo model-tree, ver Layout.tsx). Todos
+// arrancan cerrados (open:false) - a diferencia de zones (left/right
+// visibles por default), no hay razón todavía para que un panel
+// flotante nuevo aparezca solo: el usuario lo abre a mano. Los 7 ids
+// existen ya (tipos completos) aunque solo "model-tree" tiene una
+// FloatingPanel real montada en esta fase - así el shape persistido no
+// necesita volver a migrar cuando el resto se complete más adelante.
+const PANEL_IDS: PanelId[] = ["model-tree", "file-manager", "element-info", "bcf", "review-info", "review-geometry", "schedules"];
+
+// Key propia, versionada y separada del blob de layoutPersistence.ts (a
+// pedido explícito) - "v1" porque es la primera vez que este shape
+// existe, no una migración de algo anterior.
+const PANELS_STORAGE_KEY = "bwise-panels-state-v1";
+
+function isValidPanelPosition(value: unknown): value is PanelPosition {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as PanelPosition;
+  return (
+    typeof candidate.open === "boolean" &&
+    Number.isFinite(candidate.x) &&
+    Number.isFinite(candidate.y) &&
+    Number.isFinite(candidate.width) &&
+    Number.isFinite(candidate.height) &&
+    Number.isFinite(candidate.zIndex) &&
+    (candidate.dock === "free" || candidate.dock === "left" || candidate.dock === "right" || candidate.dock === "bottom")
+  );
+}
+
+interface PersistedPanelsState {
+  panels: PanelState;
+  maxZ: number;
+}
+
+function isValidPersistedPanelsState(value: unknown): value is PersistedPanelsState {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<PersistedPanelsState>;
+  if (typeof candidate.maxZ !== "number" || !Number.isFinite(candidate.maxZ)) return false;
+  if (typeof candidate.panels !== "object" || candidate.panels === null) return false;
+  const panels = candidate.panels as Partial<PanelState>;
+  return PANEL_IDS.every((id) => isValidPanelPosition(panels[id]));
+}
+
+// Defensivo por diseño (try/catch, nunca lanza) - mismo criterio que
+// loadPersistedLayout/savePersistedLayout en layoutPersistence.ts:
+// persistir esto es un nice-to-have, nunca debe romper la app (quota
+// excedida, modo privado, localStorage deshabilitado, JSON corrupto,
+// shape de una versión vieja - todos caen a null/no-op).
+function loadPersistedPanelsState(): PersistedPanelsState | null {
+  try {
+    const raw = window.localStorage.getItem(PANELS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isValidPersistedPanelsState(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedPanelsState(state: PersistedPanelsState): void {
+  try {
+    window.localStorage.setItem(PANELS_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ver el comentario de loadPersistedPanelsState.
+  }
+}
+
+const FLOATING_PANEL_BASE_X = CANVAS_INSET + 15; // ~20px, mismo inset visual que los docks fijos usan hoy
+const FLOATING_PANEL_BASE_Y = DOCK_TOP_OFFSET; // debajo del toolbar, mismo top que los docks fijos
+const FLOATING_PANEL_WIDTH = 320;
+const FLOATING_PANEL_HEIGHT = 500;
+const FLOATING_PANEL_GAP = 16;
+const FLOATING_PANEL_BOTTOM_MARGIN = 60;
+const FLOATING_PANEL_CASCADE_STEP = 28;
+const FLOATING_PANEL_BASE_Z = 20;
+
+function makeDefaultPanelPosition(): PanelPosition {
+  return {
+    open: false,
+    x: FLOATING_PANEL_BASE_X,
+    y: FLOATING_PANEL_BASE_Y,
+    width: FLOATING_PANEL_WIDTH,
+    height: FLOATING_PANEL_HEIGHT,
+    zIndex: FLOATING_PANEL_BASE_Z,
+    dock: "free",
+  };
+}
+
+function makeDefaultPanels(): PanelState {
+  return Object.fromEntries(PANEL_IDS.map((id) => [id, makeDefaultPanelPosition()])) as PanelState;
+}
+
+// Cascada en apertura: los primeros DOS paneles abiertos reparten la
+// columna izquierda en mitades apiladas (arriba/abajo); del tercero en
+// adelante, cascada libre (cada uno 28px más abajo/a la derecha que el
+// anterior) - mismo criterio visual que cualquier gestor de ventanas de
+// escritorio usa para no apilar N ventanas exactamente una encima de
+// otra. `openIndex` es la posición de ESTE panel dentro de la lista de
+// paneles que van a quedar abiertos DESPUÉS de esta apertura (se lo pasa
+// togglePanel ya calculado, ver más abajo) - no lee zIndex/maxZ para
+// decidir el layout, solo para el z-index final de la ficha misma.
+function calculateInitialPosition(openIndex: number, nextMaxZ: number): PanelPosition {
+  const availableHeight = window.innerHeight - FLOATING_PANEL_BASE_Y - FLOATING_PANEL_BOTTOM_MARGIN;
+
+  if (openIndex === 0) {
+    return {
+      open: true,
+      x: FLOATING_PANEL_BASE_X,
+      y: FLOATING_PANEL_BASE_Y,
+      width: FLOATING_PANEL_WIDTH,
+      height: availableHeight / 2,
+      zIndex: nextMaxZ,
+      dock: "free",
+    };
+  }
+
+  if (openIndex === 1) {
+    const firstPanelHeight = availableHeight / 2;
+    return {
+      open: true,
+      x: FLOATING_PANEL_BASE_X,
+      y: FLOATING_PANEL_BASE_Y + firstPanelHeight + FLOATING_PANEL_GAP,
+      width: FLOATING_PANEL_WIDTH,
+      height: availableHeight / 2 - FLOATING_PANEL_GAP,
+      zIndex: nextMaxZ,
+      dock: "free",
+    };
+  }
+
+  const cascadeOffset = (openIndex - 2) * FLOATING_PANEL_CASCADE_STEP;
+  return {
+    open: true,
+    x: FLOATING_PANEL_BASE_X + cascadeOffset,
+    y: FLOATING_PANEL_BASE_Y + cascadeOffset,
+    width: FLOATING_PANEL_WIDTH,
+    height: FLOATING_PANEL_HEIGHT,
+    zIndex: nextMaxZ,
+    dock: "free",
+  };
+}
+
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
 
 // Fase 5b: lo persistido (si existe y tiene un shape válido - ver
@@ -115,6 +277,14 @@ function getInitialLayout() {
   };
 }
 
+// Independiente de getInitialLayout() - key de localStorage propia (ver
+// PANELS_STORAGE_KEY), así que se lee/cae a defaults por separado.
+function getInitialPanelsState(): PersistedPanelsState {
+  const persisted = loadPersistedPanelsState();
+  if (persisted) return persisted;
+  return { panels: makeDefaultPanels(), maxZ: FLOATING_PANEL_BASE_Z };
+}
+
 interface LayoutStateContextType {
   zones: LayoutZones;
   setZoneVisible: (zone: keyof LayoutZones, visible: boolean) => void;
@@ -130,6 +300,12 @@ interface LayoutStateContextType {
   /** KeyboardShortcutsModal visibility - transient UI state, not persisted (see the save effect below, which deliberately doesn't include it). */
   showShortcuts: boolean;
   toggleShowShortcuts: () => void;
+  /** Etapa 4b-1 - ver FloatingPanel.tsx. Persistido aparte (bwise-panels-state-v1), no en este mismo objeto - ver el comentario en PANELS_STORAGE_KEY. */
+  panels: PanelState;
+  maxZ: number;
+  togglePanel: (id: PanelId) => void;
+  updatePanelPosition: (id: PanelId, updates: Partial<PanelPosition>) => void;
+  bringToFront: (id: PanelId) => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
@@ -149,6 +325,11 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   const [rightWidth, setRightWidth] = useState<number>(initialLayout.rightWidth);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const toggleShowShortcuts = () => setShowShortcuts((prev) => !prev);
+  // Lazy initializer propio, misma razón que initialLayout arriba - y
+  // separado de él porque lee de su propia key de localStorage.
+  const [initialPanelsState] = useState(getInitialPanelsState);
+  const [panels, setPanels] = useState<PanelState>(initialPanelsState.panels);
+  const [maxZ, setMaxZ] = useState<number>(initialPanelsState.maxZ);
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -158,12 +339,50 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
     setZones((prev) => ({ ...prev, [zone]: !prev[zone] }));
   };
 
+  // Cerrar nunca recalcula nada - solo apaga `open`, conservando x/y/
+  // width/height/zIndex tal como estaban (relevante desde Etapa 4b-2,
+  // cuando esos valores empiecen a venir de un drag/resize real, no solo
+  // del cálculo en cascada). Abrir SÍ recalcula posición: openIndex es la
+  // cantidad de paneles que van a quedar abiertos DESPUÉS de este menos
+  // uno (este mismo panel incluido, al final de esa lista) - el orden de
+  // apertura, no el orden fijo de PANEL_IDS, es lo que decide dónde cae
+  // cada uno en la cascada.
+  const togglePanel = (id: PanelId) => {
+    setPanels((prev) => {
+      const isOpening = !prev[id].open;
+      if (!isOpening) {
+        return { ...prev, [id]: { ...prev[id], open: false } };
+      }
+      const openCountBefore = Object.values(prev).filter((p) => p.open).length;
+      const nextMaxZ = maxZ + 1;
+      setMaxZ(nextMaxZ);
+      return { ...prev, [id]: calculateInitialPosition(openCountBefore, nextMaxZ) };
+    });
+  };
+
+  const updatePanelPosition = (id: PanelId, updates: Partial<PanelPosition>) => {
+    setPanels((prev) => ({ ...prev, [id]: { ...prev[id], ...updates } }));
+  };
+
+  const bringToFront = (id: PanelId) => {
+    const nextMaxZ = maxZ + 1;
+    setMaxZ(nextMaxZ);
+    updatePanelPosition(id, { zIndex: nextMaxZ });
+  };
+
   // Escribe en cada cambio, no solo al desmontar - esta app nunca se
   // desmonta en uso normal (es la app entera), así que "guardar al salir"
   // significaría, en la práctica, nunca guardar nada.
   useEffect(() => {
     savePersistedLayout({ zones, propertiesTab, bottomDockHeight, leftWidth, rightWidth });
   }, [zones, propertiesTab, bottomDockHeight, leftWidth, rightWidth]);
+
+  // Efecto separado, key separada (PANELS_STORAGE_KEY) - mismo criterio
+  // que el de arriba, pero panels/maxZ no viven en el blob de
+  // layoutPersistence.ts (a pedido explícito, ver ese comentario).
+  useEffect(() => {
+    savePersistedPanelsState({ panels, maxZ });
+  }, [panels, maxZ]);
 
   return (
     <LayoutStateContext.Provider
@@ -181,6 +400,11 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
         setRightWidth,
         showShortcuts,
         toggleShowShortcuts,
+        panels,
+        maxZ,
+        togglePanel,
+        updatePanelPosition,
+        bringToFront,
       }}
     >
       {children}
