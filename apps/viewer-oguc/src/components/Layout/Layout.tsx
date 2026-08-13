@@ -8,7 +8,7 @@ import { DockRight } from "../../ui/Dock/DockRight";
 import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
 import { ModelTree } from "../../ui/Dock/ModelTree";
 import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
-import { IconPanelTree, IconPanelIssues } from "../../ui/icons/toolbar";
+import { IconPanelTree, IconPanelIssues, IconFileManager, IconSchedules, IconReviewInfo, IconReviewGeometry } from "../../ui/icons/toolbar";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
@@ -107,6 +107,25 @@ function LayoutInner() {
 
   const handleStartReview = () => {
     navigate("/revision");
+  };
+
+  // Etapa 4b-4 - 4 paneles nuevos, ninguno migrado todavía (son shells
+  // "Contenido pendiente", ver el panel-layer más abajo) - mismo patrón
+  // togglePanel(id) que model-tree/bcf ya usan, no un mecanismo nuevo.
+  const handleToggleFileManagerPanel = () => {
+    togglePanel("file-manager");
+  };
+
+  const handleToggleReviewInfoPanel = () => {
+    togglePanel("review-info");
+  };
+
+  const handleToggleReviewGeometryPanel = () => {
+    togglePanel("review-geometry");
+  };
+
+  const handleToggleSchedulesPanel = () => {
+    togglePanel("schedules");
   };
 
   const hasModels = Object.keys(modelDisplayNames).length > 0;
@@ -259,6 +278,10 @@ function LayoutInner() {
       // isActive lee panels["bcf"].open, no zones.bottom - mismo motivo
       // que "panel-tree" arriba.
       "panel-issues": { onClick: handleToggleIssuesPanel, isActive: panels["bcf"].open },
+      "panel-file-manager": { onClick: handleToggleFileManagerPanel, isActive: panels["file-manager"].open },
+      "panel-review-info": { onClick: handleToggleReviewInfoPanel, isActive: panels["review-info"].open },
+      "panel-review-geometry": { onClick: handleToggleReviewGeometryPanel, isActive: panels["review-geometry"].open },
+      "panel-schedules": { onClick: handleToggleSchedulesPanel, isActive: panels["schedules"].open },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [toolModuleRuntime, zones.right, panels]
@@ -345,9 +368,17 @@ function LayoutInner() {
             arriba en el árbol). Dos paneles migrados hasta ahora:
             model-tree (4b-1, reusa ModelTree) y bcf (4b-3, reusa
             BcfPanel - DockBottom.tsx se eliminó en este mismo commit,
-            no le quedaba nada más que envolver). element-info/
-            file-manager/review-info/review-geometry/schedules quedan
-            para fases futuras, a propósito, no acá. */}
+            no le quedaba nada más que envolver). Etapa 4b-4 agrega 4
+            shells más ("Contenido pendiente" - sin migración real de
+            contenido todavía, solo el botón+panel para que el toggle
+            exista): file-manager y schedules, sin gate de hasModels
+            (mismo criterio que model-tree, panel siempre montado);
+            review-info y review-geometry, con el mismo gate que bcf
+            (requiresModel:true en el registry, ver registry/modules.ts).
+            element-info sigue sin FloatingPanel propio a propósito -
+            panel-data ya lo controla vía DockRight/zones.right, ver el
+            comentario en registry/modules.ts sobre por qué no se agregó
+            un módulo/panel nuevo para eso acá. */}
         {/* Sin este gate, el panel BCF flotante solo se guarda por
             panels["bcf"].open (default false - LayoutStateContext.tsx),
             pero ese valor persiste en localStorage
@@ -373,6 +404,26 @@ function LayoutInner() {
                 onCreateDialogClose={() => setCreateDialogOpen(false)}
                 onCreateTopicSubmit={handleCreateTopicSubmit}
               />
+            </FloatingPanel>
+          )}
+
+          <FloatingPanel id="file-manager" title="Gestor de Archivos" icon={<IconFileManager />}>
+            <p className="floating-panel-placeholder">Contenido pendiente</p>
+          </FloatingPanel>
+
+          <FloatingPanel id="schedules" title="Itemizados" icon={<IconSchedules />}>
+            <p className="floating-panel-placeholder">Contenido pendiente</p>
+          </FloatingPanel>
+
+          {hasModels && (
+            <FloatingPanel id="review-info" title="Info de Revisión" icon={<IconReviewInfo />}>
+              <p className="floating-panel-placeholder">Contenido pendiente</p>
+            </FloatingPanel>
+          )}
+
+          {hasModels && (
+            <FloatingPanel id="review-geometry" title="Geometría de Revisión" icon={<IconReviewGeometry />}>
+              <p className="floating-panel-placeholder">Contenido pendiente</p>
             </FloatingPanel>
           )}
         </div>

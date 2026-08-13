@@ -119,6 +119,17 @@
   min-height: 0;
 }
 
+/* Etapa 4b-4 - contenido de los 4 shells todavía sin migrar
+   (file-manager/review-info/review-geometry/schedules). */
+.floating-panel-placeholder {
+  margin: auto;
+  padding: 24px;
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* Etapa 4b-2 - 8 handles de resize. Viven 100% ADENTRO del borde del
    panel (top:0, no top:-2px), nunca a caballo sobre él - .floating-panel
    tiene overflow:hidden (arriba), que recorta el hit-testing de

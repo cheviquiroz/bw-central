@@ -28,6 +28,10 @@ import {
   IconPanelData,
   IconPanelIssues,
   IconCheckCircle,
+  IconFileManager,
+  IconReviewInfo,
+  IconReviewGeometry,
+  IconSchedules,
 } from "../icons/toolbar";
 
 /**
@@ -293,6 +297,67 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     requiresModel: true,
     tier: "free",
     shortcut: "Ctrl+3",
+  },
+
+  // Etapa 4b-4 - 4 módulos nuevos para los paneles que todavía no
+  // existían como botón de toolbar (file-manager/review-info/
+  // review-geometry/schedules). "element-info" NO se agrega acá a
+  // propósito: ya existe como "panel-data" arriba, pero ese botón sigue
+  // controlando DockRight/zones.right (el dock fijo real), no
+  // panels["element-info"] (que existe en el tipo PanelId desde 4b-1
+  // pero no tiene ningún FloatingPanel montado todavía - ver
+  // LayoutStateContext.tsx). Agregar un segundo botón que llamara a
+  // togglePanel("element-info") habría creado exactamente el "segundo
+  // sistema de botones compitiendo" que este brief pide evitar: dos
+  // toggles con el mismo label conceptual ("info del elemento"), uno
+  // real (panel-data) y uno mudo (no dibuja nada). Cuando element-info
+  // se migre de verdad a FloatingPanel, panel-data es el módulo que debe
+  // apuntar a togglePanel("element-info") en vez de toggleZone("right") -
+  // no un módulo nuevo.
+  //
+  // requiresModel: el brief pedía "siempre habilitado" para
+  // model-tree/bcf, pero panel-tree/panel-issues (arriba) ya tienen
+  // requiresModel:true por una razón real y documentada (ver el
+  // comentario sobre FileUploadModal más arriba en este archivo) - no se
+  // tocó esa regla existente acá. file-manager y schedules sí se dejan
+  // sin requiresModel (true "siempre habilitado", sin precedente en
+  // conflicto); review-info/review-geometry sí lo requieren, siguiendo
+  // el mismo criterio ya establecido para el resto del grupo workspace.
+  {
+    id: "panel-file-manager",
+    label: "Gestor de archivos",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconFileManager,
+    requiresModel: false,
+    tier: "free",
+  },
+  {
+    id: "panel-review-info",
+    label: "Info de revisión",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconReviewInfo,
+    requiresModel: true,
+    tier: "free",
+  },
+  {
+    id: "panel-review-geometry",
+    label: "Geometría de revisión",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconReviewGeometry,
+    requiresModel: true,
+    tier: "free",
+  },
+  {
+    id: "panel-schedules",
+    label: "Itemizados",
+    intent: "workspace",
+    kind: "toggle",
+    icon: IconSchedules,
+    requiresModel: false,
+    tier: "free",
   },
 ];
 
