@@ -1,7 +1,6 @@
 // src/ui/BcfPanel/BcfPanel.tsx
 import { useEffect, useState } from "react";
 import type { BcfFilterStatus, BcfManagerState, BcfPriority, BcfTopic } from "../../viewer/bcf/types/bcf";
-import { IconLock } from "../icons/dock";
 import { IssueTable } from "./IssueTable";
 import { BcfDetailPanel } from "./BcfDetailPanel";
 import { CreateTopicDialog } from "./CreateTopicDialog";
@@ -28,8 +27,6 @@ interface BcfPanelProps {
   onTopicActivate: (topic: BcfTopic, viewpointIndex?: number) => void;
   moduleRuntime: ModuleRuntimeMap;
   hasModel: boolean;
-  /** Fase 3: este panel ya no controla su propia visibilidad (era zones.right, compartido con PropertiesPanel) - ahora vive en DockBottom, que le pasa el toggle de zones.bottom. */
-  onClose: () => void;
   /**
    * Dialog visibility + submit live in Layout.tsx (the "bcf-create"
    * module's onClick sets it, via moduleRuntime, same as every other
@@ -49,7 +46,6 @@ export function BcfPanel({
   onTopicActivate,
   moduleRuntime,
   hasModel,
-  onClose,
   createDialogOpen,
   onCreateDialogClose,
   onCreateTopicSubmit,
@@ -69,15 +65,17 @@ export function BcfPanel({
 
   return (
     <div className="bcf-panel">
+      {/* Etapa 4b-3 - título/drag/close propios (dock-drag-handle,
+          .bcf-title, .bcf-pin-btn) se quitaron de acá: el único caller
+          que queda (FloatingPanel, ver Layout.tsx - DockBottom.tsx, el
+          otro caller, se eliminó en este mismo commit) ya provee los
+          tres en su propio titlebar (título real "Gestor de BCF" pasado
+          ahí, drag real desde Etapa 4b-2, botón de cerrar que llama
+          updatePanelPosition). Mantener los de acá hubiera duplicado
+          los tres. Las acciones reales (Import/Export/Create BCF +
+          FilterBar) SÍ se quedan - no tienen equivalente en
+          FloatingPanel, que no sabe nada de BCF en particular. */}
       <div className="bcf-header">
-        {/* Etapa 4a Fase 3 - zona de arrastre visual solamente (Etapa 4c
-            trae la lógica real). Envuelve el título existente en vez de
-            duplicarlo con el label hardcodeado del brief ("Issues / BCF" -
-            el título real es "Incidencias BCF"). */}
-        <div className="dock-drag-handle" onMouseDown={() => console.log("Drag DockBottom started (not implemented yet)")}>
-          <span className="dock-drag-handle-icon" aria-hidden="true">⋮⋮</span>
-          <h3 className="bcf-title">Incidencias BCF</h3>
-        </div>
         {state.isNewProject && <span className="badge-new-bcf">BCF (sin guardar)</span>}
         <div className="bcf-header-actions">
           {BCF_PANEL_MODULES.map((module) => {
@@ -106,9 +104,6 @@ export function BcfPanel({
             filteredCount={filteredTopics.length}
             onFilterChange={onFilterChange}
           />
-          <button className="bcf-pin-btn" onClick={onClose} title="Ocultar panel">
-            <IconLock />
-          </button>
         </div>
       </div>
 

@@ -50,47 +50,10 @@
   white-space: nowrap;
 }
 
-.bcf-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-low);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.bcf-pin-btn {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  color: var(--text-low);
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-}
-
-.bcf-pin-btn:hover {
-  background: #262d37;
-  color: var(--text-mid);
-}
-
-.bcf-pin-btn.active {
-  color: var(--blue);
-  background: rgba(74, 144, 217, 0.16);
-}
-
-.bcf-pin-btn svg {
-  width: 13px;
-  height: 13px;
-}
+/* .bcf-title/.bcf-pin-btn (título/cerrar propios de este panel) se
+   quitaron en Etapa 4b-3 junto con el JSX que los usaba - FloatingPanel
+   (el único caller que queda, ver BcfPanel.tsx) ya provee su propio
+   título y botón de cerrar. */
 
 /* Fase 3: el filtro ya no ocupa una fila propia con border-bottom - vive
    inline dentro de .bcf-header-actions, junto a Importar/Exportar y el

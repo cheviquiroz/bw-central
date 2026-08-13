@@ -19,6 +19,7 @@
  *   z-index: 90/200 = Orientation Cube (90 normal, 200 si DockRight abierto)
  *   z-index: 100    = Los 3 docks (.dock-panel/.dock-right/.dock-bottom)
  *   z-index: 110    = Toolbar 3D flotante (Toolbar3DFloating)
+ *   z-index: 120    = Paneles flotantes (.panel-layer - model-tree, bcf)
  *   z-index: 150    = Pre-check overlay (solo /revision)
  *   z-index: 300    = Tooltip
  *   z-index: 500    = Toast

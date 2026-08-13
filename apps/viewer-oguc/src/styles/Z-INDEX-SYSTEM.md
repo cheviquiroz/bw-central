@@ -21,6 +21,7 @@ gana; actualizar este archivo en el mismo commit que cambie un z-index.
 | 90 / 200 | `.orientation-cube` (90 normal, 200 cuando `zones.right`) | `orientation-cube.css` + inline style | **sí** |
 | 100 | `.dock-panel` (DockLeft) / `.dock-right` / `.dock-bottom` | `dock.css` / `dock-right.css` / `dock-bottom.css` | no |
 | 110 | `.toolbar-3d-floating` | `toolbar-3d-floating.css` | **sí** |
+| 120 | `.panel-layer` (paneles flotantes: model-tree, bcf) | `Layout.css` | no (sube el valor de la CAPA en vez de portar cada panel - ver Etapa 4b-3 en "Cambios históricos") |
 | 150 | `.precheck-overlay` (solo `/revision`) | `Layout.css` | no (no lo necesita, ver más abajo) |
 | 300 | `.tooltip` | `tooltip.css` | no |
 | 500 | `.toast` | `toast.css` | no |
@@ -123,3 +124,14 @@ portal.
 - **Etapa 4a Fase 3:** este documento; `LoadingOverlay` portado (mismo
   bug de stacking context, encontrado al escribir esta tabla contra el
   código real, no reportado por el usuario).
+- **Etapa 4b-3:** BCF migrado de `DockBottom` (fijo) a un
+  `FloatingPanel` (`.panel-layer`) - `.panel-layer` subió de
+  `z-index:20` a `120`: al ser `position:absolute` con un z-index
+  numérico real, ya creaba un stacking context desde Etapa 4b-1, y
+  cualquier panel flotante quedaba topeado a rank 20 contra los docks
+  fijos (100) cuando ambos ocupaban el mismo píxel - encontrado con un
+  hit-test real (BCF recién abierto, en su posición default, coincidía
+  con la de DockLeft; `elementFromPoint` devolvía el dock). Se subió el
+  z-index de la CAPA entera, no se portó cada panel individualmente -
+  los paneles flotantes son la capa que reemplaza a los docks, tiene
+  sentido que ganen todos por diseño, no caso por caso.

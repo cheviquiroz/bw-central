@@ -72,10 +72,25 @@ body {
    en la capa + auto en cada hijo real, mismo patrón que .toolbar-capsule
    ya usa (toolbar.css) - dejar pasar clicks al canvas en las zonas donde
    no hay ningún panel abierto. */
+/* z-index:120, no 20 (Etapa 4b-3 fix) - position:absolute + un z-index
+   numérico real crea un stacking context (mismo mecanismo ya encontrado
+   4 veces en Etapa 4a: KeyboardShortcutsModal/Toolbar3DFloating/
+   OrientationCube/LoadingOverlay), así que CUALQUIER .floating-panel
+   adentro queda topeado al rank de ESTE elemento visto desde afuera, sin
+   importar qué tan alto sea su propio zIndex interno (panelState.zIndex,
+   20-30ish, LayoutStateContext.tsx) - contra .dock-panel/.dock-right
+   (100, siguen siendo position:fixed), z-index:20 perdía. Confirmado con
+   un hit-test real (BCF recién abierto en su posición default, que
+   coincide con la de DockLeft: elementFromPoint devolvía el dock, no el
+   panel flotante). 120 gana a los tres docks fijos (100) y a
+   Toolbar3DFloating (110) - los paneles flotantes, la capa que
+   eventualmente reemplaza a los docks, ganan por diseño. El ordenamiento
+   ENTRE paneles flotantes (bringToFront/maxZ) sigue funcionando igual,
+   son valores relativos DENTRO de este mismo stacking context. */
 .panel-layer {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: 120;
   pointer-events: none;
 }
 

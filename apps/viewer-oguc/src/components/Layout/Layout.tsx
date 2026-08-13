@@ -5,10 +5,10 @@ import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
 import { DockRight } from "../../ui/Dock/DockRight";
-import { DockBottom } from "../../ui/Dock/DockBottom";
 import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
 import { ModelTree } from "../../ui/Dock/ModelTree";
-import { IconPanelTree } from "../../ui/icons/toolbar";
+import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
+import { IconPanelTree, IconPanelIssues } from "../../ui/icons/toolbar";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
@@ -95,11 +95,14 @@ function LayoutInner() {
     toggleZone("right");
   };
 
-  // Fase 3: Incidencias se mudó a su propia zona (DockBottom), ya no
-  // comparte "right" con Properties vía tabs - toggleZone("bottom") es
-  // ahora un toggle de visibilidad simple, igual que los otros dos.
+  // Etapa 4b-3: BCF se mudó de DockBottom (zones.bottom) a un
+  // FloatingPanel (panels["bcf"]) - mismo criterio que
+  // handleToggleTreePanel ya siguió para model-tree en 4b-1: el toggle
+  // real pasa a ser la única fuente de verdad, no dos estados
+  // sincronizados a mano. zones.bottom se queda sin usar por este botón
+  // a propósito (nada más lo necesita hoy).
   const handleToggleIssuesPanel = () => {
-    toggleZone("bottom");
+    togglePanel("bcf");
   };
 
   const handleStartReview = () => {
@@ -253,10 +256,12 @@ function LayoutInner() {
       // única fuente de verdad para este botón.
       "panel-tree": { onClick: handleToggleTreePanel, isActive: panels["model-tree"].open },
       "panel-data": { onClick: handleTogglePropertiesPanel, isActive: zones.right },
-      "panel-issues": { onClick: handleToggleIssuesPanel, isActive: zones.bottom },
+      // isActive lee panels["bcf"].open, no zones.bottom - mismo motivo
+      // que "panel-tree" arriba.
+      "panel-issues": { onClick: handleToggleIssuesPanel, isActive: panels["bcf"].open },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [toolModuleRuntime, zones.right, zones.bottom, panels]
+    [toolModuleRuntime, zones.right, panels]
   );
 
   const handleFilesSelected = async (files: File[]) => {
@@ -333,44 +338,43 @@ function LayoutInner() {
           moduleRuntime={moduleRuntime}
         />
         <DockRight hasModel={hasModels} />
-        {/* Sin este gate, DockBottomShell solo se guarda por zones.bottom
-            (default false - LayoutStateContext.tsx), pero ese valor
-            persiste en localStorage (layoutPersistence.ts): si alguna vez
-            quedó true en una sesión anterior, el panel BCF completo
-            renderizaba sobre el empty state antes de cargar cualquier
-            modelo - mismo bug de fondo que ya se corrigió en DockRight,
-            solo que ahí se reproducía siempre (sin gate) y acá solo con
-            cierto estado persistido. */}
-        {hasModels && (
-          <DockBottom
-            bcfState={bcfState}
-            onBcfFilterChange={handleBcfFilterChange}
-            onBcfTopicSelect={handleBcfTopicSelect}
-            onBcfTopicActivate={handleBcfTopicActivate}
-            moduleRuntime={moduleRuntime}
-            hasModel={hasModels}
-            createDialogOpen={createDialogOpen}
-            onCreateDialogClose={() => setCreateDialogOpen(false)}
-            onCreateTopicSubmit={handleCreateTopicSubmit}
-          />
-        )}
 
-        {/* Etapa 4b-1 - infraestructura de paneles flotantes, coexiste
-            con los docks fijos de arriba (no se tocan en esta fase salvo
-            DockLeft, ver su propio gate contra panels["model-tree"].open
-            más arriba en el árbol). Solo UN panel piloto en esta fase
-            (model-tree, reusando el ModelTree real que DockLeft ya usa) -
-            element-info/bcf/file-manager/review-info/review-geometry/
-            schedules quedan para fases futuras, a propósito, no acá.
-            Sin el resto del chrome de DockHeader (ej. el botón "+" de
-            agregar IFC) - FloatingPanel tiene su propio titlebar
-            genérico, no el de DockHeader; portar esa funcionalidad
-            puntual queda para cuando este panel reemplace a DockLeft de
-            verdad. */}
+        {/* Etapa 4b-1/4b-2/4b-3 - infraestructura de paneles flotantes,
+            coexiste con los docks fijos que quedan (DockRight; DockLeft
+            ya tiene su propio gate contra panels["model-tree"].open más
+            arriba en el árbol). Dos paneles migrados hasta ahora:
+            model-tree (4b-1, reusa ModelTree) y bcf (4b-3, reusa
+            BcfPanel - DockBottom.tsx se eliminó en este mismo commit,
+            no le quedaba nada más que envolver). element-info/
+            file-manager/review-info/review-geometry/schedules quedan
+            para fases futuras, a propósito, no acá. */}
+        {/* Sin este gate, el panel BCF flotante solo se guarda por
+            panels["bcf"].open (default false - LayoutStateContext.tsx),
+            pero ese valor persiste en localStorage
+            (bwise-panels-state-v1): si alguna vez quedó true en una
+            sesión anterior, BCF completo renderizaba sobre el empty
+            state antes de cargar cualquier modelo - mismo bug de fondo
+            ya corregido para DockRight/DockBottom en Etapa 4a. */}
         <div className="panel-layer">
           <FloatingPanel id="model-tree" title="Árbol de Modelos" icon={<IconPanelTree />}>
             <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
           </FloatingPanel>
+
+          {hasModels && (
+            <FloatingPanel id="bcf" title="Gestor de BCF" icon={<IconPanelIssues />}>
+              <BcfPanel
+                state={bcfState}
+                onFilterChange={handleBcfFilterChange}
+                onTopicSelect={handleBcfTopicSelect}
+                onTopicActivate={handleBcfTopicActivate}
+                moduleRuntime={moduleRuntime}
+                hasModel={hasModels}
+                createDialogOpen={createDialogOpen}
+                onCreateDialogClose={() => setCreateDialogOpen(false)}
+                onCreateTopicSubmit={handleCreateTopicSubmit}
+              />
+            </FloatingPanel>
+          )}
         </div>
       </main>
 
