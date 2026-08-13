@@ -9,6 +9,9 @@ import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
 import { ModelTree } from "../../ui/Dock/ModelTree";
 import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
 import { IconPanelTree, IconPanelIssues, IconFileManager, IconSchedules, IconReviewInfo, IconReviewGeometry } from "../../ui/icons/toolbar";
+import { FileManager } from "../../ui/Panels/FileManager";
+import { ReviewGeometry } from "../../ui/Panels/ReviewGeometry";
+import { Schedules } from "../../ui/Panels/Schedules";
 import { StatusBar } from "../../ui/StatusBar/StatusBar";
 import { SearchBar } from "../../ui/Search/SearchBar";
 import { Toolbar } from "../../ui/Toolbar/Toolbar";
@@ -375,6 +378,10 @@ function LayoutInner() {
             (mismo criterio que model-tree, panel siempre montado);
             review-info y review-geometry, con el mismo gate que bcf
             (requiresModel:true en el registry, ver registry/modules.ts).
+            Etapa 4b-5: file-manager/schedules/review-geometry ya tienen
+            contenido real (UI + mock data, sin lógica todavía - ver
+            src/ui/Panels/). review-info se queda como placeholder "Contenido
+            pendiente" a propósito, para Etapa 4b-6 (toca /revision).
             element-info sigue sin FloatingPanel propio a propósito -
             panel-data ya lo controla vía DockRight/zones.right, ver el
             comentario en registry/modules.ts sobre por qué no se agregó
@@ -408,11 +415,11 @@ function LayoutInner() {
           )}
 
           <FloatingPanel id="file-manager" title="Gestor de Archivos" icon={<IconFileManager />}>
-            <p className="floating-panel-placeholder">Contenido pendiente</p>
+            <FileManager />
           </FloatingPanel>
 
           <FloatingPanel id="schedules" title="Itemizados" icon={<IconSchedules />}>
-            <p className="floating-panel-placeholder">Contenido pendiente</p>
+            <Schedules />
           </FloatingPanel>
 
           {hasModels && (
@@ -423,7 +430,7 @@ function LayoutInner() {
 
           {hasModels && (
             <FloatingPanel id="review-geometry" title="Geometría de Revisión" icon={<IconReviewGeometry />}>
-              <p className="floating-panel-placeholder">Contenido pendiente</p>
+              <ReviewGeometry />
             </FloatingPanel>
           )}
         </div>

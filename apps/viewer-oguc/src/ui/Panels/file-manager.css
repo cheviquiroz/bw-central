@@ -1,0 +1,62 @@
+/* src/ui/Panels/file-manager.css */
+@import "../../styles/dock.css";
+
+/* Etapa 4b-5 - vive dentro de un FloatingPanel (ver floating-panel.css),
+   reusa los mismos tokens --dock-* que ese componente ya usa (dock.css
+   importado arriba) en vez de los --text-primary/--color-border/etc. del
+   brief original, que no existen en este proyecto - ver tokens.css. */
+.file-manager {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.file-manager-header {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.file-manager-btn-load {
+  padding: 8px 12px;
+  border: 1px solid var(--dock-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dock-text-hover);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.file-manager-list {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-manager-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.file-manager-item {
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: var(--dock-hover-bg);
+  color: var(--dock-text-hover);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.file-manager-item:hover {
+  background-color: var(--dock-selected-bg);
+}

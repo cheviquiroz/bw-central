@@ -1,0 +1,53 @@
+/* src/ui/Panels/review-geometry.css */
+@import "../../styles/dock.css";
+
+.review-geometry {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.review-geometry-tabs {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--dock-line);
+}
+
+.review-geometry-tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.review-geometry-tab:hover {
+  color: var(--dock-text-hover);
+}
+
+.review-geometry-tab.active {
+  color: var(--dock-text-hover);
+  border-bottom-color: var(--blue);
+}
+
+.review-geometry-content {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.review-geometry-empty {
+  color: var(--dock-text-secondary);
+  font-family: var(--sans);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
