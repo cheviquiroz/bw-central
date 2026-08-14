@@ -26,8 +26,24 @@ export type { LayoutZones };
 // evitar moviéndolos a otro archivo, así que se quedan donde se usan.
 export type PanelId = "model-tree" | "file-manager" | "element-info" | "bcf" | "review-info" | "review-geometry" | "schedules";
 
+// Etapa 4c-1 - grid de docking 2x2. `mode`/`dockSlot` son los ÚNICOS
+// campos nuevos acá - a diferencia del brief original de esta fase, que
+// proponía volver x/y/width/height/zIndex OPCIONALES ("solo si
+// mode=free"), se dejaron intactos y siempre-presentes: son lo que
+// calculateInitialPosition/isValidPanelPosition/FloatingPanel.tsx ya
+// leen sin chequeo de undefined en cada línea desde Etapa 4b-1/4b-2, y
+// un panel DOCKED sigue necesitando recordar su última posición/tamaño
+// libre - si el usuario lo saca del grid (Etapa 4c-2, drag-to-swap fuera
+// de un slot, o un futuro botón "flotar"), tiene que reaparecer donde
+// estaba, no en un x/y inventado de cero. `dockSlot` es `DockingSlot |
+// null` (no opcional) por el mismo motivo que el resto de este archivo
+// nunca usa `?:` para campos siempre-presentes-pero-a-veces-vacíos.
+export type DockingSlot = "left-top" | "left-bottom" | "right-top" | "right-bottom";
+
 export interface PanelPosition {
   open: boolean;
+  mode: "free" | "docked";
+  dockSlot: DockingSlot | null;
   x: number;
   y: number;
   width: number;
@@ -37,6 +53,28 @@ export interface PanelPosition {
 }
 
 export type PanelState = Record<PanelId, PanelPosition>;
+
+// Etapa 4c-1 - qué panel vive en cada columna/slot del grid 2x2, y las
+// dimensiones continuas (arrastrables) del grid mismo. NO incluye
+// `dividerX` (el brief original lo proponía como posición x absoluta del
+// separador vertical) - CSS flexbox ya deriva esa posición sola de
+// leftColumnWidth/rightColumnWidth (ver docking-container.css), llevar
+// un tercer número aparte solo para que quedara sincronizado con esos
+// dos habría sido puro estado derivado repetido, sin ningún consumidor
+// real que lo necesitara como px absoluto. Mismo motivo por el que NO
+// hay un calculateSlotGeometry acá (el brief sí lo pedía): ese cálculo
+// devolvía x/y absolutos para un layout que, en la implementación real,
+// es un flex row de dos columnas - flexbox ya resuelve exactamente ese
+// problema (ancho fijo por columna + gap), no hay razón para
+// reimplementarlo a mano en JS.
+export interface DockingLayout {
+  leftColumn: PanelId[]; // max 2: [top, bottom]
+  rightColumn: PanelId[]; // max 2: [top, bottom]
+  leftColumnWidth: number;
+  rightColumnWidth: number;
+  leftTopHeight: number; // solo relevante si leftColumn.length === 2
+  rightTopHeight: number; // solo relevante si rightColumn.length === 2
+}
 
 export const DEFAULT_LAYOUT_ZONES: LayoutZones = { left: true, right: true, bottom: false };
 
@@ -133,11 +171,15 @@ const PANEL_IDS: PanelId[] = ["model-tree", "file-manager", "element-info", "bcf
 // existe, no una migración de algo anterior.
 const PANELS_STORAGE_KEY = "bwise-panels-state-v1";
 
+const VALID_DOCK_SLOTS: DockingSlot[] = ["left-top", "left-bottom", "right-top", "right-bottom"];
+
 function isValidPanelPosition(value: unknown): value is PanelPosition {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as PanelPosition;
   return (
     typeof candidate.open === "boolean" &&
+    (candidate.mode === "free" || candidate.mode === "docked") &&
+    (candidate.dockSlot === null || VALID_DOCK_SLOTS.includes(candidate.dockSlot)) &&
     Number.isFinite(candidate.x) &&
     Number.isFinite(candidate.y) &&
     Number.isFinite(candidate.width) &&
@@ -197,6 +239,11 @@ const FLOATING_PANEL_BASE_Z = 20;
 function makeDefaultPanelPosition(): PanelPosition {
   return {
     open: false,
+    // mode/dockSlot no importan mientras open:false - togglePanel decide
+    // el modo real al abrir (ver más abajo). free/null acá es solo un
+    // valor neutro de arranque, no una preferencia.
+    mode: "free",
+    dockSlot: null,
     x: FLOATING_PANEL_BASE_X,
     y: FLOATING_PANEL_BASE_Y,
     width: FLOATING_PANEL_WIDTH,
@@ -225,6 +272,8 @@ function calculateInitialPosition(openIndex: number, nextMaxZ: number): PanelPos
   if (openIndex === 0) {
     return {
       open: true,
+      mode: "free",
+      dockSlot: null,
       x: FLOATING_PANEL_BASE_X,
       y: FLOATING_PANEL_BASE_Y,
       width: FLOATING_PANEL_WIDTH,
@@ -238,6 +287,8 @@ function calculateInitialPosition(openIndex: number, nextMaxZ: number): PanelPos
     const firstPanelHeight = availableHeight / 2;
     return {
       open: true,
+      mode: "free",
+      dockSlot: null,
       x: FLOATING_PANEL_BASE_X,
       y: FLOATING_PANEL_BASE_Y + firstPanelHeight + FLOATING_PANEL_GAP,
       width: FLOATING_PANEL_WIDTH,
@@ -250,6 +301,8 @@ function calculateInitialPosition(openIndex: number, nextMaxZ: number): PanelPos
   const cascadeOffset = (openIndex - 2) * FLOATING_PANEL_CASCADE_STEP;
   return {
     open: true,
+    mode: "free",
+    dockSlot: null,
     x: FLOATING_PANEL_BASE_X + cascadeOffset,
     y: FLOATING_PANEL_BASE_Y + cascadeOffset,
     width: FLOATING_PANEL_WIDTH,
@@ -257,6 +310,84 @@ function calculateInitialPosition(openIndex: number, nextMaxZ: number): PanelPos
     zIndex: nextMaxZ,
     dock: "free",
   };
+}
+
+// Etapa 4c-1 - grid de docking. Key propia y separada, mismo criterio que
+// PANELS_STORAGE_KEY (ver ese comentario) - "v1" porque es la primera
+// vez que este shape existe.
+const DOCKING_STORAGE_KEY = "bwise-docking-layout-v1";
+
+const DEFAULT_DOCKING_LAYOUT: DockingLayout = {
+  leftColumn: [],
+  rightColumn: [],
+  leftColumnWidth: FLOATING_PANEL_WIDTH,
+  rightColumnWidth: FLOATING_PANEL_WIDTH,
+  leftTopHeight: 400,
+  rightTopHeight: 400,
+};
+
+// Mismo mínimo que un FloatingPanel libre ya respeta (MIN_WIDTH en
+// FloatingPanel.tsx) - una columna del grid no tiene ninguna razón para
+// poder volverse más angosta que el panel libre equivalente.
+export const MIN_DOCKING_COLUMN_WIDTH = 280;
+export const MIN_DOCKING_ROW_HEIGHT = 150;
+
+function isValidPanelIdArray(value: unknown): value is PanelId[] {
+  return Array.isArray(value) && value.length <= 2 && value.every((id) => PANEL_IDS.includes(id));
+}
+
+function isValidDockingLayout(value: unknown): value is DockingLayout {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Partial<DockingLayout>;
+  return (
+    isValidPanelIdArray(candidate.leftColumn) &&
+    isValidPanelIdArray(candidate.rightColumn) &&
+    Number.isFinite(candidate.leftColumnWidth) &&
+    Number.isFinite(candidate.rightColumnWidth) &&
+    Number.isFinite(candidate.leftTopHeight) &&
+    Number.isFinite(candidate.rightTopHeight)
+  );
+}
+
+// Defensivo por diseño, mismo criterio que loadPersistedPanelsState -
+// nunca lanza, un shape viejo/corrupto cae a null (-> default).
+function loadPersistedDockingLayout(): DockingLayout | null {
+  try {
+    const raw = window.localStorage.getItem(DOCKING_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isValidDockingLayout(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePersistedDockingLayout(layout: DockingLayout): void {
+  try {
+    window.localStorage.setItem(DOCKING_STORAGE_KEY, JSON.stringify(layout));
+  } catch {
+    // ver el comentario de loadPersistedDockingLayout.
+  }
+}
+
+function getInitialDockingLayout(): DockingLayout {
+  return loadPersistedDockingLayout() ?? DEFAULT_DOCKING_LAYOUT;
+}
+
+// Reparte la altura disponible del grid 50/50 entre los dos paneles de
+// una columna con 2 elementos, o le da el 100% al único panel si solo
+// hay uno - misma regla en ambas columnas, función pura (no muta
+// `layout`, a diferencia del brief original: el resto de este archivo
+// nunca muta estado en el lugar, togglePanel/updatePanelPosition/etc.
+// siempre devuelven un objeto nuevo). gridHeight se recalcula acá mismo
+// (no se cachea en el layout persistido) por el mismo motivo que
+// DockLeft/DockRight recalculan su altura en cada render en vez de
+// guardarla: la ventana pudo cambiar de tamaño entre sesiones.
+function recalculateDockingHeights(layout: DockingLayout): DockingLayout {
+  const gridHeight = window.innerHeight - TOOLBAR_CLEARANCE - STATUS_BAR_CLEARANCE - FLOATING_PANEL_GAP;
+  const leftTopHeight = layout.leftColumn.length === 2 ? (gridHeight - FLOATING_PANEL_GAP) / 2 : gridHeight;
+  const rightTopHeight = layout.rightColumn.length === 2 ? (gridHeight - FLOATING_PANEL_GAP) / 2 : gridHeight;
+  return { ...layout, leftTopHeight, rightTopHeight };
 }
 
 const DEFAULT_PROPERTIES_TAB: PropertiesTab = "PROPERTIES";
@@ -306,6 +437,14 @@ interface LayoutStateContextType {
   togglePanel: (id: PanelId) => void;
   updatePanelPosition: (id: PanelId, updates: Partial<PanelPosition>) => void;
   bringToFront: (id: PanelId) => void;
+  /** Etapa 4c-1 - grid de docking 2x2. Persistido aparte (bwise-docking-layout-v1) - ver DOCKING_STORAGE_KEY. */
+  dockingLayout: DockingLayout;
+  updateDockingLayout: (updates: Partial<DockingLayout>) => void;
+  /** Devuelve false si el grid ya tiene 4 paneles docked y preferSlot no apunta a un slot libre - el caller (togglePanel) decide qué hacer en ese caso (hoy: abrir libre). */
+  addPanelToDocking: (id: PanelId, preferSlot?: DockingSlot) => boolean;
+  removePanelFromDocking: (id: PanelId) => void;
+  /** Etapa 4c-1: función completa, sin UI que la dispare todavía (eso es Etapa 4c-2, drag-to-swap entre slots) - se agrega ahora porque forma parte de la superficie de estado que ese siguiente sub-fase va a necesitar de inmediato, no porque haya algo que la llame hoy. */
+  swapPanelsInDocking: (id1: PanelId, id2: PanelId) => void;
 }
 
 const LayoutStateContext = createContext<LayoutStateContextType | undefined>(undefined);
@@ -330,6 +469,8 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
   const [initialPanelsState] = useState(getInitialPanelsState);
   const [panels, setPanels] = useState<PanelState>(initialPanelsState.panels);
   const [maxZ, setMaxZ] = useState<number>(initialPanelsState.maxZ);
+  // Lazy initializer + key propia, mismo criterio que initialPanelsState.
+  const [dockingLayout, setDockingLayout] = useState<DockingLayout>(getInitialDockingLayout);
 
   const setZoneVisible = (zone: keyof LayoutZones, visible: boolean) => {
     setZones((prev) => ({ ...prev, [zone]: visible }));
@@ -339,24 +480,118 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
     setZones((prev) => ({ ...prev, [zone]: !prev[zone] }));
   };
 
-  // Cerrar nunca recalcula nada - solo apaga `open`, conservando x/y/
-  // width/height/zIndex tal como estaban (relevante desde Etapa 4b-2,
-  // cuando esos valores empiecen a venir de un drag/resize real, no solo
-  // del cálculo en cascada). Abrir SÍ recalcula posición: openIndex es la
-  // cantidad de paneles que van a quedar abiertos DESPUÉS de este menos
-  // uno (este mismo panel incluido, al final de esa lista) - el orden de
-  // apertura, no el orden fijo de PANEL_IDS, es lo que decide dónde cae
-  // cada uno en la cascada.
+  const updateDockingLayout = (updates: Partial<DockingLayout>) => {
+    setDockingLayout((prev) => ({ ...prev, ...updates }));
+  };
+
+  // Etapa 4c-1. Lee `dockingLayout` del closure de render (no un
+  // functional updater) - mismo criterio que bringToFront ya usa para
+  // `maxZ` más abajo: estas acciones siempre las dispara un evento
+  // discreto del usuario (click de toolbar, no un loop de alta
+  // frecuencia como pointermove), así que no hay carrera real que un
+  // updater funcional tendría que resolver.
+  const addPanelToDocking = (id: PanelId, preferSlot?: DockingSlot): boolean => {
+    let targetSlot = preferSlot;
+    if (!targetSlot) {
+      if (dockingLayout.leftColumn.length < 2) targetSlot = dockingLayout.leftColumn.length === 0 ? "left-top" : "left-bottom";
+      else if (dockingLayout.rightColumn.length < 2) targetSlot = dockingLayout.rightColumn.length === 0 ? "right-top" : "right-bottom";
+      else return false; // grid lleno (4/4) - el caller decide el fallback (togglePanel: abre libre)
+    }
+
+    const isLeft = targetSlot.startsWith("left");
+    const newLayout = recalculateDockingHeights({
+      ...dockingLayout,
+      leftColumn: isLeft ? [...dockingLayout.leftColumn, id] : dockingLayout.leftColumn,
+      rightColumn: isLeft ? dockingLayout.rightColumn : [...dockingLayout.rightColumn, id],
+    });
+    setDockingLayout(newLayout);
+    setPanels((prev) => ({ ...prev, [id]: { ...prev[id], open: true, mode: "docked", dockSlot: targetSlot } }));
+    return true;
+  };
+
+  const removePanelFromDocking = (id: PanelId) => {
+    const newLayout = recalculateDockingHeights({
+      ...dockingLayout,
+      leftColumn: dockingLayout.leftColumn.filter((p) => p !== id),
+      rightColumn: dockingLayout.rightColumn.filter((p) => p !== id),
+    });
+    setDockingLayout(newLayout);
+    setPanels((prev) => ({ ...prev, [id]: { ...prev[id], open: false, mode: "docked", dockSlot: null } }));
+  };
+
+  // Etapa 4c-1: definida, no wireada a ninguna UI todavía (ver el
+  // comentario en LayoutStateContextType) - Etapa 4c-2 le agrega drag-
+  // to-swap real sobre DockingContainer.
+  const swapPanelsInDocking = (id1: PanelId, id2: PanelId) => {
+    const { leftColumn, rightColumn } = dockingLayout;
+    const idx1Left = leftColumn.indexOf(id1);
+    const idx1Right = rightColumn.indexOf(id1);
+    const idx2Left = leftColumn.indexOf(id2);
+    const idx2Right = rightColumn.indexOf(id2);
+
+    let newLeftColumn = leftColumn;
+    let newRightColumn = rightColumn;
+    let slot1: DockingSlot | undefined;
+    let slot2: DockingSlot | undefined;
+
+    if (idx1Left >= 0 && idx2Right >= 0) {
+      newLeftColumn = leftColumn.map((p, i) => (i === idx1Left ? id2 : p));
+      newRightColumn = rightColumn.map((p, i) => (i === idx2Right ? id1 : p));
+      slot1 = idx2Right === 0 ? "right-top" : "right-bottom";
+      slot2 = idx1Left === 0 ? "left-top" : "left-bottom";
+    } else if (idx1Right >= 0 && idx2Left >= 0) {
+      newRightColumn = rightColumn.map((p, i) => (i === idx1Right ? id2 : p));
+      newLeftColumn = leftColumn.map((p, i) => (i === idx2Left ? id1 : p));
+      slot1 = idx2Left === 0 ? "left-top" : "left-bottom";
+      slot2 = idx1Right === 0 ? "right-top" : "right-bottom";
+    } else if (idx1Left >= 0 && idx2Left >= 0) {
+      newLeftColumn = leftColumn.map((p, i) => (i === idx1Left ? id2 : i === idx2Left ? id1 : p));
+      slot1 = idx2Left === 0 ? "left-top" : "left-bottom";
+      slot2 = idx1Left === 0 ? "left-top" : "left-bottom";
+    } else if (idx1Right >= 0 && idx2Right >= 0) {
+      newRightColumn = rightColumn.map((p, i) => (i === idx1Right ? id2 : i === idx2Right ? id1 : p));
+      slot1 = idx2Right === 0 ? "right-top" : "right-bottom";
+      slot2 = idx1Right === 0 ? "right-top" : "right-bottom";
+    } else {
+      return; // uno de los dos no está docked - nada que intercambiar
+    }
+
+    setDockingLayout((prev) => ({ ...prev, leftColumn: newLeftColumn, rightColumn: newRightColumn }));
+    setPanels((prev) => ({
+      ...prev,
+      [id1]: { ...prev[id1], dockSlot: slot1 ?? prev[id1].dockSlot },
+      [id2]: { ...prev[id2], dockSlot: slot2 ?? prev[id2].dockSlot },
+    }));
+  };
+
+  // Cerrar nunca recalcula posición LIBRE - solo apaga `open`,
+  // conservando x/y/width/height/zIndex tal como estaban (relevante
+  // desde Etapa 4b-2). Si el panel estaba docked, cerrar SÍ dispara
+  // reflow (removePanelFromDocking recalcula heights de la columna que
+  // pierde un elemento). Abrir: Etapa 4c-1 lo dockea por default si el
+  // grid tiene lugar (<4); si está lleno, cae al mismo cálculo de
+  // cascada libre que ya existía antes de esta fase - `openIndex` ahora
+  // cuenta solo paneles LIBRES abiertos (los docked no participan de la
+  // cascada, tienen su propia posición de grid).
   const togglePanel = (id: PanelId) => {
-    setPanels((prev) => {
-      const isOpening = !prev[id].open;
-      if (!isOpening) {
-        return { ...prev, [id]: { ...prev[id], open: false } };
+    const current = panels[id];
+    if (current.open) {
+      if (current.mode === "docked") {
+        removePanelFromDocking(id);
+      } else {
+        setPanels((prev) => ({ ...prev, [id]: { ...prev[id], open: false } }));
       }
-      const openCountBefore = Object.values(prev).filter((p) => p.open).length;
+      return;
+    }
+
+    const totalDocked = dockingLayout.leftColumn.length + dockingLayout.rightColumn.length;
+    if (totalDocked < 4 && addPanelToDocking(id)) return;
+
+    setPanels((prev) => {
+      const openFreeCountBefore = Object.values(prev).filter((p) => p.open && p.mode === "free").length;
       const nextMaxZ = maxZ + 1;
       setMaxZ(nextMaxZ);
-      return { ...prev, [id]: calculateInitialPosition(openCountBefore, nextMaxZ) };
+      return { ...prev, [id]: calculateInitialPosition(openFreeCountBefore, nextMaxZ) };
     });
   };
 
@@ -384,6 +619,12 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
     savePersistedPanelsState({ panels, maxZ });
   }, [panels, maxZ]);
 
+  // Efecto separado, key separada (DOCKING_STORAGE_KEY) - mismo criterio
+  // que los dos de arriba.
+  useEffect(() => {
+    savePersistedDockingLayout(dockingLayout);
+  }, [dockingLayout]);
+
   return (
     <LayoutStateContext.Provider
       value={{
@@ -405,6 +646,11 @@ export function LayoutStateProvider({ children }: { children: ReactNode }) {
         togglePanel,
         updatePanelPosition,
         bringToFront,
+        dockingLayout,
+        updateDockingLayout,
+        addPanelToDocking,
+        removePanelFromDocking,
+        swapPanelsInDocking,
       }}
     >
       {children}

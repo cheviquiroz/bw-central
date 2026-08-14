@@ -29,6 +29,8 @@ interface FloatingPanelProps {
   title: string;
   icon?: ReactNode;
   children: ReactNode;
+  /** Etapa 4c-1 - true cuando este panel vive dentro de DockingContainer (grid 2x2) en vez de flotando libre. Sin drag/resize/posición inline propios en ese modo: el tamaño/posición los da el flex layout del grid (leftColumnWidth/rightColumnWidth/leftTopHeight/rightTopHeight en LayoutStateContext), no panelState.x/y/width/height. Tampoco tiene el grip de arrastre (⠿) - reordenar paneles entre slots es Etapa 4c-2; un grip que no hace nada todavía sería una afordancia falsa, mismo criterio ya aplicado al drag-handle-stub que se quitó de PropertiesPanel en Etapa 4b-7. */
+  isDocked?: boolean;
 }
 
 const MIN_WIDTH = 280;
@@ -64,8 +66,8 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(value, max));
 }
 
-export function FloatingPanel({ id, title, icon, children }: FloatingPanelProps) {
-  const { panels, updatePanelPosition, bringToFront } = useLayoutState();
+export function FloatingPanel({ id, title, icon, children, isDocked = false }: FloatingPanelProps) {
+  const { panels, togglePanel, updatePanelPosition, bringToFront } = useLayoutState();
   const panelState = panels[id];
   const panelRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragStart | null>(null);
@@ -77,9 +79,35 @@ export function FloatingPanel({ id, title, icon, children }: FloatingPanelProps)
 
   if (!panelState.open) return null;
 
+  // Etapa 4c-1: cerrar un panel docked tiene que pasar por togglePanel
+  // (dispara removePanelFromDocking -> reflow de su columna), no solo
+  // updatePanelPosition(id, {open:false}) como el modo libre - ese
+  // segundo camino dejaría el id todavía adentro de
+  // dockingLayout.leftColumn/rightColumn, mostrando un slot vacío en vez
+  // de dejar que el panel restante de la columna se expanda.
   const handleCloseClick = () => {
-    updatePanelPosition(id, { open: false });
+    if (isDocked) togglePanel(id);
+    else updatePanelPosition(id, { open: false });
   };
+
+  if (isDocked) {
+    return (
+      <div className="floating-panel floating-panel-docked">
+        <div className="floating-panel-titlebar floating-panel-titlebar-docked">
+          <div className="floating-panel-header-content">
+            {icon && <div className="floating-panel-icon">{icon}</div>}
+            <h3 className="floating-panel-title">{title}</h3>
+          </div>
+          <div className="floating-panel-actions">
+            <button className="floating-panel-close-btn" onClick={handleCloseClick} title="Cerrar" aria-label="Cerrar">
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className="floating-panel-body">{children}</div>
+      </div>
+    );
+  }
 
   const handleTitlebarPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     dragRef.current = { startClientX: event.clientX, startClientY: event.clientY, startX: panelState.x, startY: panelState.y };

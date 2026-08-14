@@ -33,6 +33,27 @@
   transition: none;
 }
 
+/* Etapa 4c-1 - modo docked (vive dentro de .docking-column, no de
+   .panel-layer). flex:1 en vez de position:absolute con x/y/width/height
+   inline: el tamaño lo da el flex layout del padre (docking-container.css),
+   no panelState. Sin transition de left/top/width/height (no aplica,
+   este panel no tiene esas props inline) - el resize de separadores ya
+   tiene su propio manejo de "sin transición durante el gesto" en
+   docking-container.css. */
+.floating-panel-docked {
+  position: static;
+  flex: 1;
+  min-height: 0;
+}
+
+/* cursor default, no grab/grabbing - el titlebar docked no tiene drag
+   (Etapa 4c-2 lo agrega). Sin esto heredaría el cursor:grab de
+   .floating-panel-titlebar de arriba, prometiendo un arrastre que hoy no
+   existe. */
+.floating-panel-titlebar-docked {
+  cursor: default;
+}
+
 .floating-panel-titlebar {
   display: flex;
   align-items: center;

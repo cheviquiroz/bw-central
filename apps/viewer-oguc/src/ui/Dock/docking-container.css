@@ -1,0 +1,82 @@
+/* src/ui/Dock/docking-container.css */
+@import "../../styles/tokens.css";
+@import "../../styles/dock.css";
+
+/* Mismo criterio de capa que .panel-layer (Layout.css): position:absolute
+   dentro de .viewport (que ya es position:relative desde Etapa 4b-1),
+   z-index:120 (Etapa 4b-3 - gana a los 3 docks fijos que puedan seguir
+   montados y a Toolbar3DFloating, ver Z-INDEX-SYSTEM.md). pointer-events
+   en la capa + auto en columnas/separadores, mismo patrón que
+   .panel-layer > * ya usa - deja pasar clicks al canvas en las franjas
+   sin panel (arriba/abajo del grid, o si solo una columna tiene
+   contenido). padding-top/bottom/left/right reemplazan lo que en modo
+   libre resolvía FLOATING_PANEL_BASE_X/Y (LayoutStateContext.tsx) -
+   mismos números reales (TOOLBAR_CLEARANCE=84, STATUS_BAR_CLEARANCE=47,
+   TOOLBAR_GAP=20), no re-derivados a mano acá para no desincronizarse -
+   ver el comentario en Layout.css sobre esos tres. */
+.docking-container {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  gap: 20px;
+  padding: 84px 20px 47px;
+  pointer-events: none;
+}
+
+.docking-container > * {
+  pointer-events: auto;
+}
+
+/* Sin transición durante un resize activo (mismo criterio que
+   .floating-panel-interacting) - un cambio de flex-basis/width con
+   transition puesto se vería "arrastrando con retraso" detrás del
+   cursor real. */
+.docking-container-resizing .docking-column {
+  transition: none;
+}
+
+.docking-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.docking-slot {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* .floating-panel-docked (floating-panel.css) ya es flex:1 - un
+   .docking-slot con flex-basis fijo (columna con 2 paneles, panel de
+   arriba) constriñe esa altura sin que el panel adentro necesite saber
+   nada de grids. */
+.docking-slot > .floating-panel-docked {
+  height: 100%;
+}
+
+.docking-separator {
+  background: var(--dock-line);
+  transition: background-color 0.15s;
+  flex-shrink: 0;
+}
+
+.docking-separator:hover {
+  background-color: var(--blue);
+}
+
+.docking-separator-vertical {
+  width: 4px;
+  cursor: ew-resize;
+  align-self: stretch;
+  border-radius: 2px;
+}
+
+.docking-separator-horizontal {
+  height: 4px;
+  cursor: ns-resize;
+  border-radius: 2px;
+}

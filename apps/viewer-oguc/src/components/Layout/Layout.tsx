@@ -1,10 +1,12 @@
 // src/components/Layout/Layout.tsx
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Layout.css";
 import Viewport from "../../ui/Viewport/Viewport";
 import { DockLeft } from "../../ui/Dock/DockLeft";
 import { FloatingPanel } from "../../ui/Dock/FloatingPanel";
+import { DockingContainer } from "../../ui/Dock/DockingContainer";
 import { ModelTree } from "../../ui/Dock/ModelTree";
 import { BcfPanel } from "../../ui/BcfPanel/BcfPanel";
 import PropertiesPanel from "../PropertiesPanel/PropertiesPanel";
@@ -19,6 +21,7 @@ import { Toolbar } from "../../ui/Toolbar/Toolbar";
 import { FileUploadModal } from "../../ui/FileUploadModal/FileUploadModal";
 import { useApp } from "../../ui/AppContext";
 import { LayoutStateProvider, useLayoutState } from "../../ui/LayoutStateContext";
+import type { PanelId } from "../../ui/LayoutStateContext";
 import { useModelToolActions } from "./useModelToolActions";
 import { useReviewInfoState } from "./useReviewInfoState";
 import { setModelBytes } from "../../core/ModelBytesRegistry";
@@ -67,7 +70,7 @@ function LayoutInner() {
   // useState local ahí se perdía cada vez que el usuario colapsaba el
   // dock. Layout.tsx nunca se desmonta.
   const [hiddenByModel, setHiddenByModel] = useState<Record<string, Set<number>>>({});
-  const { setZoneVisible, toggleShowShortcuts, panels, togglePanel } = useLayoutState();
+  const { setZoneVisible, toggleShowShortcuts, panels, togglePanel, dockingLayout } = useLayoutState();
 
   // Etapa 4b-7 - element-info se migró de DockRight (zones.right) a un
   // FloatingPanel (panels["element-info"]), así que nada en "/" vuelve a
@@ -355,6 +358,81 @@ function LayoutInner() {
     }
   };
 
+  // Etapa 4c-1 - un solo mapa id -> elemento ya armado (icon/title/
+  // children reales, misma info que cada <FloatingPanel> ya tenía antes
+  // de esta fase, ver el JSX de más abajo) en vez de duplicar esa
+  // información en DockingContainer.tsx. DockingContainer NO conoce
+  // títulos/íconos/contenido de ningún panel - solo sabe qué id vive en
+  // qué slot (dockingLayout) y va a buscar el ReactNode ya armado acá.
+  // El brief original de esta fase proponía que DockingContainer
+  // reconstruyera cada FloatingPanel desde cero
+  // (`<FloatingPanel id={panelId as any} isDocked />`, sin title/icon/
+  // children) - no compila tal cual (title y children son requeridos) y,
+  // aunque lo fueran, Layout.tsx es el único lugar que YA sabe qué
+  // contenido real le corresponde a cada id (mismo motivo por el que
+  // BcfPanel/ReviewInfoPanel/etc. se instancian acá, no en un componente
+  // genérico de docks). isDocked se decide leyendo panels[id].mode -
+  // togglePanel (LayoutStateContext.tsx) es quien realmente pone ese
+  // modo al abrir/cerrar, esto solo lo refleja en el render.
+  const panelElements: Partial<Record<PanelId, ReactNode>> = {
+    "model-tree": (
+      <FloatingPanel id="model-tree" title="Árbol de Modelos" icon={<IconPanelTree />} isDocked={panels["model-tree"].mode === "docked"}>
+        <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
+      </FloatingPanel>
+    ),
+    ...(hasModels && {
+      "element-info": (
+        <FloatingPanel id="element-info" title="Info del Elemento" icon={<IconPanelData />} isDocked={panels["element-info"].mode === "docked"}>
+          <PropertiesPanel />
+        </FloatingPanel>
+      ),
+    }),
+    ...(hasModels && {
+      bcf: (
+        <FloatingPanel id="bcf" title="Gestor de BCF" icon={<IconPanelIssues />} isDocked={panels["bcf"].mode === "docked"}>
+          <BcfPanel
+            state={bcfState}
+            onFilterChange={handleBcfFilterChange}
+            onTopicSelect={handleBcfTopicSelect}
+            onTopicActivate={handleBcfTopicActivate}
+            moduleRuntime={moduleRuntime}
+            hasModel={hasModels}
+            createDialogOpen={createDialogOpen}
+            onCreateDialogClose={() => setCreateDialogOpen(false)}
+            onCreateTopicSubmit={handleCreateTopicSubmit}
+          />
+        </FloatingPanel>
+      ),
+    }),
+    "file-manager": (
+      <FloatingPanel id="file-manager" title="Gestor de Archivos" icon={<IconFileManager />} isDocked={panels["file-manager"].mode === "docked"}>
+        <FileManager />
+      </FloatingPanel>
+    ),
+    schedules: (
+      <FloatingPanel id="schedules" title="Itemizados" icon={<IconSchedules />} isDocked={panels["schedules"].mode === "docked"}>
+        <Schedules />
+      </FloatingPanel>
+    ),
+    ...(hasModels && {
+      "review-info": (
+        <FloatingPanel id="review-info" title="Info de Revisión" icon={<IconReviewInfo />} isDocked={panels["review-info"].mode === "docked"}>
+          <ReviewInfoPanel searchManager={searchManager} hasModels={hasModels} modelDisplayNames={modelDisplayNames} {...reviewInfoState} />
+        </FloatingPanel>
+      ),
+    }),
+    ...(hasModels && {
+      "review-geometry": (
+        <FloatingPanel id="review-geometry" title="Geometría de Revisión" icon={<IconReviewGeometry />} isDocked={panels["review-geometry"].mode === "docked"}>
+          <ReviewGeometry />
+        </FloatingPanel>
+      ),
+    }),
+  };
+
+  const dockedPanelIds = new Set<PanelId>([...dockingLayout.leftColumn, ...dockingLayout.rightColumn]);
+  const freePanelIds = (Object.keys(panelElements) as PanelId[]).filter((id) => !dockedPanelIds.has(id));
+
   return (
     <div className="layout">
       {!hasModels && (
@@ -414,6 +492,14 @@ function LayoutInner() {
             de hasModels (siempre montados); element-info/bcf/review-info/
             review-geometry SÍ lo tienen (requiresModel:true en el
             registry, ver registry/modules.ts). */}
+        {/* Etapa 4c-1 - grid de docking 2x2 (DockingContainer) para
+            paneles con mode==="docked" (default al abrir, ver
+            togglePanel en LayoutStateContext.tsx) + .panel-layer, ahora
+            reducido a los paneles mode==="free": el 5to panel en
+            adelante (grid lleno, 4/4) sigue cayendo libre con la misma
+            cascada de Etapa 4b-1/4b-2, sin tocar. */}
+        <DockingContainer elements={panelElements} />
+
         {/* Sin este gate, el panel BCF flotante solo se guarda por
             panels["bcf"].open (default false - LayoutStateContext.tsx),
             pero ese valor persiste en localStorage
@@ -422,56 +508,9 @@ function LayoutInner() {
             state antes de cargar cualquier modelo - mismo bug de fondo
             ya corregido para DockRight/DockBottom en Etapa 4a. */}
         <div className="panel-layer">
-          <FloatingPanel id="model-tree" title="Árbol de Modelos" icon={<IconPanelTree />}>
-            <ModelTree hiddenByModel={hiddenByModel} onToggleElementVisibility={handleToggleElementVisibility} />
-          </FloatingPanel>
-
-          {hasModels && (
-            <FloatingPanel id="element-info" title="Info del Elemento" icon={<IconPanelData />}>
-              <PropertiesPanel />
-            </FloatingPanel>
-          )}
-
-          {hasModels && (
-            <FloatingPanel id="bcf" title="Gestor de BCF" icon={<IconPanelIssues />}>
-              <BcfPanel
-                state={bcfState}
-                onFilterChange={handleBcfFilterChange}
-                onTopicSelect={handleBcfTopicSelect}
-                onTopicActivate={handleBcfTopicActivate}
-                moduleRuntime={moduleRuntime}
-                hasModel={hasModels}
-                createDialogOpen={createDialogOpen}
-                onCreateDialogClose={() => setCreateDialogOpen(false)}
-                onCreateTopicSubmit={handleCreateTopicSubmit}
-              />
-            </FloatingPanel>
-          )}
-
-          <FloatingPanel id="file-manager" title="Gestor de Archivos" icon={<IconFileManager />}>
-            <FileManager />
-          </FloatingPanel>
-
-          <FloatingPanel id="schedules" title="Itemizados" icon={<IconSchedules />}>
-            <Schedules />
-          </FloatingPanel>
-
-          {hasModels && (
-            <FloatingPanel id="review-info" title="Info de Revisión" icon={<IconReviewInfo />}>
-              <ReviewInfoPanel
-                searchManager={searchManager}
-                hasModels={hasModels}
-                modelDisplayNames={modelDisplayNames}
-                {...reviewInfoState}
-              />
-            </FloatingPanel>
-          )}
-
-          {hasModels && (
-            <FloatingPanel id="review-geometry" title="Geometría de Revisión" icon={<IconReviewGeometry />}>
-              <ReviewGeometry />
-            </FloatingPanel>
-          )}
+          {freePanelIds.map((id) => (
+            <Fragment key={id}>{panelElements[id]}</Fragment>
+          ))}
         </div>
       </main>
 
